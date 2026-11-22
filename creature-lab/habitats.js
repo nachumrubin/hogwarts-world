@@ -361,7 +361,7 @@ function groundShadow(group,height,lake) {
 }
 
 export function createHabitat(scene,kind) {
-  const lake=kind==='squid', group=new THREE.Group(), obstacles=[], clock={value:0};
+  const lake=kind==='squid'||kind==='merperson', group=new THREE.Group(), obstacles=[], clock={value:0};
   group.name=lake?'Great Lake habitat':'Forbidden Forest habitat';
   const random=randomSource(lake?4580:712039);
   const terrainHeight=(x,z)=>layeredTerrain(x,z)+(lake?-3.65:0);

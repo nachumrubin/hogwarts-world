@@ -57,7 +57,7 @@ export class Lab{
  restoreMaterials(actor){actor.root.traverse(o=>{if(this.original.has(o))o.material=this.original.get(o)})}
  applyDebug(){for(const a of [this.actor,this.extra])a?.root.traverse(o=>{if(!o.isMesh)return;if(!this.original.has(o))this.original.set(o,o.material);const m=this.original.get(o);o.material=this.normals?this.normalMat:m;for(const mat of [].concat(o.material))mat.wireframe=this.wire})}
  calculateMemory(){const seen=new Set();let size=0;this.scene.traverse(o=>{for(const a of [o.instanceMatrix,o.instanceColor,o.geometry?.index,...Object.values(o.geometry?.attributes||{})]){const b=a?.array?.buffer;if(b&&!seen.has(b)){size+=b.byteLength;seen.add(b)}}});this.bytes=size}
- advance(dt){const previous=this.actor.root.position.clone();this.clock+=dt;this.actor.update(dt,this.clock,this.action,this.context);this.extra?.update(dt,this.clock+.82,this.action,this.context);this.hab.update(dt,this.clock);if(!this.free&&this.kind==='aragog'){const travel=this.actor.root.position.clone().sub(previous);this.target.add(travel);this.camera.position.add(travel)}}
+ advance(dt){const previous=this.actor.root.position.clone();this.clock+=dt;this.actor.update(dt,this.clock,this.action,this.context);this.extra?.update(dt,this.clock+.82,this.action,this.context);this.hab.update(dt,this.clock);if(!this.free&&(this.kind==='aragog'||this.kind==='merperson')){const travel=this.actor.root.position.clone().sub(previous);this.target.add(travel);this.camera.position.add(travel)}}
  render(){this.renderer.render(this.scene,this.camera)}
  loop=(stamp)=>{
   requestAnimationFrame(this.loop);if(!this.actor)return;const delta=this.previous?stamp-this.previous:16.67;this.previous=stamp;let dt=Math.min(.06,delta/1000);
