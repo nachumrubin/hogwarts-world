@@ -24,6 +24,10 @@ import { WorldMap, Labels } from './debug/world-map.ts';
 import { CreatureHost, zoneInfo } from './creatures/host.ts';
 import { PlaceholderCreature } from './creatures/placeholder-module.ts';
 import { COMMON_WGSL } from './gpu/shaders/common.wgsl.js';
+import { buildEcology } from './forest/ecology.ts';
+import { ForestRenderer } from './forest/forest-renderer.ts';
+import { FOREST_VIEWS, FOREST_ROUTE, toWorldView } from './forest/views.ts';
+import { LIGHT_PRESETS } from './forest/presets.ts';
 
 const FOV_Y = 60 * DEG, NEAR = 0.2, EXPOSURE = 0.82;
 const DEBUG_MODES = ['normal', 'lod', 'crack'];
@@ -54,7 +58,11 @@ export class App {
     this.renderer = new Renderer(this.gpu, this.preset);
     this.renderer.build();
     const workers = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1));
-    this.streamer = new TerrainStreamer({ seed: this.opt.seed, poolSlots: this.preset.poolSlots, uploadsPerFrame: this.preset.uploadsPerFrame, workerCount: workers, workerUrl: new URL('./terrain-worker.js', import.meta.url) });
+    // Forest POC: ?forest=A (baseline terrain, no forest), B (basic forest), C (full forest)
+    const fm = this.opt.forest;
+    this.forestMode = fm;
+    this.lightKey = LIGHT_PRESETS[this.opt.light] ? this.opt.light : 'day';
+    this.streamer = new TerrainStreamer({ seed: this.opt.seed, poolSlots: this.preset.poolSlots, uploadsPerFrame: this.preset.uploadsPerFrame, workerCount: workers, workerUrl: new URL('./terrain-worker.js', import.meta.url), terrainOptions: { forestPoc: fm === 'C' } });
     this.streamer.attachGpu(this.renderer.terrain);
     const t0 = performance.now();
     this.streamer.bootstrap(2);
@@ -68,6 +76,16 @@ export class App {
     this.origin = new FloatingOrigin(WORLD.originSnap);
     // Stage C placeholders, railway, viaduct, river water
     const t1 = performance.now();
+    if (fm === 'B' || fm === 'C') {
+      const tf = performance.now();
+      this.eco = buildEcology(this.gen, { basic: fm === 'B' });
+      this.forest = new ForestRenderer(this.eco, fm, this.lightKey, { sampleCount: this.preset.msaa, lodScale: this.opt.forestLod || 1, detailSize: this.opt.tex || 1024, shafts: fm === 'C' && this.opt.shafts !== false });
+      this.renderer.depthSampleable = fm === 'C';
+      if (this.opt.freeze) this.forest.meterEvery = 1;
+      this._attachForest();
+      this.forestMs = performance.now() - tf;
+      console.log('forest POC', JSON.stringify({ ms: Math.round(this.forestMs), build: this.forest.stats.buildMs, eco: this.eco.stats }));
+    }
     this.proxies = buildLandmarkProxies(this.gen);
     this.renderer.props.setMeshes(this.proxies.meshes);
     this.renderer.props.setInstances(this.proxies.instances);
@@ -97,16 +115,33 @@ export class App {
     this.route = buildRoute(this.gen);
     this.bench = null;
     const c = this.opt.cam;
-    const v = c && c.length === 5 ? { x: c[0], agl: c[1], z: c[2], yaw: c[3], pitch: c[4] } : VIEWS[this.opt.view] || VIEWS[0];
+    if (fm) this.route = buildRoute(this.gen, { points: FOREST_ROUTE, step: 0.5, maxSlope: 0.9, smoothWindow: 12 });
+    const fv = fm ? toWorldView(FOREST_VIEWS[Math.min(this.opt.view, FOREST_VIEWS.length - 1)]) : null;
+    const v = c && c.length === 5 ? { x: c[0], agl: c[1], z: c[2], yaw: c[3], pitch: c[4] } : fv || VIEWS[this.opt.view] || VIEWS[0];
     this.applyView(v);
-    if (this.opt.walk) this.flight.setMode('walk');
+    if (this.opt.walk || (fm && v.agl < 3 && !this.opt.freeze)) this.flight.setMode('walk');
     if (this.opt.bench) this.startBenchmark(true);
     const sunAz = SUN.azimuthDeg * DEG, sunEl = SUN.elevationDeg * DEG;
     this.sun = [Math.sin(sunAz) * Math.cos(sunEl), Math.sin(sunEl), Math.cos(sunAz) * Math.cos(sunEl)]; // X east, Z north
+    if (fm) this.sun = LIGHT_PRESETS[this.lightKey].sun.slice();
     this._resizeCanvas();
     addEventListener('resize', () => this._resizeCanvas());
     window.__app = this;
     requestAnimationFrame((t) => { this.last = t; requestAnimationFrame((tt) => this.frame(tt)); });
+  }
+
+  _attachForest() {
+    const fr = this.forest, r = this.renderer;
+    fr.build(this.gpu.device, r);
+    r.terrain.setForest(fr.terrainHook);
+    if (!this._forestHooked) {
+      this._forestHooked = true;
+      r.preSceneCallbacks.push((enc) => fr.recordShadow(enc));
+      r.drawCallbacks.push((pass) => fr.record(pass));
+      r.postSceneCallbacks.push((enc, rr) => fr.recordShafts(enc, rr));
+      r.postSceneCallbacks.push((enc, rr) => fr.recordMeter(enc, rr));
+      r.extraStats = fr.stats;
+    }
   }
 
   applyView(v) {
@@ -147,7 +182,13 @@ export class App {
       else if (code === 'KeyB') { if (this.bench && this.bench.active) { this.bench = null; this.dyn.enabled = this._benchScale; } else this.startBenchmark(); }
       else if (code === 'F9') this.gpu.simulateLoss();
       else if (code === 'KeyP') { const keys = Object.keys(PRESETS); const next = keys[(keys.indexOf(this.presetKey) + 1) % keys.length]; const u = new URL(location.href); u.searchParams.set('preset', next); try { localStorage.setItem('highlands.preset', next); } catch {} location.href = u.href; }
-      else if (/^Digit[0-9]$/.test(code)) { const n = +code.slice(5); const v = VIEWS[n === 0 ? 9 : n - 1]; if (v) { this.bench = null; this.applyView(v); } }
+      else if (/^Digit[0-9]$/.test(code)) {
+        const n = +code.slice(5);
+        const v = this.forestMode ? (FOREST_VIEWS[n - 1] ? toWorldView(FOREST_VIEWS[n - 1]) : null) : VIEWS[n === 0 ? 9 : n - 1];
+        if (v) { this.bench = null; this.applyView(v); if (this.forestMode && v.agl < 3) this.flight.setMode('walk'); }
+      }
+      else if (code === 'KeyO' && this.forest) { this.lightKey = this.lightKey === 'day' ? 'overcast' : 'day'; this.forest.setPreset(this.lightKey); this.sun = LIGHT_PRESETS[this.lightKey].sun.slice(); }
+      else if (code === 'KeyJ' && this.forest) { this.forest.windOn = !this.forest.windOn; }
     }
   }
 
@@ -159,6 +200,7 @@ export class App {
     const frameMs = t - this.last; this.last = t;
     const dt = Math.min(frameMs / 1000, 0.1);
     this.time += dt; this.frameIndex++;
+    if (this.opt.time !== null && this.opt.time !== undefined) this.time = this.opt.time;
     this._keys();
     const f = this.flight;
 
@@ -169,6 +211,8 @@ export class App {
       f.x = p.x; f.y = p.y; f.z = p.z; f.yaw = p.yaw; f.pitch = p.pitch; roll = p.roll;
       f.groundHeight = this.gen.heightAt(p.x, p.z); f.agl = p.y - f.groundHeight;
       this.input.consumeMouse([0, 0]);
+    } else if (this.opt.freeze) {
+      roll = 0; this.input.consumeMouse([0, 0]);
     } else {
       f.update(dt, this.input, (x, z) => this.groundAt(x, z));
       roll = f.roll;
@@ -179,6 +223,13 @@ export class App {
     this.streamer.update(this.tree, frameMs);
     if (!this.overviewRequested && (this.streamer.stats.backlog === 0 || this.time > 3)) this._bakeOverview();
     if (this.renderer.overviewData && this.overviewFade < 1) this.overviewFade = Math.min(1, this.overviewFade + dt / 1.2);
+    // fixed-camera captures: stream without rendering until the terrain is complete, then render (saves many slow
+    // software-rendered frames in headless runs)
+    if (this.opt.freeze && !this._settled) {
+      if (this.streamer.stats.backlog === 0 && this.streamer.pending.size === 0 && this.renderer.overviewData && this.frameIndex > 2) { this._settled = true; this.overviewFade = 1; this.settledFrames = 0; }
+      else return;
+    }
+    if (this._settled) this.settledFrames++;
 
     // --- camera matrices, relative to the floating origin
     const o = this.origin; o.update(f.x, f.z);
@@ -199,6 +250,15 @@ export class App {
     F[44] = this.tree.morphStart; F[45] = this.debugMode; F[46] = 0; F[47] = this.overviewFade;
     { const g = r.overviewData ? r.overviewData.grid : { x0: -1e6, z0: -1e6, cell: 1, nx: 1, nz: 1 }; F[56] = g.x0; F[57] = g.z0; F[58] = 1 / (g.cell * g.nx); F[59] = 1 / (g.cell * g.nz); }
     F[48] = 2.6; F[49] = EXPOSURE; F[50] = 0.78; F[51] = 0.8;
+    let exposure = EXPOSURE;
+    if (this.forestMode) {
+      const lp = LIGHT_PRESETS[this.lightKey];
+      F[46] = lp.overcast; F[48] = lp.haze; F[27] = lp.illuminance;
+      // eye adaptation (forest modes): smoothed towards the metered target, ~1 s time constant
+      this.adapt = this.adapt || 1;
+      if (this.forest || this.forestMode === 'A') { const tgt = this.forest ? this.forest.autoExposure : 1; this.adapt += (tgt - this.adapt) * Math.min(1, (this.opt.freeze ? 1 : dt * 1.5)); }
+      exposure = EXPOSURE * lp.exposure * this.adapt;
+    }
     F[52] = f.x; F[53] = f.y; F[54] = f.z; F[55] = f.agl;
 
     // --- draw list (frustum culled)
@@ -215,8 +275,9 @@ export class App {
     }
     this.culled = culled;
     r.props.update(o.x, o.z, this.planes, f.x, f.y, f.z, 9000);
+    if (this.forest) this.forest.update(this.time, { x: f.x, y: f.y, z: f.z }, o, this.planes);
     this.creatures.update(dt);
-    const stats = r.render(this.time, EXPOSURE);
+    const stats = r.render(this.time, exposure);
     this.inflight++;
     const dev = this.gpu.device;
     dev.queue.onSubmittedWorkDone().then(() => { if (this.gpu.device === dev) this.inflight--; }, () => {});
@@ -275,6 +336,7 @@ export class App {
       `chunks drawn ${s.terrainDraws}  leaves ${this.tree.leaves.length}  resident ${st.resident}/${this.preset.poolSlots}  cached ${st.cached}  pending ${st.pending}  backlog ${st.backlog}  generated ${st.generated} (avg ${(st.genMsTotal / Math.max(1, st.generated)).toFixed(1)} ms, ${st.workers} workers)`,
       `${f.mode === 'walk' ? 'WALKING' : 'BROOM'}  x ${f.x.toFixed(1)} E  y ${f.y.toFixed(1)}  z ${f.z.toFixed(1)} N (m)   AGL ${f.agl.toFixed(1)} m   speed ${Math.hypot(f.vx, f.vy, f.vz).toFixed(1)} m/s   hdg ${head.toFixed(0)}°  pitch ${(f.pitch / DEG).toFixed(0)}°  bank ${(f.roll / DEG).toFixed(0)}°`,
       `render ${r.width}×${r.height} (scale ${this.dyn.scale.toFixed(2)}${this.dyn.enabled ? ', dynamic' : ''})  ${this.preset.name}  MSAA ${this.preset.msaa}×  LOD factor ${this.preset.lodFactor}  morph ${this.tree.morphStart.toFixed(2)}  origin (${o.x}, ${o.z})`,
+      ...(this.forest ? [`forest ${this.forestMode} (${LIGHT_PRESETS[this.lightKey].name}${this.forest.windOn ? '' : ', wind off'})  draws ${this.forest.stats.draws}  tris ${this.forest.stats.triangles.toLocaleString()}  trees LOD0/1/2/imp ${this.forest.stats.lod.join('/')}  cover ${this.forest.stats.cover} in ${this.forest.stats.coverDraws} draws  est. GPU memory ${(this.forest.stats.gpuBytes / 1048576).toFixed(0)} MB`] : this.forestMode ? ['forest A (baseline: no forest)'] : []),
       `debug view: ${DEBUG_MODES[this.debugMode]}   ${this.bench && this.bench.active ? `BENCHMARK ${this.bench.t.toFixed(1)}/${this.bench.duration} s` : ''}${this.losses ? `   device losses recovered: ${this.losses}` : ''}${this.gpu.errors.length ? `   WebGPU errors: ${this.gpu.errors.length}` : ''}`,
     ].join('\n');
   }
@@ -290,6 +352,7 @@ export class App {
       this.renderer.destroy();
       await this.gpu.init();
       this.renderer.build();
+      if (this.forest) this._attachForest();
       this.inflight = 0;
       const n = this.streamer.reattach(this.renderer.terrain);
       this.losses++;

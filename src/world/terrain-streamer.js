@@ -11,8 +11,9 @@ import { buildChunk } from '../terrain/chunk-mesher.js';
 import { shadeOverview, sampleHeights, sampleMaterials } from '../terrain/overview.js';
 
 export class TerrainStreamer {
-  constructor({ seed, poolSlots, uploadsPerFrame, workerCount, workerUrl }) {
+  constructor({ seed, poolSlots, uploadsPerFrame, workerCount, workerUrl, terrainOptions = {} }) {
     this.workerUrl = workerUrl;
+    this.terrainOptions = terrainOptions;
     this.seed = seed;
     this.poolSlots = poolSlots;
     this.uploadsPerFrame = uploadsPerFrame;
@@ -27,7 +28,7 @@ export class TerrainStreamer {
     this.stats = { generated: 0, genMsTotal: 0, uploadsThisFrame: 0, evictions: 0, pending: 0, backlog: 0, maxBacklog: 0, resident: 0, cached: 0, maxPending: 0, workers: 0 };
     this.cpuLimit = poolSlots * 3;
     this.workers = [];
-    this.mainGen = new WorldTerrain();
+    this.mainGen = new WorldTerrain(undefined, terrainOptions);
     this._startWorkers(workerCount);
   }
 
@@ -37,6 +38,7 @@ export class TerrainStreamer {
         const w = new Worker(this.workerUrl, { type: 'module' });
         w.onmessage = (e) => this._onMessage(i, e.data);
         w.onerror = (e) => { console.error('terrain worker error', e.message || e); };
+        if (this.terrainOptions.forestPoc) w.postMessage({ type: 'init', terrainOptions: this.terrainOptions });
         this.workers.push({ w, inflight: 0 });
       } catch (err) {
         console.warn('Module workers unavailable, generating on the main thread', err);

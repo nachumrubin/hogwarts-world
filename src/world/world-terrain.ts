@@ -9,6 +9,7 @@
 
 import { noise, fbm, erodedFbm, ridged, smoothstep, mix } from '../terrain/noise.js';
 import { WORLD_DB, type WorldDB, type Landmark, type River } from './world-db.ts';
+import { ForestSite } from '../forest/site.ts';
 import { sampleSpline, arcLengths, PolylineIndex, PolygonMask, polygonArea, type P2, type Nearest } from './geometry.ts';
 
 function smin(a: number, b: number, k: number): number { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; }
@@ -39,9 +40,12 @@ export class WorldTerrain {
   private pathIdx: { idx: PolylineIndex; half: number; road: boolean }[] = [];
   private nn: Nearest = { dist: 0, seg: 0, t: 0, side: 0 };
   private stage = 99; // evaluation stage limit, used while building derived data
+  /** Forest POC micro-relief overlay (only when the forest experiment is enabled; the default world is unchanged). */
+  readonly forestSite: ForestSite | null;
 
-  constructor(db: WorldDB = WORLD_DB) {
+  constructor(db: WorldDB = WORLD_DB, opts: { forestPoc?: boolean } = {}) {
     this.db = db;
+    this.forestSite = opts.forestPoc ? new ForestSite() : null;
     this.water = db.lake.surface;
     const sd = db.seed | 0;
     this.s = { warpX: sd ^ 0x1001, warpZ: sd ^ 0x2002, eroded: sd ^ 0x3003, ridge: sd ^ 0x4004, shore: sd ^ 0x5005, shoreType: sd ^ 0x6006, bed: sd ^ 0x7007, rock: sd ^ 0x8008, forest: sd ^ 0x9009 };
@@ -245,7 +249,9 @@ export class WorldTerrain {
     if (this.stage <= 4) return h;
     h = this.applyRailway(h, x, z);
     if (this.stage <= 5) return h;
-    return this.applyPads(h, x, z);
+    h = this.applyPads(h, x, z);
+    if (this.forestSite && this.stage >= 99) h += this.forestSite.floorDelta(x, z);
+    return h;
   }
 
   // -------------------------------------------------------------------------------------------- derived data

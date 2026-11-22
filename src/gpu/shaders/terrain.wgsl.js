@@ -5,7 +5,11 @@
 import { COMMON_WGSL } from './common.wgsl.js';
 import { WORLD, CHUNK_VERTS, CHUNK_VERTEX_COUNT } from '../../config.js';
 
-export const TERRAIN_WGSL = COMMON_WGSL + /* wgsl */ `
+/**
+ * Terrain shader source. `forest` (optional): WGSL with the forest POC's struct, group(1) bindings and functions;
+ * when given, the fragment shader shades the forest floor with its layered materials, shadow map and canopy volume.
+ */
+export function terrainWGSL(forest = null) { return COMMON_WGSL + (forest || '') + /* wgsl */ `
 struct Draw {
   origin: vec2f,      // chunk minimum corner relative to the render origin (exact)
   spacing: f32,       // vertex spacing (m), a power of two
@@ -73,6 +77,7 @@ fn lodColor(d: u32) -> vec3f {
 
 @fragment fn fs(i: VOut) -> @location(0) vec4f {
   let wp = i.rel + F.origin.xyz;            // world position (f32 is fine for shading inputs)
+  ${forest ? 'let dRx = dpdx(i.rel); let dRy = dpdy(i.rel);' : ''}
   let toCam = i.rel - F.camPos.xyz;
   let dist = length(toCam);
   var n = normalize(i.n);
@@ -154,11 +159,34 @@ fn lodColor(d: u32) -> vec3f {
   let hv = normalize(L - toCam / max(dist, 1e-3));
   col += sunIrradiance(max(wp.y, 0.0)) * shadow * pow(max(dot(n, hv), 0.0), 60.0) * (0.02 + 0.08 * shore) * ndl;
 
-  col = aerial(col, toCam);
+  ${forest ? FOREST_TERRAIN_BRANCH : 'col = aerial(col, toCam);'}
 
   let mode = u32(F.params.y);
   if (mode == 1u) { col = lodColor(i.depth) * (0.35 + 0.65 * ndl) * mix(1.0, 0.55, i.morph) * 3.0; }
   if (mode == 2u) { col = vec3f(0.2, 0.2, 0.2) * (0.5 + 0.5 * ndl); }
   return hdrOut(col);
 }
+`; }
+
+export const TERRAIN_WGSL = terrainWGSL();
+
+// Forest POC: blend the forest-floor material in over the ecology map, forest shadows and canopy everywhere they exist.
+const FOREST_TERRAIN_BRANCH = /* wgsl */ `
+  {
+    let ps = i.rel - F2.siteOff.xyz;
+    let muv = vec2f((ps.x - F2.mapRect.x) * F2.mapRect.z, (ps.z - F2.mapRect.y) * F2.mapRect.w);
+    let edge = min(min(muv.x, 1.0 - muv.x), min(muv.y, 1.0 - muv.y));
+    let wG = smoothstep(0.0, 0.035, edge) * select(0.0, 1.0, F2.look.x > 1.5);
+    let fsh = shadowAt(ps, n, i.pos.xy);
+    let cvs = canopyAt(ps + n * 1.0);
+    if (wG > 0.0) {
+      let g = forestGround(ps, n, dRx, dRy, dist);
+      let colF = forestLight(g.alb, ps, g.n, n, g.ao, g.rough, i.pos.xy, 1.0);
+      col = mix(col * min(fsh, 1.0) * mix(1.0, cvs.r, 0.5), colF, wG);
+    } else if (F2.look.x > 0.5) {
+      // outside the detailed area: existing shading, darkened by forest shadows and canopy where they reach
+      col *= mix(1.0, fsh, 0.85) * mix(1.0, cvs.r, 0.6);
+    }
+    col = finishColor(col, ps).rgb;
+  }
 `;

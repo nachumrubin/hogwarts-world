@@ -20,7 +20,7 @@ struct Frame {
   camUp: vec4f,       // xyz, w = tan(fovY/2)
   camFwd: vec4f,      // xyz, w = near plane
   viewport: vec4f,    // width, height, 1/width, 1/height
-  params: vec4f,      // morphStart, debug mode, unused, overview fade 0..1
+  params: vec4f,      // morphStart, debug mode, overcast 0..1 (forest POC lighting preset; 0 = clear), overview fade 0..1
   atmo: vec4f,        // haze multiplier, exposure, mie g, ambient strength
   camWorld: vec4f,    // camera world position (for noise / height-dependent fog), w = camera altitude
   ovRect: vec4f,      // overview maps: world minX, minZ, 1/sizeX, 1/sizeZ
@@ -79,7 +79,7 @@ fn sunTransmittance(y: f32) -> vec3f {
   return exp(-(BETA_R * odToSpace(y, mu, H_R) + 1.1 * hazeBeta() * odToSpace(y, mu, H_M)));
 }
 
-fn sunIrradiance(y: f32) -> vec3f { return SUN_COLOR * F.sunDir.w * sunTransmittance(y); }
+fn sunIrradiance(y: f32) -> vec3f { return SUN_COLOR * F.sunDir.w * sunTransmittance(y) * (1.0 - 0.88 * F.params.z); }
 
 // In-scattered radiance and transmittance along a ray, given optical depths (rayleigh, mie) and view-sun cosine.
 struct Scatter { inscatter: vec3f, transmittance: vec3f };
@@ -115,6 +115,7 @@ fn skyRadiance(d: vec3f, withSun: bool) -> vec3f {
     let disc = smoothstep(0.99995, 0.999985, cs);
     c += disc * SUN_COLOR * F.sunDir.w * 1.5e3 * s.transmittance; // bright but far below the f16 limit
   }
+  if (F.params.z > 0.0) { c = mix(c, overcastSky(mu), F.params.z); }
   // below the horizon: fade to a dim ground-bounce colour so rays that miss the terrain backdrop do not look black
   let below = smoothstep(0.0, -0.08, mu);
   return mix(c, sunIrradiance(0.0) * vec3f(0.035, 0.04, 0.03) * F.sunDir.y + c * 0.25, below);
@@ -124,6 +125,13 @@ fn skyAmbient(n: vec3f) -> vec3f {
   // cheap irradiance estimate: zenith and horizon radiance, weighted by how much the normal sees each
   let zen = skyRadiance(vec3f(0.0, 1.0, 0.0), false);
   let hor = skyRadiance(normalize(vec3f(-F.sunDir.x, 0.12, -F.sunDir.z)), false);
-  return PI * mix(hor, zen, 0.5 + 0.5 * n.y) * (0.6 + 0.4 * n.y);
+  let clear = PI * mix(hor, zen, 0.5 + 0.5 * n.y) * (0.6 + 0.4 * n.y);
+  if (F.params.z <= 0.0) { return clear; }
+  // overcast: brighter, colourless, more uniform dome (the cloud deck scatters the sun's light)
+  return mix(clear, overcastSky(n.y) * PI * (0.75 + 0.25 * n.y), F.params.z);
+}
+fn overcastSky(y: f32) -> vec3f {
+  let e = SUN_COLOR * F.sunDir.w * 0.055;
+  return e * vec3f(0.93, 0.97, 1.03) * (0.55 + 0.45 * smoothstep(-0.1, 0.6, y));
 }
 `;

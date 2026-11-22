@@ -14,8 +14,16 @@ This project adapts techniques and small portions of code from **Abyssal Garden*
 | `src/quality/dynamic-resolution.js` — dynamic resolution controller logic | `main.js` `frame()` |
 | `src/debug/route.js` — arc-length-parameterised Catmull-Rom camera path | `main.js` (`FLY`, `flyLUT`), `dev.js` |
 | `src/meshes/mesh-builder.ts` — mesh builder with per-vertex material ids in a 16-byte vertex, one shared buffer | `math.js` (`Mesh`) |
+| `src/forest/shaders/bake.wgsl.ts` — periodic value/Worley noise (`tn`, `tf`, `tw`, `h33`), rock detail height `H()`, slope-in-texture layout | `shaders.js` `W_NOISE`, `W_DETAIL` |
+| `src/forest/shaders/forest-common.wgsl.ts` — multi-scale detail sampling with slope normals, 3×3 PCF, volume sky visibility, height-fog integral | `shaders.js` `W_SOLID` (`tri`), `S_B` (`shadow9`, `vol`, `amb`), `S_G` (`fogIn`) |
+| `src/forest/shaders/cover.wgsl.ts` — vertex-generated ribbon strips (rows from `vertex_index`, exact arc bend, distance widening/shrinking), `sway()` | `shaders.js` `W_LEAF` |
+| `src/forest/shaders/vegetation.wgsl.ts` — wind sway phasing | `shaders.js` `W_LEAF` `sway()` |
+| `src/forest/shaders/impostor-shafts.wgsl.ts` — half-resolution shaft raymarch with IGN jitter, depth-aware 3×3 blur | `shaders.js` `W_RAYS`, `W_RBLUR` |
+| `src/forest/props-gen.ts` — icosphere rocks with fbm displacement and plane cuts | `world.js` `meshChunk`, `math.js` `icosphere` |
+| `src/forest/tree-gen.ts` — recursive branch polylines swept into tubes | `world.js` `meshCoral`, `math.js` `Mesh.tube` |
+| `src/forest/forest-renderer.ts` — cell-sorted instance runs (`drawCells`), shadow map rendered once and reused | `main.js` `drawCells()`, shadow bake |
 
-Everything else (terrain generation, quadtree LOD, streaming, collision, atmosphere, renderer structure) is new.
+Everything else (terrain generation, quadtree LOD, streaming, collision, atmosphere, renderer structure, forest ecology and tree growth rules, impostors) is new. See `docs/forest-poc-techniques.md` for the forest audit.
 
 ```
 MIT License

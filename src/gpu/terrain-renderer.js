@@ -4,7 +4,7 @@
 
 import { CHUNK_BYTES } from '../config.js';
 import { buildIndexPatterns } from '../terrain/index-patterns.js';
-import { TERRAIN_WGSL } from './shaders/terrain.wgsl.js';
+import { TERRAIN_WGSL, terrainWGSL } from './shaders/terrain.wgsl.js';
 
 export const DRAW_STRIDE = 32; // bytes, matches struct Draw in terrain.wgsl.js
 
@@ -36,10 +36,49 @@ export class TerrainRenderer {
       multisample: { count: sampleCount },
     });
     this.frameBuffer = frameBuffer; this.sampler = sampler;
+    this.opts = { sampleCount, colorFormat, depthFormat };
+    this.forest = null;
     this.setOverview(overviewView, materialsView);
   }
 
+  /**
+   * Forest POC: switch to the terrain variant that also reads the forest bind group (group 1).
+   * forest = { wgsl, bindGroupLayout, bindGroup }; null switches back.
+   */
+  setForest(forest) {
+    this.forest = forest;
+    if (!forest) return;
+    const d = this.device, V = GPUShaderStage.VERTEX, Fr = GPUShaderStage.FRAGMENT;
+    this.g0Layout = d.createBindGroupLayout({ label: 'terrain g0', entries: [
+      { binding: 0, visibility: V | Fr, buffer: { type: 'uniform' } },
+      { binding: 1, visibility: V, buffer: { type: 'read-only-storage' } },
+      { binding: 2, visibility: V, buffer: { type: 'read-only-storage' } },
+      { binding: 3, visibility: Fr, texture: { sampleType: 'float' } },
+      { binding: 4, visibility: Fr, sampler: { type: 'filtering' } },
+      { binding: 5, visibility: Fr, texture: { sampleType: 'float' } },
+    ] });
+    const module = d.createShaderModule({ label: 'terrain+forest', code: terrainWGSL(forest.wgsl) });
+    const o = this.opts;
+    this.forestPipeline = d.createRenderPipeline({
+      label: 'terrain+forest', layout: d.createPipelineLayout({ bindGroupLayouts: [this.g0Layout, forest.bindGroupLayout] }),
+      vertex: { module, entryPoint: 'vs' }, fragment: { module, entryPoint: 'fs', targets: [{ format: o.colorFormat }] },
+      primitive: { topology: 'triangle-list', cullMode: 'back', frontFace: 'cw' },
+      depthStencil: { format: o.depthFormat, depthWriteEnabled: true, depthCompare: 'greater' },
+      multisample: { count: o.sampleCount },
+    });
+    this._forestBG0();
+  }
+
+  _forestBG0() {
+    if (!this.forest || !this._ovViews) return;
+    this.forestBG0 = this.device.createBindGroup({ layout: this.g0Layout, entries: [
+      { binding: 0, resource: { buffer: this.frameBuffer } }, { binding: 1, resource: { buffer: this.draws } }, { binding: 2, resource: { buffer: this.pool } },
+      { binding: 3, resource: this._ovViews[0] }, { binding: 4, resource: this.sampler }, { binding: 5, resource: this._ovViews[1] }] });
+  }
+
   setOverview(view, materialsView) {
+    this._ovViews = [view, materialsView];
+    this._forestBG0();
     this.bindGroup = this.device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(0),
       entries: [
@@ -73,8 +112,8 @@ export class TerrainRenderer {
   record(pass) {
     if (!this.count) return 0;
     this.device.queue.writeBuffer(this.draws, 0, this.drawData, 0, this.count * DRAW_STRIDE);
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, this.bindGroup);
+    if (this.forest) { pass.setPipeline(this.forestPipeline); pass.setBindGroup(0, this.forestBG0); pass.setBindGroup(1, this.forest.bindGroup); }
+    else { pass.setPipeline(this.pipeline); pass.setBindGroup(0, this.bindGroup); }
     pass.setIndexBuffer(this.index, this.patterns.format);
     let tris = 0;
     const off = this.patterns.offsets, cnt = this.patterns.counts;

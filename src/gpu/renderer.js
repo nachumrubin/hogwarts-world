@@ -21,6 +21,13 @@ export class Renderer {
     this.stats = { triangles: 0, drawCalls: 0, terrainDraws: 0, propDraws: 0 };
     /** External draw callbacks (creature modules), recorded in the scene pass after terrain and props. */
     this.drawCallbacks = [];
+    /** Encoder-level hooks: before the scene pass (e.g. shadow maps) and after it (e.g. shafts into the HDR image). */
+    this.preSceneCallbacks = [];
+    this.postSceneCallbacks = [];
+    /** Keep the scene depth readable after the pass (forest light shafts). */
+    this.depthSampleable = false;
+    /** Optional profiling split: record the scene in several passes so per-pass GPU timestamps exist. */
+    this.profilePasses = null;
   }
 
   build() {
@@ -98,7 +105,7 @@ export class Renderer {
     for (const t of this.targets) t.destroy();
     const d = this.device, sc = this.sampleCount;
     this.hdr = d.createTexture({ label: 'hdr', size: [w, h], format: HDR, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
-    this.depth = d.createTexture({ label: 'depth', size: [w, h], format: DEPTH, sampleCount: sc, usage: GPUTextureUsage.RENDER_ATTACHMENT });
+    this.depth = d.createTexture({ label: 'depth', size: [w, h], format: DEPTH, sampleCount: sc, usage: GPUTextureUsage.RENDER_ATTACHMENT | (this.depthSampleable ? GPUTextureUsage.TEXTURE_BINDING : 0) });
     this.targets = [this.hdr, this.depth];
     if (sc > 1) { this.msaa = d.createTexture({ label: 'msaa', size: [w, h], format: HDR, sampleCount: sc, usage: GPUTextureUsage.RENDER_ATTACHMENT }); this.targets.push(this.msaa); }
     const hdrView = this.hdr.createView();
@@ -107,8 +114,10 @@ export class Renderer {
       colorAttachments: [sc > 1
         ? { view: this.msaa.createView(), resolveTarget: hdrView, loadOp: 'clear', storeOp: 'discard', clearValue: [0, 0, 0, 1] }
         : { view: hdrView, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 1] }],
-      depthStencilAttachment: { view: this.depth.createView(), depthClearValue: 0, depthLoadOp: 'clear', depthStoreOp: 'discard' },
+      depthStencilAttachment: { view: this.depth.createView(), depthClearValue: 0, depthLoadOp: 'clear', depthStoreOp: this.depthSampleable ? 'store' : 'discard' },
     };
+    this.hdrView = hdrView; this.depthView = this.depth.createView();
+    this.targetsVersion = (this.targetsVersion || 0) + 1;
     this.postPass = { label: 'post', colorAttachments: [{ view: null, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 1] }] };
     this.postBG = d.createBindGroup({ layout: this.postPipe.getBindGroupLayout(0), entries: [
       { binding: 0, resource: hdrView }, { binding: 1, resource: this.sampler }, { binding: 2, resource: { buffer: this.postBuffer } }] });
@@ -127,13 +136,19 @@ export class Renderer {
     const ts = this.gpu.beginTimestamps();
     this.scenePass.timestampWrites = ts ? ts.begin : undefined;
     this.postPass.timestampWrites = ts ? ts.end : undefined;
-    const pass = enc.beginRenderPass(this.scenePass);
-    const tris = this.terrain.record(pass);
-    this.props.record(pass);
-    for (const cb of this.drawCallbacks) cb(pass);
-    pass.setPipeline(this.skyPipe); pass.setBindGroup(0, this.skyBG); pass.draw(3);
-    pass.setPipeline(this.waterPipe); pass.setBindGroup(0, this.waterBG); pass.draw(4);
-    pass.end();
+    for (const cb of this.preSceneCallbacks) cb(enc);
+    let tris;
+    if (this.profilePasses) tris = this.profilePasses(enc, this);
+    else {
+      const pass = enc.beginRenderPass(this.scenePass);
+      tris = this.terrain.record(pass);
+      this.props.record(pass);
+      for (const cb of this.drawCallbacks) cb(pass);
+      pass.setPipeline(this.skyPipe); pass.setBindGroup(0, this.skyBG); pass.draw(3);
+      pass.setPipeline(this.waterPipe); pass.setBindGroup(0, this.waterBG); pass.draw(4);
+      pass.end();
+    }
+    for (const cb of this.postSceneCallbacks) cb(enc, this);
     const canvasTex = this.gpu.context.getCurrentTexture();
     this.postPass.colorAttachments[0].view = canvasTex.createView();
     const pp = enc.beginRenderPass(this.postPass);
@@ -148,8 +163,8 @@ export class Renderer {
     const s = this.stats;
     s.terrainDraws = this.terrain.count;
     s.propDraws = this.props.stats.draws;
-    s.drawCalls = this.terrain.count + this.props.stats.draws + 3;
-    s.triangles = tris + this.props.stats.triangles + 1 + 2 + 1;
+    s.drawCalls = this.terrain.count + this.props.stats.draws + 3 + (this.extraStats ? this.extraStats.draws : 0);
+    s.triangles = tris + this.props.stats.triangles + 1 + 2 + 1 + (this.extraStats ? this.extraStats.triangles : 0);
     return s;
   }
 

@@ -7,9 +7,10 @@ import { WorldTerrain } from '../world/world-terrain.ts';
 import { buildChunk } from './chunk-mesher.js';
 import { sampleHeights, sampleMaterials, shadeOverview } from './overview.js';
 
-const gen = new WorldTerrain();
+let gen = new WorldTerrain();
 self.onmessage = (e) => {
   const m = e.data;
+  if (m.type === 'init') { gen = new WorldTerrain(undefined, m.terrainOptions || {}); return; }
   if (m.type === 'chunk') {
     const t0 = performance.now();
     const c = buildChunk(gen, m.depth, m.ix, m.iz);
