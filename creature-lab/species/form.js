@@ -25,7 +25,7 @@ function smoothSections(rows,steps){
   }
   return [...samples,rows.at(-1)];
 }
-export function sweep(sections,sides) {
+export function sweep(sections,sides,sectionNormal) {
   const rows=smoothSections(sections,sides>=20?3:sides>=12?2:1);
   const points=rows.map(r=>new T.Vector3(...r.slice(0,3)));
   const axis=new T.Vector3(1,0,0);
@@ -33,7 +33,7 @@ export function sweep(sections,sides) {
   if(Math.abs(direction.x)>.8) axis.set(0,0,1);
   const pos=[],indices=[];
   for(let i=0;i<rows.length;i++){
-    const tangent=points[Math.min(i+1,rows.length-1)].clone().sub(points[Math.max(0,i-1)]).normalize();
+    const tangent=sectionNormal||points[Math.min(i+1,rows.length-1)].clone().sub(points[Math.max(0,i-1)]).normalize();
     const v=tangent.clone().cross(axis).normalize(), u=v.clone().cross(tangent);
     for(let j=0;j<sides;j++){
       const a=j*2*Math.PI/sides;
@@ -59,7 +59,7 @@ export class Specimen {
     const levels=[make(0)],mesh=new T.Mesh(levels[0],this.materials.get(color));
     parent.add(mesh);this.parts.push({mesh,levels,make});return mesh;
   }
-  loft(parent,color,rows){return this.mesh(parent,color,l=>sweep(rows,[20,12,7][l]))}
+  loft(parent,color,rows,normal){const axis=normal&&new T.Vector3(...normal);return this.mesh(parent,color,l=>sweep(rows,[20,12,7][l],axis))}
   oval(parent,color,x,y,z,w,h,d){
     const mesh=this.mesh(parent,color,l=>new T.SphereGeometry(1,[20,12,8][l],[14,9,6][l]));
     mesh.position.set(x,y,z);mesh.scale.set(w,h,d);return mesh;

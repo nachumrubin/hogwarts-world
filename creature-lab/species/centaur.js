@@ -26,7 +26,8 @@ export class Centaur extends Specimen {
       this.oval(arm,skin,-s*.024,-.604,.069,.018,.046,.02);this.arms.push(arm);
     }
   }
-  update(dt,t,action){
+  update(dt,t,action,context){
+    this.horse.advance(dt,action,context);
     const walk=action==='Walk'||action==='Turn'?1:0;
     this.horse.animate(t,walk);this.trunk.scale.y=1+.009*Math.sin(2*t);
     this.head.rotation.y=.18*Math.sin(t*.72);

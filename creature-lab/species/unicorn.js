@@ -22,7 +22,8 @@ export class Unicorn extends Specimen {
     }
     this.loft(h,0xc2ac78,[[0,.15,.118,.053,.056],[0,.26,.155,.045,.045],[0,.43,.211,.03,.029],[0,.62,.277,.003,.003]]);
   }
-  update(dt,t,action){
+  update(dt,t,action,context){
+    this.horse.advance(dt,action,context);
     const walk=action==='Walk'?1:0;
     this.horse.animate(t,walk);
     const aim=action==='Graze'?1.72:action==='Alert'?-.22:.04;

@@ -4,7 +4,7 @@ import {joint} from './form.js';
 // at the scapula or hip, with distinct carpus/hock and fetlock pivots.
 export function equine(a,{coat,hair,hoof,front=true,slender=1,length=1}){
   const b=joint(a.body);b.scale.set(slender,1,length);
-  a.loft(b,coat,[[0,1.35,-1.1,.1,.22],[0,1.36,-.98,.33,.41],[0,1.4,-.74,.43,.49],[0,1.39,-.37,.41,.46],[0,1.34,.03,.43,.47],[0,1.39,.39,.45,.52],[0,1.44,.65,.40,.54],[0,1.44,.87,.29,.42],[0,1.5,.94,.16,.22],[0,1.5,.98,.035,.08]]);
+  a.loft(b,coat,[[0,1.35,-1.1,.1,.22],[0,1.36,-.98,.33,.41],[0,1.4,-.74,.43,.49],[0,1.39,-.37,.41,.46],[0,1.34,.03,.43,.47],[0,1.39,.39,.45,.52],[0,1.44,.65,.40,.54],[0,1.44,.87,.29,.42],[0,1.5,.94,.16,.22],[0,1.5,.98,.035,.08]],[0,0,1]);
   const legs=[];
   for(const s of [-1,1])for(const fore of [false,true]){
     if(fore&&!front)continue;
@@ -20,12 +20,17 @@ export function equine(a,{coat,hair,hoof,front=true,slender=1,length=1}){
   }
   const tail=joint(b,0,1.65,-.98);
   a.loft(tail,hair,[[0,0,.06,.10,.11],[0,-.10,-.12,.13,.14],[.02,-.34,-.24,.15,.15],[.04,-.63,-.30,.13,.12],[.04,-.95,-.35,.09,.08],[.02,-1.16,-.42,.008,.01]]);
-  return {base:b,animate(t,walk){
+  return {base:b,advance(dt,action,context){
+    if(action!=='Walk')return;
+    const yaw=a.body.rotation.y+=.19*dt;
+    a.root.position.x+=.54*dt*Math.sin(yaw);a.root.position.z+=.54*dt*Math.cos(yaw);
+    a.root.position.y=a.origin.y+(context?.terrainHeight?.(a.root.position.x,a.root.position.z)||0);
+  },animate(t,walk,tuck=0){
     tail.rotation.z=.12*Math.sin(1.8*t);
     const bob=walk*(-.047+.012*Math.cos(t*.8*4*Math.PI));
     b.position.y=bob;
     for(const {upper,lower,cannon,phase,fore,bend,hock} of legs){
-      if(!walk){upper.rotation.x=lower.rotation.x=cannon.rotation.x=0;continue}
+      if(!walk){upper.rotation.x=.38*tuck;lower.rotation.x=-.54*tuck;cannon.rotation.x=.77*tuck;continue}
       const cycle=(t*.8+phase)%1;
       const swing=Math.max(0,(cycle-.62)/.38);
       const stride=cycle<.62?.21-.42*cycle/.62:-.21+.42*swing*swing*(3-2*swing);

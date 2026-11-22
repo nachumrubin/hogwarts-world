@@ -32,12 +32,13 @@ export class Hippogriff extends Specimen {
     }
     this.open=0;this.flight=0;this.update(0,0,'Idle');
   }
-  update(dt,t,action){
+  update(dt,t,action,context){
+    this.horse.advance(dt,action,context);
     const fly=action==='Fly',flap=fly||action==='Flap',walk=action==='Walk'?1:0;
     const blend=1-Math.exp(-dt*3.2);
     this.open+=((flap||action==='Unfold'?1:0)-this.open)*blend;
     this.flight+=((fly?1:0)-this.flight)*blend;
-    this.horse.animate(t,walk);this.body.position.y=this.flight*(.65+.09*Math.cos(t*4.4));
+    this.horse.animate(t,walk,this.flight);this.body.position.y=this.flight*(.65+.09*Math.cos(t*4.4));
     this.wings.forEach(pose=>pose(this.open,flap?.67*Math.sin(t*4.4):.36));
     this.neck.rotation.x=.036*Math.sin(t*(walk?5:1.7))+this.flight*.24;
     this.head.rotation.y=.12*Math.sin(t*.8);
