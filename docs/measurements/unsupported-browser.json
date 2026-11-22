@@ -1,0 +1,13 @@
+{
+  "mode": "unsupported",
+  "preset": "high",
+  "size": "960x540",
+  "results": [
+    {
+      "message": "This browser does not expose WebGPU (navigator.gpu is missing). Use a current desktop Chrome, Edge, or a browser with WebGPU enabled.",
+      "panelVisible": true,
+      "title": "WebGPU is not available"
+    }
+  ],
+  "log": []
+}

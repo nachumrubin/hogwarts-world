@@ -13,6 +13,7 @@ This project adapts techniques and small portions of code from **Abyssal Garden*
 | `src/flight/flight-model.js` — two-stage low-pass mouse look | `main.js` `frame()` |
 | `src/quality/dynamic-resolution.js` — dynamic resolution controller logic | `main.js` `frame()` |
 | `src/debug/route.js` — arc-length-parameterised Catmull-Rom camera path | `main.js` (`FLY`, `flyLUT`), `dev.js` |
+| `src/meshes/mesh-builder.ts` — mesh builder with per-vertex material ids in a 16-byte vertex, one shared buffer | `math.js` (`Mesh`) |
 
 Everything else (terrain generation, quadtree LOD, streaming, collision, atmosphere, renderer structure) is new.
 
@@ -39,3 +40,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Assets not included
+
+No third-party models are included in this repository yet. The HP-world repository's models (Hogwarts castle,
+Quidditch pitch, cliff scan, forest models; CC BY 4.0 unless noted in its `docs/CREDITS.md`) are planned for Stage D and
+will be credited here and on an in-game credits screen when integrated. "Rock Table" (CC BY-NC-SA 4.0) and the
+Sketchfab-licensed "grass" model will not be used.
+
+Harry Potter and related names are trademarks of Warner Bros. Entertainment Inc. This is a non-commercial fan project;
+no assets are extracted from films or games.

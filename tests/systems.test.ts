@@ -27,7 +27,7 @@ test('coordinate convention: yaw 0 looks north (+Z), yaw 90° looks east (+X); r
 });
 
 const T = new WorldTerrain();
-function input(keys: string[]) {
+function input(keys: string[]): any {
   return { wheel: 0, keys: new Set(keys), down(...c: string[]) { return c.some((k) => this.keys.has(k)); }, axis(n: string[], p: string[]) { return (this.down(...p) ? 1 : 0) - (this.down(...n) ? 1 : 0); }, consumeMouse(o: number[]) { o[0] = 0; o[1] = 0; return o; } };
 }
 

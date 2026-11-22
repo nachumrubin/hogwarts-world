@@ -1,0 +1,150 @@
+{
+  "mode": "shots",
+  "preset": "high",
+  "size": "960x540",
+  "results": [
+    {
+      "view": 2,
+      "file": "/home/claude/scratch/F2/shots/view2-lod.png",
+      "proxyMs": 16,
+      "props": {
+        "draws": 15,
+        "triangles": 10179,
+        "visible": 15,
+        "total": 36
+      },
+      "creatures": [
+        {
+          "id": "giant-squid",
+          "ready": true,
+          "lod": 1,
+          "failed": null
+        },
+        {
+          "id": "merpeople",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "aragog",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "unicorns",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "centaurs",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        }
+      ],
+      "mode": "broom",
+      "pos": [
+        2700,
+        460,
+        2600
+      ],
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "description": "",
+        "device": ""
+      },
+      "frames": 41,
+      "time": 4,
+      "errors": [],
+      "stats": {
+        "triangles": 440919,
+        "drawCalls": 229,
+        "terrainDraws": 211,
+        "propDraws": 15
+      },
+      "resident": 1664,
+      "generated": 1717,
+      "avgGenMs": 5.82,
+      "leaves": 760,
+      "balanced": true,
+      "bootstrapMs": 74,
+      "overviewMs": 17589
+    },
+    {
+      "view": 8,
+      "file": "/home/claude/scratch/F2/shots/view8-lod.png",
+      "proxyMs": 23,
+      "props": {
+        "draws": 36,
+        "triangles": 12215,
+        "visible": 36,
+        "total": 36
+      },
+      "creatures": [
+        {
+          "id": "giant-squid",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "merpeople",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "aragog",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "unicorns",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "centaurs",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        }
+      ],
+      "mode": "broom",
+      "pos": [
+        600,
+        1370.9,
+        600
+      ],
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "description": "",
+        "device": ""
+      },
+      "frames": 39,
+      "time": 3.9,
+      "errors": [],
+      "stats": {
+        "triangles": 294059,
+        "drawCalls": 177,
+        "terrainDraws": 138,
+        "propDraws": 36
+      },
+      "resident": 1017,
+      "generated": 1017,
+      "avgGenMs": 4.28,
+      "leaves": 430,
+      "balanced": true,
+      "bootstrapMs": 92,
+      "overviewMs": 18010
+    }
+  ],
+  "log": []
+}

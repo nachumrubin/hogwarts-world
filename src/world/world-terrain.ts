@@ -161,15 +161,20 @@ export class WorldTerrain {
   }
 
   private applyPromontory(h: number, x: number, z: number): number {
-    const c = this.castle, dx = x - c.x, dz = z - c.z, d = Math.sqrt(dx * dx + dz * dz);
+    const c = this.castle, dx = x - c.x, dz = z - c.z;
+    // the plateau is elongated along the promontory axis and narrower across it
+    const ax = 0.94, az = -0.34; // unit vector of the promontory axis (WNW–ESE); u runs along it, v across it
+    const u = dx * ax + dz * az, v = -dx * az + dz * ax;
+    const d = Math.sqrt((u * u) / 1.35 + (v * v) * 1.25);
     const core = c.radius;
     if (d > core + 320) return h;
     const top = c.elevation!;
     // east (towards the mainland grounds) the plateau blends gently; elsewhere it ends in lake-facing cliffs
     const east = d > 1e-6 ? smoothstep(-0.15, 0.65, dx / d) : 0;
-    const width = mix(55, 300, east);
+    const width = mix(45 + 40 * smoothstep(-0.2, 0.4, noise(x / 120, z / 120, this.s.rock + 6)), 300, east);
     // the plateau edge wobbles so the cliff line is not a circle
-    const edge = core - 10 + 22 * fbm(x / 90, z / 90, this.s.rock, 2);
+    // a lobed, bitten cliff line: low-frequency lobes plus small notches
+    const edge = core - 12 + 34 * fbm(x / 160, z / 160, this.s.rock, 2) + 12 * fbm(x / 45, z / 45, this.s.rock + 4, 2);
     const t = smoothstep(edge, edge + width, d);
     const shape = 1 - (1 - t) * (1 - t) * (1 - t); // steep just below the rim
     const drop = mix(top - (this.water - 8), top - 382, east);
@@ -303,7 +308,8 @@ export class WorldTerrain {
       for (let i = n - 2; i >= 0; i--) if (!pinned[i]) { const ds = s[i + 1] - s[i]; elev[i] = Math.min(Math.max(elev[i], elev[i + 1] - g * ds), elev[i + 1] + g * ds); }
     }
     const kind = new Uint8Array(n);
-    for (let i = 0; i < n; i++) kind[i] = elev[i] - ground[i] > 12 ? 1 : ground[i] - elev[i] > 30 ? 2 : 0;
+    // embankments up to 18 m, cuttings up to 30 m; beyond that a viaduct or a tunnel
+    for (let i = 0; i < n; i++) kind[i] = elev[i] - ground[i] > 18 ? 1 : ground[i] - elev[i] > 30 ? 2 : 0;
     // remove one-sample flickers between kinds
     for (let i = 1; i < n - 1; i++) if (kind[i - 1] === kind[i + 1] && kind[i] !== kind[i - 1]) kind[i] = kind[i - 1];
     return { pts, s, elev, ground, kind, index: new PolylineIndex(pts, false, 90, 128) };
@@ -311,7 +317,7 @@ export class WorldTerrain {
 
   private buildPads(): void {
     for (const lm of this.db.landmarks) {
-      if (!(lm.site === 'pad' || lm.site === 'shore' || lm.site === 'knoll')) continue;
+      if (!(lm.site === 'pad' || lm.site === 'shore' || lm.site === 'knoll' || lm.site === 'cliff-foot')) continue;
       const target = lm.elevation ?? this.heightAt(lm.x, lm.z);
       this.pads.push({ lm, target, r: lm.radius, blend: lm.blend ?? Math.max(20, lm.radius), flatten: lm.flatten ?? 1 });
     }
@@ -366,7 +372,7 @@ export class WorldTerrain {
     forest *= 1 - smoothstep(0.55, 0.8, slope); // cliffs stay bare
     // managed grounds: around the castle, the pitch and village greens
     const c = this.castle;
-    let lawn = (1 - smoothstep(520, 760, Math.hypot(x - (c.x + 250), z - (c.z + 50)))) * (1 - forest) * (1 - smoothstep(0.25, 0.45, slope));
+    let lawn = (1 - smoothstep(330, 520, Math.hypot(x - (c.x + 260), z - (c.z + 30)))) * (1 - forest) * (1 - smoothstep(0.18, 0.32, slope)) * 0.85;
     for (const id of ['quidditch-pitch', 'hogsmeade']) {
       const l = this.db.landmarks.find((m) => m.id === id)!;
       lawn = Math.max(lawn, (1 - smoothstep(l.radius, l.radius + 60, Math.hypot(x - l.x, z - l.z))) * 0.8);

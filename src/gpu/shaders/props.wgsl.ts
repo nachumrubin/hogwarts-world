@@ -37,13 +37,13 @@ fn albedoOf(m: u32, lp: vec3f, wp: vec3f, n: vec3f) -> vec3f {
   let course = fract(lp.y / 0.45);
   let joint = smoothstep(0.0, 0.08, course) * smoothstep(1.0, 0.92, course);
   switch m {
-    case 0u: { return vec3f(0.36, 0.33, 0.29) * (0.78 + 0.35 * k) * (0.82 + 0.18 * joint); }   // castle stone
+    case 0u: { return vec3f(0.23, 0.215, 0.19) * (0.75 + 0.4 * k) * (0.82 + 0.18 * joint); }   // castle stone
     case 1u: { return vec3f(0.07, 0.075, 0.085) * (0.8 + 0.4 * k); }                           // slate
     case 2u: { return vec3f(0.17, 0.11, 0.07) * (0.75 + 0.4 * k); }                            // timber
     case 3u: { return vec3f(0.05, 0.07, 0.06); }                                               // glass
     case 4u: { return vec3f(0.05, 0.08, 0.03) * (0.6 + 0.8 * k); }                             // foliage
     case 7u: { return vec3f(0.55, 0.40, 0.12); }                                               // gold
-    case 8u: { return vec3f(0.30, 0.05, 0.05) * (0.8 + 0.3 * k); }                             // fabric
+    case 8u: { return vec3f(0.50, 0.48, 0.45) * (0.8 + 0.3 * k); }                             // fabric (colour from the instance tint)
     case 9u: { return vec3f(0.42, 0.38, 0.31) * (0.8 + 0.3 * k); }                             // plaster
     case 10u: { return vec3f(0.10, 0.085, 0.075) * (0.75 + 0.5 * k); }                         // shingle roof
     case 11u: { return vec3f(0.16, 0.15, 0.15); }                                              // steel
@@ -79,14 +79,17 @@ fn albedoOf(m: u32, lp: vec3f, wp: vec3f, n: vec3f) -> vec3f {
     if (i.mat == 6u) {
       let f = vnoise(vec2f((wp.x + wp.z) * 0.7, wp.y * 0.5 + t * 3.0)) * 0.6 + vnoise(vec2f((wp.x - wp.z) * 2.1, wp.y * 1.7 + t * 5.0)) * 0.4;
       let foam = vec3f(0.55, 0.58, 0.6) * (0.55 + 0.6 * f);
-      return vec4f(aerial(foam * (sunE * 0.6 + skyAmbient(n)) / PI, toP), 1.0);
+      return hdrOut(aerial(foam * (sunE * 0.6 + skyAmbient(n)) / PI, toP));
     }
     let g = vnoised(wp.xz * 0.6 + vec2f(t * 0.6, t * 0.35)).yz * 0.08;
     let nn = normalize(vec3f(-g.x, 1.0, -g.y));
     let r = reflect(v, nn);
     let fres = 0.02 + 0.98 * pow(1.0 - max(dot(-v, nn), 0.0), 5.0);
-    let col = skyRadiance(vec3f(r.x, max(r.y, 0.05), r.z), false) * fres * 0.8 + (sunE * L.y + skyAmbient(vec3f(0.0, 1.0, 0.0))) * vec3f(0.010, 0.012, 0.010) * (1.0 - fres);
-    return vec4f(aerial(col, toP), 1.0);
+    // banks and trees line a river: near-horizontal reflections see mostly dark bank, not sky
+    let bank = (sunE * 0.25 + skyAmbient(vec3f(0.0, 1.0, 0.0))) * vec3f(0.045, 0.055, 0.04) / PI;
+    let refl = mix(bank, skyRadiance(vec3f(r.x, max(r.y, 0.02), r.z), false), smoothstep(0.05, 0.4, r.y));
+    let col = refl * fres * 0.75 + (sunE * L.y + skyAmbient(vec3f(0.0, 1.0, 0.0))) * vec3f(0.010, 0.012, 0.010) * (1.0 - fres);
+    return hdrOut(aerial(col, toP));
   }
   let alb = albedoOf(i.mat, i.lp, wp, n) * i.tint;
   let ndl = max(dot(n, L), 0.0);
@@ -96,6 +99,6 @@ fn albedoOf(m: u32, lp: vec3f, wp: vec3f, n: vec3f) -> vec3f {
     let fres = 0.04 + 0.96 * pow(1.0 - max(dot(-v, n), 0.0), 5.0);
     col += skyRadiance(r, false) * fres * select(0.5, 0.25, i.mat == 7u) + sunE * pow(max(dot(r, L), 0.0), 200.0) * 2.0;
   }
-  return vec4f(aerial(col, toP), 1.0);
+  return hdrOut(aerial(col, toP));
 }
 `;

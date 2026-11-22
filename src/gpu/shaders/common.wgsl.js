@@ -37,6 +37,8 @@ const EARTH_R = 6.36e6;
 const SUN_COLOR = vec3f(1.0, 0.96, 0.90);
 
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
+/** Every HDR output goes through this: rgba16float overflows to infinity above 65504, which tonemaps to NaN (black). */
+fn hdrOut(c: vec3f) -> vec4f { return vec4f(clamp(c, vec3f(0.0), vec3f(30000.0)), 1.0); }
 
 fn h31(p: vec3f) -> f32 { var q = fract(p * vec3f(.1031, .1030, .0973)); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
 
@@ -111,7 +113,7 @@ fn skyRadiance(d: vec3f, withSun: bool) -> vec3f {
   if (withSun) {
     let cs = dot(d, F.sunDir.xyz);
     let disc = smoothstep(0.99995, 0.999985, cs);
-    c += disc * SUN_COLOR * F.sunDir.w * 2.2e4 * s.transmittance;
+    c += disc * SUN_COLOR * F.sunDir.w * 1.5e3 * s.transmittance; // bright but far below the f16 limit
   }
   // below the horizon: fade to a dim ground-bounce colour so rays that miss the terrain backdrop do not look black
   let below = smoothstep(0.0, -0.08, mu);

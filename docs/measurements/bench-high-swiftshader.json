@@ -1,0 +1,74 @@
+{
+  "kind": "highlands-benchmark",
+  "version": 1,
+  "date": "2026-11-22T09:49:23.234Z",
+  "preset": "High",
+  "presetKey": "high",
+  "lodFactor": 3.2,
+  "msaa": 4,
+  "resolution": "960x540",
+  "renderScale": 1,
+  "canvas": "960x540",
+  "adapter": "google / swiftshader",
+  "timestampQuery": true,
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+  "seed": 1337,
+  "chunks": {
+    "generated": 15255,
+    "avgGenMs": 5.8,
+    "maxPending": 3,
+    "maxBacklog": 394,
+    "evictions": 12449,
+    "workers": 1
+  },
+  "webgpuErrors": 0,
+  "deviceLosses": 0,
+  "route": {
+    "lengthM": 16938,
+    "durationS": 150,
+    "speedMps": 112.9,
+    "warmupS": 1
+  },
+  "frames": 153,
+  "fps": {
+    "avg": 0.7493564350616531,
+    "low1pct": 0.4379625979941335
+  },
+  "frameTimeMs": {
+    "avg": 1334.4784313725488,
+    "p50": 1283.300000000003,
+    "p90": 1766.5,
+    "p95": 1966.5999999999767,
+    "p99": 2283.2999999999884,
+    "p999": 2416.5,
+    "max": 2416.5,
+    "min": 383.2000000000003
+  },
+  "gpuTimeMs": {
+    "avg": 898.6970801045759,
+    "p50": 884.298093,
+    "p90": 991.019746,
+    "p95": 991.019746,
+    "p99": 991.019746,
+    "p999": 991.019746,
+    "max": 991.019746,
+    "min": 384.975999
+  },
+  "hitches": {
+    "over33ms": 153,
+    "over50ms": 153,
+    "over100ms": 153
+  },
+  "triangles": {
+    "avg": 346860,
+    "max": 469502
+  },
+  "drawCalls": {
+    "avg": 184,
+    "max": 257
+  },
+  "missingChunks": {
+    "avg": 105.5,
+    "max": 394
+  }
+}

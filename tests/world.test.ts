@@ -149,5 +149,5 @@ test('terrain is deterministic (golden hash) and identical across independent in
   }
   const hex = (h >>> 0).toString(16).padStart(8, '0');
   console.log(`  world golden hash ${hex}`);
-  assert.equal(hex, process.env.WORLD_GOLDEN || '367a5516');
+  assert.equal(hex, process.env.WORLD_GOLDEN || 'd12de9a3');
 });

@@ -18,7 +18,7 @@ fn viewRay(ndc: vec2f) -> vec3f {
 }
 @fragment fn fsSky(i: FsOut) -> @location(0) vec4f {
   if (u32(F.params.y) == 2u) { return vec4f(40.0, 0.0, 40.0, 1.0); } // crack check: pure magenta where terrain is missing
-  return vec4f(skyRadiance(viewRay(i.ndc), true), 1.0);
+  return hdrOut(skyRadiance(viewRay(i.ndc), true));
 }
 `;
 

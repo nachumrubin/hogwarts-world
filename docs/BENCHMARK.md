@@ -1,13 +1,14 @@
 # Running the benchmark on real hardware
 
-The numbers in `docs/STATUS.md` come from a **software** WebGPU adapter (SwiftShader, CPU) and say nothing about
+The benchmark numbers in `docs/STATUS.md` come from a **software** WebGPU adapter (SwiftShader, CPU) and say nothing about
 GPU performance. Real numbers need a run on your machine:
 
 1. `npm start` and open `http://localhost:8080/?bench=1` in Chrome/Edge (desktop, plugged in, other tabs closed).
-   Optional: `&preset=low|medium|high|ultra`, `&duration=90` (seconds), `&seed=1337`.
+   Optional: `&preset=low|medium|high|ultra`, `&duration=180` (seconds, default 180), `&seed=1337`.
    The window size is the render size; full screen (F11) is recommended. Dynamic resolution is frozen during the run.
-2. The route (≈8.4 km at ≈94 m/s over 90 s: low over the loch, up the glen, over the crag, high panorama) starts
-   immediately. A result panel appears at the end with **Download JSON**; the same JSON is printed to the console
+2. The route (16.9 km: Hogsmeade Station, the boat crossing low over the lake, up the castle cliffs, the grounds, low over
+   the Forbidden Forest to Aragog's Hollow, a high pass back, the pitch, Hogsmeade, the western lake; ≈ 94 m/s at the
+   default 180 s) starts immediately. A result panel appears at the end with **Download JSON**; the same JSON is printed to the console
    (`HIGHLANDS_BENCHMARK {...}`) and available as `window.__benchResult`.
 3. Report: `fps.avg`, `frameTimeMs.p50/p95/p99/max`, `gpuTimeMs` (needs `timestamp-query`; in Chrome you may need
    `chrome://flags/#enable-webgpu-developer-features` for full-precision timestamps), `hitches`, `missingChunks.max`.

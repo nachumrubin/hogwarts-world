@@ -1,0 +1,154 @@
+{
+  "mode": "loss",
+  "preset": "high",
+  "size": "640x360",
+  "results": [
+    {
+      "before": {
+        "proxyMs": 18,
+        "props": {
+          "draws": 9,
+          "triangles": 7824,
+          "visible": 9,
+          "total": 36
+        },
+        "creatures": [
+          {
+            "id": "giant-squid",
+            "ready": true,
+            "lod": 2,
+            "failed": null
+          },
+          {
+            "id": "merpeople",
+            "ready": true,
+            "lod": 2,
+            "failed": null
+          },
+          {
+            "id": "aragog",
+            "ready": true,
+            "lod": 3,
+            "failed": null
+          },
+          {
+            "id": "unicorns",
+            "ready": true,
+            "lod": 2,
+            "failed": null
+          },
+          {
+            "id": "centaurs",
+            "ready": true,
+            "lod": 3,
+            "failed": null
+          }
+        ],
+        "mode": "broom",
+        "pos": [
+          3880,
+          393.7,
+          3120
+        ],
+        "adapter": {
+          "vendor": "google",
+          "architecture": "swiftshader",
+          "description": "",
+          "device": ""
+        },
+        "frames": 43,
+        "time": 4.2,
+        "errors": [],
+        "stats": {
+          "triangles": 546948,
+          "drawCalls": 276,
+          "terrainDraws": 264,
+          "propDraws": 9
+        },
+        "resident": 1664,
+        "generated": 1913,
+        "avgGenMs": 5.65,
+        "leaves": 907,
+        "balanced": true,
+        "bootstrapMs": 78,
+        "overviewMs": 14109
+      },
+      "after": {
+        "proxyMs": 18,
+        "props": {
+          "draws": 9,
+          "triangles": 7824,
+          "visible": 9,
+          "total": 36
+        },
+        "creatures": [
+          {
+            "id": "giant-squid",
+            "ready": true,
+            "lod": 2,
+            "failed": null
+          },
+          {
+            "id": "merpeople",
+            "ready": true,
+            "lod": 2,
+            "failed": null
+          },
+          {
+            "id": "aragog",
+            "ready": true,
+            "lod": 3,
+            "failed": null
+          },
+          {
+            "id": "unicorns",
+            "ready": true,
+            "lod": 2,
+            "failed": null
+          },
+          {
+            "id": "centaurs",
+            "ready": true,
+            "lod": 3,
+            "failed": null
+          }
+        ],
+        "mode": "broom",
+        "pos": [
+          3880,
+          393.7,
+          3120
+        ],
+        "adapter": {
+          "vendor": "google",
+          "architecture": "swiftshader",
+          "description": "",
+          "device": ""
+        },
+        "frames": 55,
+        "time": 5.3,
+        "errors": [],
+        "stats": {
+          "triangles": 546948,
+          "drawCalls": 276,
+          "terrainDraws": 264,
+          "propDraws": 9
+        },
+        "resident": 1664,
+        "generated": 1913,
+        "avgGenMs": 5.65,
+        "leaves": 907,
+        "balanced": true,
+        "bootstrapMs": 78,
+        "overviewMs": 14109
+      },
+      "losses": 2,
+      "framesAdvancedAfterRecovery": 4,
+      "file": "/home/claude/scratch/F2/loss/after-loss.png"
+    }
+  ],
+  "log": [
+    "[log] Recovered from device loss: re-uploaded 1664 chunks from the CPU cache",
+    "[log] Recovered from device loss: re-uploaded 1664 chunks from the CPU cache"
+  ]
+}

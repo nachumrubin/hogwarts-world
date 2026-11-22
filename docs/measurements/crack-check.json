@@ -1,0 +1,373 @@
+{
+  "mode": "crack",
+  "preset": "high",
+  "size": "640x360",
+  "results": [
+    {
+      "cam": "3650,250,2850,0,-89",
+      "file": "/home/claude/scratch/F2/crack/crack_3650_250_2850_0__89.png",
+      "magenta": 0,
+      "pixels": 230400,
+      "proxyMs": 16,
+      "props": {
+        "draws": 4,
+        "triangles": 7664,
+        "visible": 4,
+        "total": 36
+      },
+      "creatures": [
+        {
+          "id": "giant-squid",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "merpeople",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "aragog",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "unicorns",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "centaurs",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        }
+      ],
+      "mode": "broom",
+      "pos": [
+        3650,
+        639.7,
+        2850
+      ],
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "description": "",
+        "device": ""
+      },
+      "frames": 66,
+      "time": 6.5,
+      "errors": [],
+      "stats": {
+        "triangles": 134500,
+        "drawCalls": 69,
+        "terrainDraws": 62,
+        "propDraws": 4
+      },
+      "resident": 1549,
+      "generated": 1549,
+      "avgGenMs": 5.2,
+      "leaves": 694,
+      "balanced": true,
+      "bootstrapMs": 69,
+      "overviewMs": 17031
+    },
+    {
+      "cam": "2900,60,2150,45,-70",
+      "file": "/home/claude/scratch/F2/crack/crack_2900_60_2150_45__70.png",
+      "magenta": 0,
+      "pixels": 230400,
+      "proxyMs": 28,
+      "props": {
+        "draws": 4,
+        "triangles": 8872,
+        "visible": 4,
+        "total": 36
+      },
+      "creatures": [
+        {
+          "id": "giant-squid",
+          "ready": true,
+          "lod": 0,
+          "failed": null
+        },
+        {
+          "id": "merpeople",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "aragog",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "unicorns",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "centaurs",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        }
+      ],
+      "mode": "broom",
+      "pos": [
+        2900,
+        360,
+        2150
+      ],
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "description": "",
+        "device": ""
+      },
+      "frames": 87,
+      "time": 8.7,
+      "errors": [],
+      "stats": {
+        "triangles": 109228,
+        "drawCalls": 56,
+        "terrainDraws": 49,
+        "propDraws": 4
+      },
+      "resident": 1664,
+      "generated": 1849,
+      "avgGenMs": 6.64,
+      "leaves": 880,
+      "balanced": true,
+      "bootstrapMs": 88,
+      "overviewMs": 19355
+    },
+    {
+      "cam": "6800,120,5000,200,-75",
+      "file": "/home/claude/scratch/F2/crack/crack_6800_120_5000_200__75.png",
+      "magenta": 0,
+      "pixels": 230400,
+      "proxyMs": 24,
+      "props": {
+        "draws": 4,
+        "triangles": 8872,
+        "visible": 4,
+        "total": 36
+      },
+      "creatures": [
+        {
+          "id": "giant-squid",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "merpeople",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "aragog",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "unicorns",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "centaurs",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        }
+      ],
+      "mode": "broom",
+      "pos": [
+        6800,
+        670.5,
+        5000
+      ],
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "description": "",
+        "device": ""
+      },
+      "frames": 79,
+      "time": 7.9,
+      "errors": [],
+      "stats": {
+        "triangles": 113308,
+        "drawCalls": 58,
+        "terrainDraws": 51,
+        "propDraws": 4
+      },
+      "resident": 1664,
+      "generated": 1817,
+      "avgGenMs": 4.51,
+      "leaves": 856,
+      "balanced": true,
+      "bootstrapMs": 100,
+      "overviewMs": 18999
+    },
+    {
+      "cam": "1550,80,4550,300,-85",
+      "file": "/home/claude/scratch/F2/crack/crack_1550_80_4550_300__85.png",
+      "magenta": 0,
+      "pixels": 230400,
+      "proxyMs": 20,
+      "props": {
+        "draws": 4,
+        "triangles": 7700,
+        "visible": 4,
+        "total": 36
+      },
+      "creatures": [
+        {
+          "id": "giant-squid",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "merpeople",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "aragog",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "unicorns",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "centaurs",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        }
+      ],
+      "mode": "broom",
+      "pos": [
+        1550,
+        485.5,
+        4550
+      ],
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "description": "",
+        "device": ""
+      },
+      "frames": 99,
+      "time": 9.8,
+      "errors": [],
+      "stats": {
+        "triangles": 67096,
+        "drawCalls": 36,
+        "terrainDraws": 29,
+        "propDraws": 4
+      },
+      "resident": 1664,
+      "generated": 1825,
+      "avgGenMs": 6.48,
+      "leaves": 868,
+      "balanced": true,
+      "bootstrapMs": 80,
+      "overviewMs": 23040
+    },
+    {
+      "cam": "3650,40,2400,0,6",
+      "file": "/home/claude/scratch/F2/crack/crack_3650_40_2400_0_6.png",
+      "magenta": 114639,
+      "pixels": 230400,
+      "proxyMs": 19,
+      "props": {
+        "draws": 29,
+        "triangles": 11790,
+        "visible": 29,
+        "total": 36
+      },
+      "creatures": [
+        {
+          "id": "giant-squid",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "merpeople",
+          "ready": true,
+          "lod": 2,
+          "failed": null
+        },
+        {
+          "id": "aragog",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "unicorns",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        },
+        {
+          "id": "centaurs",
+          "ready": true,
+          "lod": 3,
+          "failed": null
+        }
+      ],
+      "mode": "broom",
+      "pos": [
+        3650,
+        419.7,
+        2400
+      ],
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "description": "",
+        "device": ""
+      },
+      "frames": 42,
+      "time": 4.2,
+      "errors": [],
+      "stats": {
+        "triangles": 524290,
+        "drawCalls": 283,
+        "terrainDraws": 251,
+        "propDraws": 29
+      },
+      "resident": 1664,
+      "generated": 1805,
+      "avgGenMs": 5.1,
+      "leaves": 871,
+      "balanced": true,
+      "bootstrapMs": 60,
+      "overviewMs": 13040
+    }
+  ],
+  "log": []
+}

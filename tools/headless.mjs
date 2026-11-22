@@ -65,7 +65,7 @@ async function grab(page) {
 
 const info = async (page) => page.evaluate(() => {
   const a = window.__app;
-  return { adapter: a.gpu.adapterInfo, frames: a.frameIndex, time: +a.time.toFixed(1), errors: a.gpu.errors.slice(0, 5), stats: { ...a.renderer.stats }, resident: a.streamer.stats.resident, generated: a.streamer.stats.generated, avgGenMs: +(a.streamer.stats.genMsTotal / Math.max(1, a.streamer.stats.generated)).toFixed(2), leaves: a.tree.leaves.length, balanced: a.tree.isBalanced(), bootstrapMs: +a.bootstrapMs.toFixed(0), overviewMs: a.overviewMs ? +a.overviewMs.toFixed(0) : null };
+  return { proxyMs: +(a.proxyMs || 0).toFixed(0), props: { ...a.renderer.props.stats }, creatures: a.creatures.status(), mode: a.flight.mode, pos: [+a.flight.x.toFixed(1), +a.flight.y.toFixed(1), +a.flight.z.toFixed(1)], adapter: a.gpu.adapterInfo, frames: a.frameIndex, time: +a.time.toFixed(1), errors: a.gpu.errors.slice(0, 5), stats: { ...a.renderer.stats }, resident: a.streamer.stats.resident, generated: a.streamer.stats.generated, avgGenMs: +(a.streamer.stats.genMsTotal / Math.max(1, a.streamer.stats.generated)).toFixed(2), leaves: a.tree.leaves.length, balanced: a.tree.isBalanced(), bootstrapMs: +a.bootstrapMs.toFixed(0), overviewMs: a.overviewMs ? +a.overviewMs.toFixed(0) : null };
 });
 
 const report = { mode, preset: PRESET, size: `${W}x${H}`, results: [] };
@@ -113,6 +113,16 @@ try {
     const file = `${out}/after-loss.png`;
     writeFileSync(file, await grab(page));
     report.results.push({ before, after, losses: await page.evaluate('window.__app.losses'), framesAdvancedAfterRecovery: after.frames - f0, file });
+    await page.close();
+  } else if (mode === 'map') {
+    // the debug map is a 2D canvas overlay: capture it directly, small and large
+    const page = await open({ view: process.env.VIEW || '2', hud: '0' }, { timeout: 300000 });
+    for (const big of [false, true]) {
+      if (big) { await page.keyboard.press('KeyM'); await new Promise((r) => setTimeout(r, 1500)); }
+      const url = await page.evaluate(() => document.getElementById('map').toDataURL('image/png'));
+      writeFileSync(`${out}/map-${big ? 'large' : 'small'}.png`, Buffer.from(url.split(',')[1], 'base64'));
+    }
+    report.results.push(await info(page));
     await page.close();
   } else if (mode === 'unsupported') {
     const page = await browser.newPage();

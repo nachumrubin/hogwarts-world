@@ -410,10 +410,11 @@
    "name": "Underground Passage Entrance",
    "x": 3570,
    "z": 2690,
-   "elevation": null,
+   "elevation": 312,
    "kind": "entrance",
    "site": "cliff-foot",
-   "radius": 6
+   "radius": 7,
+   "blend": 24
   },
   {
    "id": "merpeople-cove",
@@ -841,7 +842,7 @@
     ],
     "halfWidth": 260,
     "blend": 420,
-    "relief": 0.25
+    "relief": 0.12
    }
   ]
  },
@@ -1461,12 +1462,12 @@
   },
   {
    "id": "hogsmeade",
-   "name": "Hogsmeade from the road",
-   "x": 2000,
-   "z": 4380,
-   "agl": 30,
-   "yaw": 290,
-   "pitch": -6
+   "name": "Hogsmeade high street from the south",
+   "x": 1465,
+   "z": 4350,
+   "agl": 22,
+   "yaw": 23,
+   "pitch": -5
   },
   {
    "id": "station",
@@ -1516,11 +1517,11 @@
   {
    "id": "pitch",
    "name": "Quidditch Pitch",
-   "x": 2800,
-   "z": 3550,
-   "agl": 40,
-   "yaw": 40,
-   "pitch": -12
+   "x": 2780,
+   "z": 3520,
+   "agl": 110,
+   "yaw": 38,
+   "pitch": -16
   }
  ]
 }

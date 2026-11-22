@@ -126,7 +126,7 @@ fn lodColor(d: u32) -> vec3f {
   albedo = mix(albedo, mud, smoothstep(0.0, -3.0, hAbove));
 
   // managed lawn (castle grounds, pitch, village greens): short, brighter, even grass
-  let lawnCol = mix(vec3f(0.060, 0.095, 0.030), vec3f(0.075, 0.105, 0.035), v2) * (0.92 + 0.16 * v3);
+  let lawnCol = mix(vec3f(0.048, 0.072, 0.027), vec3f(0.058, 0.080, 0.030), v2) * (0.92 + 0.16 * v3);
   albedo = mix(albedo, lawnCol, mat.b * (1.0 - rockAmt));
   // forest floor: moss and needles, darker with depth; from a distance a clumped canopy tone (no trees yet)
   let depth = mat.g;
@@ -159,6 +159,6 @@ fn lodColor(d: u32) -> vec3f {
   let mode = u32(F.params.y);
   if (mode == 1u) { col = lodColor(i.depth) * (0.35 + 0.65 * ndl) * mix(1.0, 0.55, i.morph) * 3.0; }
   if (mode == 2u) { col = vec3f(0.2, 0.2, 0.2) * (0.5 + 0.5 * ndl); }
-  return vec4f(col, 1.0);
+  return hdrOut(col);
 }
 `;

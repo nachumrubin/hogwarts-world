@@ -13,9 +13,12 @@
     "headless": "node tools/build.mjs && node tools/headless.mjs"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@webgpu/types": "^0.1.60",
     "esbuild": "^0.28.2",
-    "typescript": "^6.0.3",
-    "@webgpu/types": "^0.1.60"
+    "typescript": "^6.0.3"
   },
-  "engines": { "node": ">=22.18" }
+  "engines": {
+    "node": ">=22.18"
+  }
 }
