@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Highlands prototype — WebGPU terrain</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+<canvas id="view" tabindex="0" aria-label="3D view of the procedural Highlands terrain"></canvas>
+<pre id="overlay" aria-live="off"></pre>
+<div id="help" hidden>
+  <b>Click</b> to capture the mouse · <b>WASD</b> fly · <b>E/Space</b> up · <b>Q/C</b> down · <b>Shift</b> fast · <b>Alt</b> slow · <b>wheel</b> speed<br>
+  <b>1–8</b> viewpoints · <b>B</b> benchmark · <b>H/F3</b> overlay · <b>L/F4</b> debug view (LOD / crack check) · <b>P</b> quality preset · <b>F9</b> simulate GPU loss · <b>Esc</b> release mouse
+</div>
+<div id="status" hidden role="status"></div>
+<div id="result" hidden><pre></pre><a href="#">Download JSON</a> <button type="button" onclick="this.parentElement.hidden=true">Close</button></div>
+<div id="error" hidden role="alert"><h1></h1><p></p>
+  <p class="hint">Requirements: a desktop browser with WebGPU (Chrome or Edge 113+, Safari 26+, Firefox 141+ on Windows), served from <code>http://localhost</code> (run <code>npm start</code>).</p></div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
