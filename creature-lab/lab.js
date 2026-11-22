@@ -1,10 +1,11 @@
+import {catalog} from './species/catalog.js';
 import * as THREE from './vendor/three.module.js';
 import {Squid} from './squid.js';
 import {Aragog} from './aragog.js';
 import {createHabitat} from './habitats.js';
 
 const V=THREE.Vector3;
-const species={squid:Squid,aragog:Aragog};
+const species={squid:Squid,aragog:Aragog,...Object.fromEntries(Object.entries(catalog).map(([k,s])=>[k,s.model]))};
 const directions={'three-quarter':[.32,.19,1],habitat:[.38,.28,1],above:[.001,1,.001],left:[0,.05,1],right:[0,.05,-1],front:[1,.08,.001],rear:[-1,.08,.001],'close-up':[.24,.08,1]};
 const spiderViews={front:[0,.19,1],rear:[0,.19,-1],left:[1,.2,0],right:[-1,.2,0],'three-quarter':[.56,.32,1],habitat:[.7,.4,1],'close-up':[.15,.12,1]};
 export class Lab{
@@ -21,19 +22,27 @@ export class Lab{
   const out=document.querySelector('#thumb-'+kind),actor=new species[kind](),scene=new THREE.Scene();actor.setLOD(1);scene.add(actor.root);
   scene.add(new THREE.HemisphereLight(0xffebe2,0x627571,2));for(const [x,y,z,power,c] of [[-4,7,8,3,0xffdbaf],[2,4,-5,3,0xc3e6dc]]){let l=new THREE.DirectionalLight(c,power);l.position.set(x,y,z);scene.add(l)}
   const cam=new THREE.PerspectiveCamera(29,2.05,.1,80),look=kind==='squid'?new V(1,0,0):new V(0,1.05,0);
-  cam.position.copy(look).add(kind==='squid'?new V(5,4.5,15.2):new V(4,2.8,5.5));cam.lookAt(look);if(kind==='squid')cam.rotateZ(-.095);
+  cam.position.copy(look).add(kind==='squid'?new V(5,4.5,15.2):new V(4,2.8,5.5));if(catalog[kind]){
+    const box=new THREE.Box3().setFromObject(actor.root),size=box.getSize(new V());
+    box.getCenter(look);cam.position.copy(look).addScaledVector(new V(.92,.19,.73).normalize(),Math.max(size.y*2.45,size.z*1.55));
+  }cam.lookAt(look);if(kind==='squid')cam.rotateZ(-.095);
   const r=this.renderer;r.setPixelRatio(1);r.setSize(460,224,false);r.setClearColor(0,0);r.render(scene,cam);out.width=460;out.height=224;out.getContext('2d').drawImage(this.canvas,0,0,460,224);actor.dispose();r.setPixelRatio(Math.min(devicePixelRatio,1.65));this.resize()
  }
  switchCreature(kind){if(this.actor){this.setCopies(1);this.restoreMaterials(this.actor);this.actor.dispose();this.hab.dispose()}this.kind=kind;this.actor=new species[kind]();this.scene.add(this.actor.root);this.hab=createHabitat(this.scene,kind);this.context={obstacles:this.hab.obstacles,terrainHeight:this.hab.terrainHeight,playerPosition:this.camera.position,habitatRadius:3};
+  this.bounds=catalog[kind]?new THREE.Box3().setFromObject(this.actor.root):null;
   this.clock=0;this.action=kind==='squid'?'Swim':'Idle';this.level=0;this.angle='three-quarter';this.setAngle(this.angle);this.applyDebug();this.calculateMemory();this.render();
  }
  setAngle(angle){
   this.free=false;this.angle=angle;this.target.set(this.kind==='squid'?1.25:0,this.kind==='squid'?0:1.05,0);let radius=this.fit();
   if(angle==='close-up'){this.target.set(this.kind==='squid'?-.55:0,this.kind==='squid'?-.03:1.18,this.kind==='squid'?.25:1);radius=this.kind==='squid'?4.8:2.7}
   else if(angle==='habitat')radius*=1.44;
-  this.target.add(this.actor?.root.position||new V());const dir=(this.kind==='aragog'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
+  if(this.bounds){
+    this.bounds.getCenter(this.target);
+    if(angle==='close-up'){const size=this.bounds.getSize(new V());this.target.y+=size.y*.28;this.target.z+=size.z*.22;radius=this.fit()*.48}
+  }
+  this.target.add(this.actor?.root.position||new V());const dir=(this.kind!=='squid'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
  }
- fit(){const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
+ fit(){if(this.bounds){const s=this.bounds.getSize(new V());return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
  orbit(){this.camera.position.copy(this.target).add(new V().setFromSpherical(this.spherical));this.camera.lookAt(this.target);if(this.kind==='squid')this.camera.rotateZ(-.085)}
  bindCamera(){
   const c=this.canvas;c.addEventListener('pointerdown',e=>{c.focus({preventScroll:true});c.setPointerCapture(e.pointerId);this.drag=[e.clientX,e.clientY]});c.addEventListener('pointerup',()=>this.drag=null);c.addEventListener('pointercancel',()=>this.drag=null);

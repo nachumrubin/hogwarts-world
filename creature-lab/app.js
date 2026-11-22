@@ -1,3 +1,4 @@
+import {catalog} from './species/catalog.js';
 import {Lab} from './lab.js';
 import {icons,svg} from './icons.js';
 icons();
@@ -6,8 +7,17 @@ const spec={
  squid:{name:'Giant Squid',latin:'Architeuthis dux',id:'001',lab:'Underwater Lake Lab',taxon:'Cephalopoda',size:'17.5 m',zone:'Freshwater',mood:'Curious',actions:{Swim:'Slow swim',Rest:'Resting',Feed:'Feeding extension',Turn:'Turning',Dive:'Diving',Investigate:'Investigate',Retreat:'Retreat'}},
  aragog:{name:'Aragog',latin:'Acromantula',id:'002',lab:'Ancient Forest Lab',taxon:'Arachnida',size:'6.3 m',zone:'Woodland',mood:'Territorial',actions:{Idle:'Idle breathing',Walk:'Deliberate walk',Turn:'Turn in place',Raise:'Raise front legs',Threat:'Threat display'}}
 };
+Object.assign(spec,catalog);
+for(const [id,s] of Object.entries(catalog)){
+ const card=document.querySelector('[data-creature="aragog"]').cloneNode(true);
+ card.dataset.creature=id;card.querySelector('canvas').id='thumb-'+id;
+ card.querySelector('strong').textContent=s.name;card.querySelector('small').textContent=s.zone;
+ card.querySelector('.plate').textContent='SP–'+s.id;
+ $('.spec-data').before(card);
+}
+$('.count').textContent=String(Object.keys(spec).length).padStart(2,'0');
 const defaults=kind=>({action:Object.keys(spec[kind].actions)[0],speed:1,light:80,night:false,lod:'0',wire:false,normals:false,running:true});
-let prefs={squid:defaults('squid'),aragog:defaults('aragog')},lab,kind='squid',tab='workspace',captures=[],recording=null,toastTimer,surveying=false;
+let prefs=Object.fromEntries(Object.keys(spec).map(key=>[key,defaults(key)])),lab,kind='squid',tab='workspace',captures=[],recording=null,toastTimer,surveying=false;
 function toast(t){$('#toast').textContent=t;$('#toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').style.display='none',3300)}
 function metric(m,ms){$('#fps').textContent=(1000/ms).toFixed(ms>150?1:0);$('#frame').textContent=ms.toFixed(1);$('#tri').textContent=m.triangles>=1000?(m.triangles/1000).toFixed(1)+'k':m.triangles;$('#calls').textContent=m.drawCalls;const t=Math.floor(lab.clock);$('#time').textContent=String(t/60|0).padStart(2,'0')+':'+String(t%60).padStart(2,'0');$('.timeline span').style.width=(lab.clock%60)/60*100+'%'}
 function setRunning(v){lab.running=v;prefs[kind].running=v;$('#play').innerHTML=svg(v?'pause':'play');$('#play').setAttribute('aria-label',v?'Pause animation':'Resume animation');$('#play').title=v?'Pause (Space)':'Resume (Space)';$('#viewState').textContent=v?'LIVE':'PAUSED'}
@@ -16,7 +26,7 @@ function showControls(){const p=prefs[kind];$('#action').innerHTML=Object.entrie
  for(const [id,out,format] of [['speed','speedV',v=>v.toFixed(1)+'×'],['light','lightV',v=>v+'%']]){const inp=$('#'+id);inp.value=p[id];$('#'+out).textContent=format(p[id]);inp.style.setProperty('--p',((inp.value-inp.min)/(inp.max-inp.min)*100)+'%')}
  all('[data-night]').forEach(b=>b.classList.toggle('chosen',!!Number(b.dataset.night)===p.night));$('#lod').value=p.lod;$('#wire').checked=p.wire;$('#normals').checked=p.normals;lab.wire=p.wire;lab.normals=p.normals;lab.applyDebug();lab.speed=p.speed;lab.hab.setLighting(p.light/80,p.night);lab.setLOD(p.lod);setRunning(p.running)
 }
-function selectCreature(v){kind=v;lab.switchCreature(v);const s=spec[v];all('[data-creature]').forEach(b=>{b.classList.toggle('selected',b.dataset.creature===v);b.setAttribute('aria-pressed',b.dataset.creature===v)});$('#name').textContent=s.name;$('#latin').textContent=s.latin;$('#habitatLabel').textContent=s.lab;$('#specId').textContent='SPECIMEN '+s.id;$('#camera').selectedIndex=0;for(const id of ['taxon','size','zone','mood'])$('#'+id).textContent=s[id];$('#sizeLabel').textContent=v==='squid'?'Length':'Leg span';showControls()}
+function selectCreature(v){kind=v;lab.switchCreature(v);const s=spec[v];all('[data-creature]').forEach(b=>{b.classList.toggle('selected',b.dataset.creature===v);b.setAttribute('aria-pressed',b.dataset.creature===v)});$('#name').textContent=s.name;$('#latin').textContent=s.latin;$('#habitatLabel').textContent=s.lab;$('#specId').textContent='SPECIMEN '+s.id;$('#camera').selectedIndex=0;for(const id of ['taxon','size','zone','mood'])$('#'+id).textContent=s[id];$('#sizeLabel').textContent=v==='squid'?'Length':v==='aragog'?'Leg span':v==='merperson'?'Length':'Height';showControls()}
 function modal(html){$('#dialogbody').innerHTML=html;$('#dialog').showModal()}
 function blobCanvas(){lab.render();return new Promise((resolve,reject)=>lab.canvas.toBlob(b=>b?resolve(b):reject(Error('Capture failed.')),'image/png'))}
 function addCapture(blob,label){const url=URL.createObjectURL(blob),video=blob.type.startsWith('video');captures.unshift({url,label,video,name:kind+'-'+Date.now()+(video?'.webm':'.png')});$('#capCount').textContent=captures.length;toast(label+' saved to Captures');if(tab==='captures')showTab(tab)}
@@ -38,7 +48,7 @@ async function survey(){
 }
 async function start(){
  lab=new Lab($('#world'),metric);selectCreature('squid');$('#load').hidden=true;requestAnimationFrame(lab.loop);
- lab.thumbnail('squid');lab.thumbnail('aragog');lab.render();lab.onStimulus=()=>{if(kind==='squid'){setAction('Investigate');toast('Stimulus placed in the lake')}};
+ for(const key of Object.keys(spec))lab.thumbnail(key);lab.render();lab.onStimulus=()=>{if(kind==='squid'){setAction('Investigate');toast('Stimulus placed in the lake')}};
  all('[data-creature]').forEach(b=>b.onclick=()=>{if(!surveying&&b.dataset.creature!==kind){selectCreature(b.dataset.creature);showTab('workspace')}});
  all('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));$('#help').onclick=()=>modal('<h2>Camera & animation</h2><p>Drag to orbit and scroll to zoom. In free camera mode, click the scene and use W/A/S/D to move, Q/E to descend or rise, and Shift to move faster.</p><p>Space pauses animation. Use the step button for one 1/60-second interval. Double-click the lake to place a stimulus. Field notes includes eight inspection angles.</p>');$('#closedialog').onclick=()=>$('#dialog').close();
  $('#action').onchange=e=>setAction(e.target.value);$('#play').onclick=()=>setRunning(!lab.running);$('#step').onclick=()=>{setRunning(false);lab.advance(1/60);lab.render()};$('#speed').oninput=e=>{prefs[kind].speed=+e.target.value;showControls()};$('#light').oninput=e=>{prefs[kind].light=+e.target.value;showControls()};all('[data-night]').forEach(b=>b.onclick=()=>{prefs[kind].night=!!Number(b.dataset.night);showControls()});for(const id of ['wire','normals','lod'])$('#'+id).onchange=e=>{prefs[kind][id]=id==='lod'?e.target.value:e.target.checked;showControls()};
