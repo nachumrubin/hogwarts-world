@@ -6,3 +6,9 @@
 
 @media(min-width:791px){.library{max-height:calc(100vh - 125px);overflow-y:auto}.library .specimen{flex-shrink:0}}
 @media(max-width:790px){.library{overflow-x:auto}.library .specimen{flex-shrink:0}}
+
+.view[data-inspection=neutral] .scene-tint,.view[data-inspection=silhouette] .scene-tint{display:none}
+.view:is([data-inspection=neutral],[data-inspection=silhouette]) .caption{color:#28312e;text-shadow:none}
+.view:is([data-inspection=neutral],[data-inspection=silhouette]) .caption :is(b,em){color:#48514b}
+@media(max-width:790px){.library .specimen{flex:0 0 auto;min-width:145px}}
+@media(min-width:791px){.library .panel-title{flex-shrink:0}}

@@ -1,7 +1,9 @@
 // All source observations come from the renderer and browser that execute the survey.
 import { zipSync, strToU8 } from './vendor/fflate.js';
 
-const specimens = ['squid', 'aragog'];
+import {catalog} from './species/catalog.js';
+const specimens = ['squid', 'aragog', ...Object.keys(catalog)];
+const locomotion = key => ({squid:'Swim',merperson:'Swim',owl:'Fly'})[key] || 'Walk';
 const angles = ['front', 'rear', 'left', 'right', 'above', 'three-quarter', 'close-up', 'habitat'];
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
 const rounded = n => Number.isFinite(n) ? Math.round(n * 1000) / 1000 : null;
@@ -77,7 +79,7 @@ async function specimenBenchmarks(api, specimen, report, progress) {
   ];
   await api.setRunning(true);
   await api.setAngle('three-quarter');
-  await api.setAction(specimen==='squid'?'Swim':'Walk');
+  await api.setAction(locomotion(specimen));
   for (const config of configs) {
     progress('Benchmarking '+specimen+' · '+config.distance+' · '+config.copies+' specimen'+(config.copies===1?'':'s'));
     report.runs.push(await sample({...config,specimen},api));
@@ -146,7 +148,12 @@ export async function runSurvey(api,onProgress=()=>{}) {
         files[path] = new Uint8Array(await (await png(api.canvas)).arrayBuffer());
         report.media.push(path);
       }
-      const motions = specimen==='squid' ? [['Swim','three-quarter'],['Feed','left']] : [['Walk','left'],['Threat','three-quarter']];
+      for(const {angle,canvas} of api.plates(specimen,'neutral')){
+        const path=specimen+'/comparison/'+angle+'.png';
+        files[path]=new Uint8Array(await (await png(canvas)).arrayBuffer());
+        report.media.push(path);
+      }
+      const motions = specimen==='squid' ? [['Swim','three-quarter'],['Feed','left']] : [[locomotion(specimen),'left'],[({aragog:'Threat',hippogriff:'Flap',owl:'Look',unicorn:'Graze',centaur:'Turn',merperson:'Turn'})[specimen],'three-quarter']];
       await api.setRunning(true);
       for (const [action,angle] of motions) {
         const path = specimen+'/clips/'+action.toLowerCase()+'-'+angle+'.webm';

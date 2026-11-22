@@ -1,3 +1,4 @@
+import {inspectionMaterials,studioLights,background,comparisonPlates} from './inspection.js';
 import {catalog} from './species/catalog.js';
 import * as THREE from './vendor/three.module.js';
 import {Squid} from './squid.js';
@@ -15,6 +16,8 @@ export class Lab{
   this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.65));this.camera=new THREE.PerspectiveCamera(39,1,.035,180);this.scene=new THREE.Scene();this.target=new V();this.free=false;this.keys=new Set();
   this.clock=0;this.speed=1;this.running=true;this.actor=null;this.extra=null;this.level=0;this.wire=false;this.normals=false;this.normalMat=new THREE.MeshNormalMaterial();this.original=new WeakMap();this.metric={};this.samples=[];this.lastLabel=0;this.context={};this.spherical=new THREE.Spherical();
   const gl=this.renderer.getContext(),dbg=gl.getExtension('WEBGL_debug_renderer_info');this.gl=gl;this.gpuExt=gl.getExtension('EXT_disjoint_timer_query_webgl2');this.queries=[];this.gpuMs=null;this.rendererName=dbg?gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
+  this.mode='habitat';this.inspectionMaterials=inspectionMaterials();
+  this.studio=studioLights();this.studio.visible=false;this.scene.add(this.studio);
   this.resize();new ResizeObserver(()=>this.resize()).observe(canvas.parentElement);this.bindCamera();
  }
  resize(){const box=this.canvas.parentElement.getBoundingClientRect();if(!box.width||!box.height)return;this.renderer.setSize(Math.round(box.width),Math.round(box.height),false);this.camera.aspect=box.width/box.height;this.camera.updateProjectionMatrix();if(this.actor&&!this.drag&&!this.free)this.setAngle(this.angle||'three-quarter')}
@@ -30,7 +33,13 @@ export class Lab{
  }
  switchCreature(kind){if(this.actor){this.setCopies(1);this.restoreMaterials(this.actor);this.actor.dispose();this.hab.dispose()}this.kind=kind;this.actor=new species[kind]();this.scene.add(this.actor.root);this.hab=createHabitat(this.scene,kind);this.context={obstacles:this.hab.obstacles,terrainHeight:this.hab.terrainHeight,playerPosition:this.camera.position,habitatRadius:3};
   this.bounds=catalog[kind]?new THREE.Box3().setFromObject(this.actor.root):null;
-  this.clock=0;this.action=kind==='squid'?'Swim':'Idle';this.level=0;this.angle='three-quarter';this.setAngle(this.angle);this.applyDebug();this.calculateMemory();this.render();
+  this.clock=0;this.action=catalog[kind]?Object.keys(catalog[kind].actions)[0]:kind==='squid'?'Swim':'Idle';this.level=0;this.angle='three-quarter';this.setAngle(this.angle);this.applyDebug();this.calculateMemory();this.render();
+ }
+ widePose(action){return (this.kind==='owl'||this.kind==='hippogriff')&&['Unfold','Flap','Fly'].includes(action)}
+ setAction(action){
+  const reframe=this.widePose(action)!==this.widePose(this.action);
+  this.action=action;
+  if(reframe&&!this.free)this.setAngle(this.angle);
  }
  setAngle(angle){
   this.free=false;this.angle=angle;this.target.set(this.kind==='squid'?1.25:0,this.kind==='squid'?0:1.05,0);let radius=this.fit();
@@ -38,27 +47,36 @@ export class Lab{
   else if(angle==='habitat')radius*=1.44;
   if(this.bounds){
     this.bounds.getCenter(this.target);
+    if(this.widePose(this.action))this.target.y+=this.kind==='owl'?.24:.40;
     if(angle==='close-up'){const size=this.bounds.getSize(new V());this.target.y+=size.y*.28;this.target.z+=size.z*.22;radius=this.fit()*.48}
   }
   this.target.add(this.actor?.root.position||new V());const dir=(this.kind!=='squid'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
  }
- fit(){if(this.bounds){const s=this.bounds.getSize(new V());return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
+ fit(){if(this.bounds){const s=this.bounds.getSize(new V());if(this.widePose(this.action)){s.x=this.kind==='owl'?1.55:5.6;s.y+=this.kind==='owl'?.48:1.0}return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
  orbit(){this.camera.position.copy(this.target).add(new V().setFromSpherical(this.spherical));this.camera.lookAt(this.target);if(this.kind==='squid')this.camera.rotateZ(-.085)}
  bindCamera(){
   const c=this.canvas;c.addEventListener('pointerdown',e=>{c.focus({preventScroll:true});c.setPointerCapture(e.pointerId);this.drag=[e.clientX,e.clientY]});c.addEventListener('pointerup',()=>this.drag=null);c.addEventListener('pointercancel',()=>this.drag=null);
   c.addEventListener('pointermove',e=>{if(!this.drag)return;let dx=e.clientX-this.drag[0],dy=e.clientY-this.drag[1];this.drag=[e.clientX,e.clientY];if(this.free){this.camera.rotation.order='YXZ';this.camera.rotation.y-=dx*.005;this.camera.rotation.x=THREE.MathUtils.clamp(this.camera.rotation.x-dy*.005,-1.5,1.5)}else{this.spherical.theta-=dx*.006;this.spherical.phi=THREE.MathUtils.clamp(this.spherical.phi-dy*.006,.03,Math.PI-.03);this.orbit()}});
-  c.addEventListener('wheel',e=>{e.preventDefault();if(this.free)this.camera.translateZ(e.deltaY*.01);else{this.spherical.radius=THREE.MathUtils.clamp(this.spherical.radius*Math.exp(e.deltaY*.001),1,95);this.orbit()}},{passive:false});
+  c.addEventListener('wheel',e=>{e.preventDefault();if(this.free)this.camera.translateZ(e.deltaY*.01);else{this.spherical.radius=THREE.MathUtils.clamp(this.spherical.radius*Math.exp(e.deltaY*.001),this.bounds?this.fit()*.09:1,95);this.orbit()}},{passive:false});
   c.addEventListener('dblclick',e=>{let r=c.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2),this.camera);this.context.stimulus=ray.ray.at(this.camera.position.distanceTo(this.target),new V());this.onStimulus?.()});
   window.addEventListener('keydown',e=>{if(document.activeElement===c)this.keys.add(e.code)});window.addEventListener('keyup',e=>this.keys.delete(e.code));window.addEventListener('blur',()=>this.keys.clear())
  }
  setDistance(d){this.setAngle('three-quarter');this.spherical.radius*=({near:1,medium:2,far:3.7})[d]||1;this.orbit()}
- setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new species[this.kind]();this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root)}this.calculateMemory()}
+ setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new species[this.kind]();this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root);this.applyDebug()}this.calculateMemory()}
  setLOD(l){this.auto=l==='auto';if(this.auto)return;let v=Number(l);if(this.level===v)return;this.actor.setLOD(v);this.extra?.setLOD(v);this.level=v;this.applyDebug();this.calculateMemory()}
  restoreMaterials(actor){actor.root.traverse(o=>{if(this.original.has(o))o.material=this.original.get(o)})}
- applyDebug(){for(const a of [this.actor,this.extra])a?.root.traverse(o=>{if(!o.isMesh)return;if(!this.original.has(o))this.original.set(o,o.material);const m=this.original.get(o);o.material=this.normals?this.normalMat:m;for(const mat of [].concat(o.material))mat.wireframe=this.wire})}
+ applyDebug(){for(const a of [this.actor,this.extra])a?.root.traverse(o=>{if(!o.isMesh)return;if(!this.original.has(o))this.original.set(o,o.material);const m=this.original.get(o);o.material=this.normals?this.normalMat:(this.inspectionMaterials[this.mode]||m);for(const mat of [].concat(o.material))mat.wireframe=this.wire})}
  calculateMemory(){const seen=new Set();let size=0;this.scene.traverse(o=>{for(const a of [o.instanceMatrix,o.instanceColor,o.geometry?.index,...Object.values(o.geometry?.attributes||{})]){const b=a?.array?.buffer;if(b&&!seen.has(b)){size+=b.byteLength;seen.add(b)}}});this.bytes=size}
- advance(dt){const previous=this.actor.root.position.clone();this.clock+=dt;this.actor.update(dt,this.clock,this.action,this.context);this.extra?.update(dt,this.clock+.82,this.action,this.context);this.hab.update(dt,this.clock);if(!this.free&&(this.kind==='aragog'||this.kind==='merperson')){const travel=this.actor.root.position.clone().sub(previous);this.target.add(travel);this.camera.position.add(travel)}}
- render(){this.renderer.render(this.scene,this.camera)}
+ advance(dt){const previous=this.actor.root.position.clone();this.clock+=dt;this.actor.update(dt,this.clock,this.action,this.context);this.extra?.update(dt,this.clock+.82,this.action,this.context);this.hab.update(dt,this.clock);if(!this.free&&this.kind!=='squid'){const travel=this.actor.root.position.clone().sub(previous);this.target.add(travel);this.camera.position.add(travel)}}
+ plates(kind,mode){return comparisonPlates(this.renderer,kind,species[kind],mode)}
+ setInspection(mode){this.mode=mode;this.applyDebug()}
+ render(){
+  if(this.mode==='habitat'){this.renderer.render(this.scene,this.camera);return}
+  const scene=this.scene,fog=scene.fog,back=scene.background;
+  this.hab.group.visible=false;this.studio.visible=true;scene.fog=null;scene.background=background;
+  try{this.renderer.render(scene,this.camera)}
+  finally{this.hab.group.visible=true;this.studio.visible=false;scene.fog=fog;scene.background=back}
+ }
  loop=(stamp)=>{
   requestAnimationFrame(this.loop);if(!this.actor)return;const delta=this.previous?stamp-this.previous:16.67;this.previous=stamp;let dt=Math.min(.06,delta/1000);
   if(this.free){let k=this.keys,v=dt*(k.has('ShiftLeft')?12:4);this.camera.translateZ(v*(+k.has('KeyS')-k.has('KeyW')));this.camera.translateX(v*(+k.has('KeyD')-k.has('KeyA')));this.camera.position.y+=v*(+k.has('KeyE')-k.has('KeyQ'))}

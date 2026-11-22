@@ -364,7 +364,10 @@ export function createHabitat(scene,kind) {
   const lake=kind==='squid'||kind==='merperson', group=new THREE.Group(), obstacles=[], clock={value:0};
   group.name=lake?'Great Lake habitat':'Forbidden Forest habitat';
   const random=randomSource(lake?4580:712039);
-  const terrainHeight=(x,z)=>layeredTerrain(x,z)+(lake?-3.65:0);
+  const terrainHeight=(x,z)=>{
+    if(lake||kind==='aragog')return layeredTerrain(x,z)+(lake?-3.65:0);
+    return layeredTerrain(x,z)*Math.min(1,Math.max(0,Math.hypot(x,z)-2))-(kind==='owl'?.29:0);
+  };
   const originalFog=scene.fog, originalBackground=scene.background;
   const fog=new THREE.FogExp2(lake?0x244b4d:0x2f3930,lake?.035:.047);
   scene.fog=fog;scene.background=color(lake?0x244b4d:0x2f3930);
@@ -381,6 +384,10 @@ export function createHabitat(scene,kind) {
   addRocks(group,terrainHeight,random,lake,clock,obstacles);
   plants(group,terrainHeight,random,lake,clock);
   if(!lake)addForest(group,terrainHeight,random,clock,obstacles);
+  if(kind==='owl'){
+    const perch=new THREE.Mesh(new THREE.CylinderGeometry(.108,.13,1.14,14),new THREE.MeshStandardMaterial({color:0x675440,roughness:1}));
+    perch.rotation.z=Math.PI/2-.04;perch.position.y=-.095;group.add(perch);
+  }
   groundShadow(group,terrainHeight,lake);
   const shafts=lightShafts(group,lake,clock), motes=particles(group,random,lake);
   function setLighting(intensity=1,night=false){
@@ -388,6 +395,11 @@ export function createHabitat(scene,kind) {
     hemi.intensity=(lake?1.32:1.06)*intensity*(night?.62:1);
     key.intensity=(lake?3.05:2.75)*intensity*n;
     key.color.set(night?0xa5c6dd:0xffddae);
+    if(!night){
+      if(kind==='hippogriff')key.color.set(0xffedcf);
+      if(kind==='unicorn')key.color.set(0xffe8bc);
+      if(kind==='merperson')key.color.set(0xc1e1d6);
+    }
     rim.intensity=(lake?2.3:1.85)*intensity*(night?.67:1);
     fill.intensity=.42*intensity;
     fog.color.set(lake?(night?0x112e36:0x315b5c):(night?0x17262b:0x394337));
@@ -400,7 +412,7 @@ export function createHabitat(scene,kind) {
   }
   setLighting(1,false);
   let disposed=false;
-  return {terrainHeight,obstacles,setLighting,update(dt,time){clock.value=time;motes.time.value=time;},dispose(){
+  return {group,terrainHeight,obstacles,setLighting,update(dt,time){clock.value=time;motes.time.value=time;},dispose(){
     if(disposed)return;disposed=true;
     if(scene.fog===fog){scene.fog=originalFog;scene.background=originalBackground;}
     scene.remove(group);
