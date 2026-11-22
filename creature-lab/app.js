@@ -57,7 +57,7 @@ const api={switchCreature:selectCreature,setAction,setAngle:v=>lab.setAngle(v),s
 function save(b,name){let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),60000)}
 async function survey(){
  if(surveying)return;surveying=true;const saved=structuredClone(prefs),initial=kind,angle=lab.angle;$('#survey')?.setAttribute('disabled','');
- try{const {runSurvey}=await import('./evidence.js');const result=await runSurvey(api,t=>{if($('#surveyStatus'))$('#surveyStatus').textContent=t});save(result.blob,result.filename);toast('Survey archive exported')}
+ try{prefs=Object.fromEntries(Object.keys(spec).map(key=>[key,defaults(key)]));const {runSurvey}=await import('./evidence.js');const result=await runSurvey(api,t=>{if($('#surveyStatus'))$('#surveyStatus').textContent=t});save(result.blob,result.filename);toast('Survey archive exported')}
  catch(e){console.error(e);toast(e.message)}finally{lab.setCopies(1);prefs=saved;selectCreature(initial);lab.setAngle(angle);surveying=false;if(tab==='captures')showTab(tab)}
 }
 async function start(){
