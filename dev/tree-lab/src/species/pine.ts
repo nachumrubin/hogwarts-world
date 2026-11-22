@@ -15,7 +15,7 @@ import { Skeleton, type TNode, growRoots } from '../framework/skeleton.ts';
 
 export const PINE = { name: 'Ancient Scots pine', latin: 'Pinus sylvestris', seed: 1714, baseRadius: 0.62 };
 
-interface Shoot { node: TNode; dir: V3; order: number; age: number; vigor: number; shaded: number; alive: boolean; leader: boolean; born: number; dom?: boolean; vig?: number }
+interface Shoot { node: TNode; dir: V3; order: number; age: number; vigor: number; shaded: number; alive: boolean; leader: boolean; born: number; dom?: boolean; vig?: number; sub?: boolean; kink?: number }
 
 export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string, unknown> } {
   const r = rng(seed);
@@ -49,13 +49,13 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
       if (s.vigor < 0.22) s.shaded++; else s.shaded = Math.max(0, s.shaded - 1);
       // self-pruning with age: branches laid down while young die once the crown has risen far above them
       if (!s.leader && !s.dom && s.order === 1 && t > 30 && s.node.p[1] < 11) { s.alive = false; continue; }
-      if (!s.leader && !s.dom && (s.shaded > 4 || (s.order === 2 && s.age > 9) || (s.order === 3 && s.age > 4))) { s.alive = false; continue; }
+      if (!s.leader && !s.dom && (s.shaded > (s.sub ? 7 : 4) || (s.order === 2 && s.age > (s.sub ? 22 : 9)) || (s.order === 3 && s.age > (s.sub ? 9 : 4)))) { s.alive = false; continue; }
       // extension
       let L: number;
       if (s.leader) L = (old ? 0.08 : 1.15 * Math.exp(-t / 13) + 0.18) * (0.85 + 0.3 * r());
       // laterals slow down as they age (and as the tree ages): old pines do not have endlessly long limbs
       // laterals slow down with age; dominant upper limbs (fed by the crown they carry) keep growing for a century
-      else L = (s.order === 1 ? 0.5 : s.order === 2 ? 0.36 : 0.2) * (0.4 + 0.6 * s.vigor) * (s.vig ?? 1) * Math.exp(-s.age / (s.dom ? 19 : s.order === 1 ? 13 : 6));
+      else L = (s.order === 1 ? 0.5 : s.order === 2 ? 0.36 : 0.2) * (0.4 + 0.6 * s.vigor) * (s.vig ?? 1) * Math.exp(-s.age / (s.dom ? 19 : s.sub ? 11 : s.order === 1 ? 13 : 6));
       // wind: less growth on the windward side, shoots bend leeward
       const h = [s.dir[0], 0, s.dir[2]]; const hl = Math.hypot(h[0], h[2]);
       if (hl > 0.2) L *= 1 + 0.25 * (h[0] * wind[0] + h[2] * wind[2]) / hl;
@@ -67,8 +67,12 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
         }
       } else {
         // laterals: near horizontal, tips turning up towards light; old upper laterals rise to form the flat crown
-        const up = s.dom ? (s.age > 12 ? 0.06 : 0.02) : s.order === 1 && old && s.node.p[1] > 13 ? 0.09 : 0.03 * s.vigor;
-        d = norm(add(d, [(r() - 0.5) * 0.25 + wind[0] * 0.04, up - 0.02 * s.order, (r() - 0.5) * 0.25 + wind[2] * 0.04]));
+        // dominant limbs: rise in a long S (up from the stem, out, then the tip turns up to the light); others level
+        const up = s.dom ? (s.age < 4 ? 0.1 : s.age < 14 ? -0.015 : 0.07) : s.sub ? 0.035 : s.order === 1 && old && s.node.p[1] > 13 ? 0.08 : 0.03 * s.vigor;
+        const wob = s.dom || s.sub ? 0.42 : 0.3;
+        d = norm(add(d, [(r() - 0.5) * wob + wind[0] * 0.04, up - 0.02 * s.order + (r() - 0.5) * 0.12, (r() - 0.5) * wob + wind[2] * 0.04]));
+        // a lost shoot tip: a side bud takes over and the branch changes course (the angular elbows of old pine limbs)
+        if (s.order <= 2 && r() < (s.dom ? 0.18 : 0.1)) { const sd = norm([-d[2], 0, d[0]]); const sg = r() < 0.5 ? 1 : -1; d = norm(add(d, add(mul(sd, sg * (0.35 + 0.35 * r())), [0, s.dom ? 0.12 : 0.03, 0]))); }
       }
       s.dir = d;
       const nn = sk.add(s.node, add(s.node.p, mul(d, Math.max(0.05, L))), s.order);
@@ -88,13 +92,18 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
           next.push({ node: nn, dir: norm([Math.cos(az), dom ? 0.12 : el, Math.sin(az)]), order: 1, age: 0, vigor: 1, shaded: 0, alive: true, leader: false, born: t, dom, vig: dom ? 1.05 : 0.5 + 0.7 * r() });
         }
         }
+      } else if (s.dom && s.age > 3 && s.age < 22 && r() < 0.32) {
+        // dominant limb forks: one arm continues, the other is a persistent sub-limb that builds its own flat spray
+        const side = norm([-d[2], 0, d[0]]); const sg = r() < 0.5 ? 1 : -1;
+        next.push({ node: nn, dir: norm(add(add(mul(d, 0.6), mul(side, sg * (0.6 + 0.4 * r()))), [0, 0.15 + 0.2 * r(), 0])), order: 2, age: 0, vigor: s.vigor, shaded: 0, alive: true, leader: false, born: t, sub: true, vig: 0.75 + 0.4 * r() });
+        s.dir = norm(add(d, mul(side, -sg * 0.25)));
       } else if (!s.leader && s.order < 3 && r() < (s.order === 1 ? 0.85 : 0.55)) {
         // planar sprays: forks to either side in the branch plane
         const side = norm([-d[2], 0, d[0]]);
         const nf = s.order === 1 ? 2 : 1;
         for (let i = 0; i < nf; i++) {
           const sg = i === 0 ? 1 : -1;
-          next.push({ node: nn, dir: norm(add(add(mul(d, 0.65), mul(side, sg * (0.7 + 0.3 * r()))), [0, (r() - 0.4) * 0.5, 0])), order: s.order + 1, age: 0, vigor: s.vigor, shaded: 0, alive: true, leader: false, born: t, vig: 0.7 + 0.6 * r() });
+          next.push({ node: nn, dir: norm(add(add(mul(d, 0.65), mul(side, sg * (0.7 + 0.3 * r()))), [0, (r() - 0.4) * 0.5, 0])), order: s.order + 1, age: 0, vigor: s.vigor, shaded: 0, alive: true, leader: false, born: t, vig: 0.7 + 0.6 * r(), sub: s.dom || s.sub ? r() < 0.35 : false });
         }
       }
       if (old && s.leader && r() < 0.15) s.alive = false; // the old leader dies back
@@ -122,7 +131,8 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
     if (h < 4 || r() < (h < 8 ? 0.6 : 0.35)) { shed.push(p); continue; }
     const q = r();
     let m: TNode = p;
-    if (q < 0.25) continue; // whole dead branch still attached
+    let L = 0; for (let m2: TNode | undefined = p; m2; m2 = m2.children.find((c) => c.order === 1)) L += m2.parent ? len(sub(m2.p, m2.parent.p)) : 0;
+    if (q < 0.25 && L < 2.6) continue; // whole (short) dead branch still attached
     const keep = q < 0.6 ? 1 + Math.floor(r() * 2) : 2 + Math.floor(r() * 5);
     for (let i = 0; i < keep && m.children.length; i++) m = m.children.find((c) => c.order === 1) || m.children[0];
     shed.push(...m.children); m.broken = true;
@@ -135,6 +145,12 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
   sk.computeRadii({ tipR: 0.006, n: 2.75, taper: 0.03, targetBase: PINE.baseRadius });
   sk.rootRadii(0.3, 0.02);
   sk.root.r = PINE.baseRadius * 1.1;
+  // snapped stubs: the dead wood shrinks and splinters towards the break, and old stubs sag out of line
+  for (const n of sk.nodes) if (n.broken && n.parent && n.order >= 1) {
+    n.r *= 0.5 + 0.25 * r();
+    const d = sub(n.p, n.parent.p), L = len(d);
+    n.p = add(n.p, [(r() - 0.5) * 0.3 * L, -(0.05 + 0.3 * r()) * L, (r() - 0.5) * 0.3 * L]);
+  }
   return { sk, info: { growMs: Math.round(growMs), periods: PERIODS, leaderLosses, ...sk.stats() } };
 }
 

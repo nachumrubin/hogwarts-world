@@ -60,7 +60,7 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
   let samples = 0;
   // field evaluation with a per-block capsule list
   const field = (p: V3, list: Cap[]): { d: number; cap: Cap | null; t: number } => {
-    let d = 1e9, best: Cap | null = null, bt = 0;
+    let d = 1e9, best: Cap | null = null, bt = 0, dPlain = 1e9;
     for (const c of list) {
       if (p[0] < c.lo[0] || p[1] < c.lo[1] || p[2] < c.lo[2] || p[0] > c.hi[0] || p[1] > c.hi[1] || p[2] > c.hi[2]) continue;
       const q = sdCone(p, c);
@@ -69,15 +69,23 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
         const k = o.blend * Math.min(c.ra + (c.rb - c.ra) * q.t, best ? best.ra : 1e9) + 1e-4;
         const h = clamp(0.5 + 0.5 * (q.d - d) / k, 0, 1);
         const nd = d > 1e8 ? q.d : q.d * (1 - h) + d * h - k * h * (1 - h);
-        if (q.d < d) { best = c; bt = q.t; }
+        if (q.d < dPlain) { best = c; bt = q.t; dPlain = q.d; }
         d = nd;
       }
     }
-    if (best && o.bark) d -= o.bark(p, best.axis, best.ra + (best.rb - best.ra) * bt, best.node);
-    // near the region's faces the implicit surface sinks 3 % inside, so the tube that takes over there covers it
     if (best) {
+      const rb = best.ra + (best.rb - best.ra) * bt;
+      const bk = o.bark ? o.bark(p, best.axis, rb, best.node) : 0;
+      d -= bk;
+      // towards the region's faces the blended surface relaxes to the bare nearest capsule (what the tube that
+      // takes over there follows) and then sinks 4 % inside it, so the tube covers the rim and no ledge shows
       const m = Math.min(p[0] - o.min[0], o.max[0] - p[0], p[1] - o.min[1], o.max[1] - p[1], p[2] - o.min[2], o.max[2] - p[2]);
-      if (m < 0.45) d += 0.035 * (best.ra + (best.rb - best.ra) * bt) * (1 - m / 0.45);
+      if (m < 1.0) {
+        const w = 1 - clamp((m - 0.15) / 0.85, 0, 1), ws = w * w * (3 - 2 * w);
+        const u = 1 - clamp(m / 0.5, 0, 1);
+        const bare = dPlain - bk + 0.04 * rb * u * u * (3 - 2 * u);
+        d = d * (1 - ws) + bare * ws;
+      }
     }
     if (o.carve) d = Math.max(d, -o.carve(p, d));
     return { d, cap: best, t: bt };
@@ -150,8 +158,14 @@ export function tubeStarts(chains: Chain[], o: FusionOpts, overlap: number): Map
     if (!inRegion(pts[0].p, o) || pts[Math.min(1, pts.length - 1)].r < o.minR) continue; // starts outside, or thin: normal tube
     let acc = 0, cut = Infinity;
     for (let i = 1; i < pts.length; i++) {
-      acc += Math.sqrt(dot(sub(pts[i].p, pts[i - 1].p), sub(pts[i].p, pts[i - 1].p)));
-      if (!inRegion(pts[i].p, o) || Math.min(pts[i].r, pts[i - 1].r) < o.minR) { cut = Math.max(0, acc - overlap); break; }
+      const d = sub(pts[i].p, pts[i - 1].p), L = Math.sqrt(dot(d, d));
+      if (!inRegion(pts[i].p, o) || Math.min(pts[i].r, pts[i - 1].r) < o.minR) {
+        // the implicit surface stops where the segment leaves the region (or gets too thin), not at the next node
+        let f = 1;
+        if (!inRegion(pts[i].p, o)) for (let k = 1; k <= 32; k++) { const q = k / 32; const pp: V3 = [pts[i - 1].p[0] + d[0] * q, pts[i - 1].p[1] + d[1] * q, pts[i - 1].p[2] + d[2] * q]; if (!inRegion(pp, o)) { f = (k - 1) / 32; break; } }
+        cut = Math.max(0, acc + L * f - overlap); break;
+      }
+      acc += L;
     }
     res.set(ch, cut);
   }

@@ -83,7 +83,7 @@ async function main() {
   viewer.mode = (MODES.includes(q.get('mode') as Mode) ? q.get('mode') : 'lit') as Mode;
   viewer.overcast = q.get('light') === 'overcast' ? 1 : 0;
   // layout: side by side at true relative sizes, 32 m apart
-  const spacing = 34;
+  const spacing = 36;
   const xs = built.map((_, k) => (k - (built.length - 1) / 2) * spacing);
   const upload = () => {
     viewer.clear();
@@ -107,13 +107,14 @@ async function main() {
   const H = which === 'all' ? Math.max(...built.map((b) => b.bounds.max[1])) : b0.bounds.max[1];
   const W = which === 'all' ? spacing * built.length : Math.max(b0.bounds.max[0] - b0.bounds.min[0], b0.bounds.max[2] - b0.bounds.min[2]);
   const FOV = 50 * Math.PI / 180;
-  const fullDist = (Math.max(H * 1.08, W * 0.62 / (canvas.width / canvas.height)) * 0.55) / Math.tan(FOV / 2);
+  const cx = which === 'all' ? 0 : (b0.bounds.min[0] + b0.bounds.max[0]) / 2, cz = which === 'all' ? 0 : (b0.bounds.min[2] + b0.bounds.max[2]) / 2;
+  const fullDist = Math.max(H * 1.08 * 0.55, W * 0.6 / (canvas.width / canvas.height)) / Math.tan(FOV / 2);
   const setView = (v: string) => {
     cam.free = false;
     const p = b0.poi;
-    if (v === 'front' || v === 'silhouette' || v === 'all') { cam.az = 0; cam.el = 0.05; cam.dist = fullDist; cam.target = [0, H * 0.48, 0]; }
-    else if (v === 'side') { cam.az = Math.PI / 2; cam.el = 0.05; cam.dist = fullDist; cam.target = [0, H * 0.48, 0]; }
-    else if (v === 'three' || v === 'wire' || v === 'clay') { cam.az = Math.PI / 4; cam.el = 0.2; cam.dist = fullDist * 1.02; cam.target = [0, H * 0.45, 0]; }
+    if (v === 'front' || v === 'silhouette' || v === 'all') { cam.az = 0; cam.el = 0.05; cam.dist = fullDist; cam.target = [cx, H * 0.48, cz]; }
+    else if (v === 'side') { cam.az = Math.PI / 2; cam.el = 0.05; cam.dist = fullDist; cam.target = [cx, H * 0.48, cz]; }
+    else if (v === 'three' || v === 'wire' || v === 'clay') { cam.az = Math.PI / 4; cam.el = 0.2; cam.dist = fullDist * 1.02; cam.target = [cx, H * 0.45, cz]; }
     else if (v === 'trunk') { cam.az = p.trunkAz; cam.el = 0.08; cam.dist = p.trunkDist; cam.target = [0, p.trunkY, 0]; }
     else if (v === 'junction') { cam.az = p.junctionAz; cam.el = p.junctionEl; cam.dist = p.junctionDist; cam.target = p.junction; }
     else if (v === 'interior') { cam.free = true; cam.eye = p.interiorEye; cam.yaw = p.interiorYaw; cam.pitch = p.interiorPitch; }
