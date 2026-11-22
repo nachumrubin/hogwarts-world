@@ -1,28 +1,34 @@
 import {Specimen,joint} from './form.js';
 import {equine} from './equine.js';
-import {wing,feather,talon} from './avian.js';
+import {raptorWing,plumage,talon} from './avian.js';
 export class Hippogriff extends Specimen {
   constructor(){
     super();
     const coat=0x786b59,ruff=0xbab4a3,slate=0x737777;
-    this.horse=equine(this,{coat,hair:0x4d4840,hoof:0x484340,front:false,length:.95});
-    const b=this.horse.base,n=this.neck=joint(b,0,1.48,.58);
-    this.loft(n,ruff,[[0,-.27,0,.32,.33],[0,-.05,.055,.40,.40],[0,.20,.094,.36,.36],[0,.43,.18,.27,.285],[0,.63,.23,.21,.22],[0,.81,.28,.15,.17]]);
-    for(let row=0;row<2;row++)for(let i=0;i<19;i++){
-      const a=2*Math.PI*(i+row*.5)/19,x=Math.sin(a),z=Math.cos(a),h=.24+row*.27;
-      feather(this,n,i%4?ruff:0xaca899,[x*(.32-row*.055),h,.12+row*.07+z*(.32-row*.055)],[x*(.38-row*.058),h-.29,.08+row*.07+z*(.395-row*.045)],.078,[x,0,z]);
+    this.horse=equine(this,{kind:'hippogriff',pivot:[0,1.48,.58],foreColor:ruff,coat,hair:0x4d4840,hoof:0x484340,front:false,length:.95});
+    const b=this.horse.base,n=this.neck=this.horse.neck;
+    for(let row=0;row<3;row++){
+      const vanes=[],count=20-row*3;
+      for(let i=0;i<count;i++){
+        const angle=2*Math.PI*(i+.46*row)/count,x=Math.sin(angle),z=Math.cos(angle);
+        const h=.23+row*.198+.035*z,r=.33-row*.047;
+        const reach=.27+.057*z+.025*Math.sin(angle*3+.7*row);
+        vanes.push([[x*r,h,.14+.064*row+z*r],[x*(r+.068),h-reach,.12+.064*row+z*(r+.07)],.076-row*.006,[x,0,z]]);
+      }
+      plumage(this,n,row===1?0xafaa9b:ruff,vanes);
     }
     const h=this.head=joint(n,0,.74,.27);
     this.loft(h,ruff,[[0,.04,-.20,.081,.12],[0,.06,-.12,.173,.19],[0,.09,.032,.202,.20],[0,.08,.16,.178,.16],[0,.065,.26,.121,.112]]);
     this.loft(h,0xb99d69,[[0,.069,.184,.13,.09],[0,.074,.292,.114,.092],[0,.057,.393,.076,.076],[0,.002,.449,.045,.054],[0,-.088,.439,.012,.022],[0,-.112,.42,.004,.005]]);
     for(const s of [-1,1]){
-      this.oval(h,0xc79844,s*.155,.116,.171,.042,.052,.047);
-      this.oval(h,0x242722,s*.183,.121,.187,.023,.031,.026);
-      this.oval(h,slate,s*.154,.163,.167,.046,.028,.090).rotation.x=.15;
+      this.oval(h,0xc79844,s*.161,.127,.162,.029,.026,.032);
+      this.oval(h,0x242722,s*.181,.129,.171,.013,.018,.014);
+      this.oval(h,0x645a49,s*.095,.096,.306,.016,.012,.031);
+      this.oval(h,slate,s*.147,.153,.158,.046,.020,.076).rotation.x=.15;
     }
     this.wings=[];this.forelegs=[];
     for(const s of [-1,1]){
-      this.wings.push(wing(this,b,s,[s*.32,1.75,.32],1.68,[0x8c8d83,0x696c69,0x4d5253]));
+      this.wings.push(raptorWing(this,b,s,[s*.32,1.74,.38]));
       const upper=joint(b,s*.27,1.46,.60);
       this.loft(upper,slate,[[0,.13,0,.15,.18],[0,-.14,-.03,.14,.19],[0,-.36,-.09,.101,.14],[0,-.55,-.11,.065,.086]]);
       const shank=joint(upper,0,-.50,-.11);

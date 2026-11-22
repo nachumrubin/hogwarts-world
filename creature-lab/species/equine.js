@@ -1,26 +1,27 @@
+import {equineBody} from './equine-body.js';
 import {joint} from './form.js';
 
 // Barrel, croup and withers share a continuous surface. Limbs are parented
 // at the scapula or hip, with distinct carpus/hock and fetlock pivots.
-export function equine(a,{coat,hair,hoof,front=true,slender=1,length=1}){
+export function equine(a,{coat,hair,hoof,kind,foreColor=coat,pivot,front=true,slender=1,length=1}){
   const b=joint(a.body);b.scale.set(slender,1,length);
-  a.loft(b,coat,[[0,1.35,-1.1,.1,.22],[0,1.36,-.98,.33,.41],[0,1.4,-.74,.43,.49],[0,1.39,-.37,.41,.46],[0,1.34,.03,.43,.47],[0,1.39,.39,.45,.52],[0,1.44,.65,.40,.54],[0,1.44,.87,.29,.42],[0,1.5,.94,.16,.22],[0,1.5,.98,.035,.08]],[0,0,1]);
+  const neck=equineBody(a,b,kind,coat,foreColor,pivot);
   const legs=[];
   for(const s of [-1,1])for(const fore of [false,true]){
     if(fore&&!front)continue;
     const upper=joint(b,s*(fore?.285:.27),1.52,fore?.62:-.72);
     const bend=fore?-.035:.18, hock=fore?.018:-.26;
-    a.loft(upper,coat,[[-s*.07,.21,0,.055,.09],[-s*.035,.11,0,.132,.194],[0,-.08,0,.16,.24],[0,-.36,bend,.12,.16],[0,-.50,bend,.086,.103],[0,-.56,bend,.032,.047]]);
+    a.loft(upper,coat,[[-s*.07,.21,0,.055,.09],[-s*.035,.11,0,.145,.20],[-s*.026,-.08,0,.146,fore?.204:.238],[-s*.009,-.28,bend*.72,.128,fore?.16:.194],[0,-.39,bend,.101,.133],[0,-.50,bend,.086,.103],[0,-.56,bend,.032,.047]]);
     const lower=joint(upper,0,-.49,bend);
-    a.loft(lower,coat,[[0,.08,0,.037,.046],[0,.004,0,.087,.099],[0,-.08,hock*.32,.092,.112],[0,-.33,hock,.071,.084],[0,-.40,hock,.060,.072],[0,-.438,hock,.025,.032]]);
+    a.loft(lower,coat,[[0,.08,0,.037,.046],[0,.004,0,.087,.099],[0,-.08,hock*.32,.092,.112],[0,-.23,hock*.69,.065,.091],[0,-.33,hock,.073,fore?.077:.106],[0,-.40,hock,.060,.072],[0,-.438,hock,.025,.032]]);
     const cannon=joint(lower,0,-.36,hock);
-    a.loft(cannon,coat,[[0,.060,0,.032,.042],[0,-.006,0,.07,.08],[0,-.09,.015,.056,.063],[0,-.34,.04,.049,.052],[0,-.44,.043,.066,.073],[0,-.53,.09,.053,.06]]);
-    a.loft(cannon,hoof,[[0,-.49,.08,.058,.067],[0,-.55,.105,.081,.10],[0,-.65,.13,.094,.124],[0,-.665,.13,.093,.12]]);
+    a.loft(cannon,coat,[[0,.060,0,.032,.042],[0,-.006,0,.07,.08],[0,-.09,.015,.056,.063],[0,-.31,.030,.044,.055],[0,-.44,.043,.066,.073],[0,-.53,.09,.053,.06]]);
+    a.loft(cannon,hoof,[[0,-.49,.08,.058,.067],[0,-.55,.105,.081,.10],[0,-.642,.138,.089,.121],[0,-.665,.14,.086,.12]]);
     legs.push({upper,lower,cannon,bend,hock,phase:(fore?.24:0)+(s>0?.5:0),fore});
   }
   const tail=joint(b,0,1.65,-.98);
   a.loft(tail,hair,[[0,0,.06,.10,.11],[0,-.10,-.12,.13,.14],[.02,-.34,-.24,.15,.15],[.04,-.63,-.30,.13,.12],[.04,-.95,-.35,.09,.08],[.02,-1.16,-.42,.008,.01]]);
-  return {base:b,advance(dt,action,context){
+  return {base:b,neck,advance(dt,action,context){
     if(action!=='Walk')return;
     const yaw=a.body.rotation.y+=.19*dt;
     a.root.position.x+=.54*dt*Math.sin(yaw);a.root.position.z+=.54*dt*Math.cos(yaw);

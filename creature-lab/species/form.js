@@ -10,7 +10,7 @@ export function joint(parent,x=0,y=0,z=0) {
 
 // Sweep elliptical cross sections along a path. The reference axis stays
 // fixed between rings so the cross sections do not twist at inflections.
-function smoothSections(rows,steps){
+export function smoothSections(rows,steps){
   const samples=[];
   for(let i=0;i<rows.length-1;i++){
     const a=rows[i],b=rows[i+1],prev=rows[Math.max(0,i-1)],next=rows[Math.min(i+2,rows.length-1)];
@@ -54,9 +54,9 @@ export class Specimen {
     this.root=new T.Group();this.body=joint(this.root);
     this.parts=[];this.materials=new Map();this.level=0;this.origin=new T.Vector3();
   }
-  mesh(parent,color,make){
+  mesh(parent,color,make,MeshType=T.Mesh){
     if(!this.materials.has(color))this.materials.set(color,new T.MeshStandardMaterial({color,roughness:.84,side:T.DoubleSide}));
-    const levels=[make(0)],mesh=new T.Mesh(levels[0],this.materials.get(color));
+    const levels=[make(0)],mesh=new MeshType(levels[0],this.materials.get(color));
     parent.add(mesh);this.parts.push({mesh,levels,make});return mesh;
   }
   loft(parent,color,rows,normal){const axis=normal&&new T.Vector3(...normal);return this.mesh(parent,color,l=>sweep(rows,[20,12,7][l],axis))}
@@ -71,7 +71,9 @@ export class Specimen {
   setPosition(p){this.origin.copy(p);this.root.position.copy(p)}
   dispose(){
     this.root.removeFromParent();
-    for(const {levels} of this.parts)levels.forEach(g=>g.dispose());
+    for(const {mesh,levels} of this.parts){
+      mesh.skeleton?.dispose();levels.forEach(g=>g.dispose());
+    }
     this.materials.forEach(m=>m.dispose());
   }
 }
