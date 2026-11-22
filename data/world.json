@@ -1,0 +1,1526 @@
+{
+ "schema": "hogwarts-world/1",
+ "comment": "World coordinate database. Metres. X = east, Y = up (elevation above sea level), Z = north, origin = south-west corner of the playable area. Landmark x/z are the approved planning anchors and must not move without a documented conflict. 'elevation' is a target the terrain must honour (null = derived from the terrain model). 'site' says how the terrain treats the anchor.",
+ "seed": 1337,
+ "playable": {
+  "minX": 0,
+  "minZ": 0,
+  "maxX": 8000,
+  "maxZ": 6000
+ },
+ "scenicMargin": 4000,
+ "lake": {
+  "name": "Great Lake",
+  "surface": 300,
+  "comment": "Closed shoreline control polygon (counter-clockwise, x/z). A Catmull-Rom spline through these points plus small-scale noise makes the shore. The castle promontory is the land between the landing and the north bay.",
+  "shoreline": [
+   [
+    2850,
+    2035
+   ],
+   [
+    3150,
+    2120
+   ],
+   [
+    3330,
+    2290
+   ],
+   [
+    3440,
+    2470
+   ],
+   [
+    3425,
+    2580
+   ],
+   [
+    3395,
+    2690
+   ],
+   [
+    3370,
+    2800
+   ],
+   [
+    3385,
+    2905
+   ],
+   [
+    3440,
+    2990
+   ],
+   [
+    3505,
+    3080
+   ],
+   [
+    3470,
+    3180
+   ],
+   [
+    3330,
+    3300
+   ],
+   [
+    3130,
+    3430
+   ],
+   [
+    2860,
+    3540
+   ],
+   [
+    2600,
+    3610
+   ],
+   [
+    2420,
+    3680
+   ],
+   [
+    2330,
+    3850
+   ],
+   [
+    2240,
+    4060
+   ],
+   [
+    2080,
+    4120
+   ],
+   [
+    1980,
+    4010
+   ],
+   [
+    1900,
+    3850
+   ],
+   [
+    1700,
+    3760
+   ],
+   [
+    1420,
+    3720
+   ],
+   [
+    1160,
+    3660
+   ],
+   [
+    900,
+    3600
+   ],
+   [
+    620,
+    3530
+   ],
+   [
+    380,
+    3420
+   ],
+   [
+    250,
+    3260
+   ],
+   [
+    380,
+    3150
+   ],
+   [
+    650,
+    3200
+   ],
+   [
+    900,
+    3230
+   ],
+   [
+    1080,
+    3160
+   ],
+   [
+    1120,
+    3000
+   ],
+   [
+    980,
+    2850
+   ],
+   [
+    1000,
+    2650
+   ],
+   [
+    1180,
+    2560
+   ],
+   [
+    1320,
+    2420
+   ],
+   [
+    1450,
+    2260
+   ],
+   [
+    1620,
+    2120
+   ],
+   [
+    1650,
+    1900
+   ],
+   [
+    1760,
+    1820
+   ],
+   [
+    1880,
+    1920
+   ],
+   [
+    1900,
+    2120
+   ],
+   [
+    2120,
+    2090
+   ],
+   [
+    2450,
+    2000
+   ]
+  ],
+  "depthBowls": [
+   {
+    "id": "squid-deep",
+    "x": 2900,
+    "z": 2200,
+    "radius": 650,
+    "depth": 72
+   },
+   {
+    "id": "merpeople-basin",
+    "x": 1900,
+    "z": 2850,
+    "radius": 600,
+    "depth": 55
+   },
+   {
+    "id": "north-basin",
+    "x": 2450,
+    "z": 3250,
+    "radius": 500,
+    "depth": 38
+   },
+   {
+    "id": "west-arm",
+    "x": 650,
+    "z": 3380,
+    "radius": 420,
+    "depth": 34
+   }
+  ],
+  "baseDepth": 14,
+  "steepShores": [
+   {
+    "id": "boathouse-dropoff",
+    "x": 2870,
+    "z": 2090,
+    "radius": 260,
+    "slope": 0.75,
+    "note": "Giant Squid Deepwater lies 156 m from the boathouse: a steep loch-style drop-off makes the deep habitat start close to shore."
+   },
+   {
+    "id": "castle-cliffs",
+    "x": 3420,
+    "z": 2800,
+    "radius": 380,
+    "slope": 0.9
+   }
+  ],
+  "islands": [
+   {
+    "id": "willow-isle",
+    "x": 1480,
+    "z": 3170,
+    "radius": 48,
+    "height": 14
+   },
+   {
+    "id": "west-skerry",
+    "x": 600,
+    "z": 3360,
+    "radius": 26,
+    "height": 6
+   }
+  ]
+ },
+ "landmarks": [
+  {
+   "id": "hogwarts-castle",
+   "name": "Hogwarts Castle",
+   "x": 3650,
+   "z": 2850,
+   "elevation": 390,
+   "kind": "castle",
+   "site": "promontory",
+   "radius": 175
+  },
+  {
+   "id": "castle-courtyard",
+   "name": "Castle Courtyard",
+   "x": 3700,
+   "z": 2980,
+   "elevation": 390,
+   "kind": "courtyard",
+   "site": "on-castle",
+   "radius": 30
+  },
+  {
+   "id": "hagrids-hut",
+   "name": "Hagrid's Hut",
+   "x": 3830,
+   "z": 3060,
+   "elevation": 375,
+   "kind": "building",
+   "site": "pad",
+   "radius": 22,
+   "blend": 70
+  },
+  {
+   "id": "forest-entrance",
+   "name": "Forbidden Forest Entrance",
+   "x": 4000,
+   "z": 3290,
+   "elevation": null,
+   "kind": "forest",
+   "site": "pad",
+   "radius": 14,
+   "blend": 60
+  },
+  {
+   "id": "greenhouses",
+   "name": "Greenhouses",
+   "x": 3950,
+   "z": 2720,
+   "elevation": null,
+   "kind": "building",
+   "site": "pad",
+   "radius": 45,
+   "blend": 70
+  },
+  {
+   "id": "whomping-willow",
+   "name": "Whomping Willow",
+   "x": 4220,
+   "z": 2620,
+   "elevation": null,
+   "kind": "tree",
+   "site": "pad",
+   "radius": 16,
+   "blend": 50
+  },
+  {
+   "id": "owlery",
+   "name": "Owlery",
+   "x": 4480,
+   "z": 3180,
+   "elevation": null,
+   "kind": "tower",
+   "site": "knoll",
+   "radius": 18,
+   "rise": 32,
+   "knollRadius": 170
+  },
+  {
+   "id": "quidditch-pitch",
+   "name": "Quidditch Pitch",
+   "x": 3000,
+   "z": 3750,
+   "elevation": null,
+   "kind": "stadium",
+   "site": "pad",
+   "radius": 115,
+   "blend": 140
+  },
+  {
+   "id": "hogsmeade",
+   "name": "Hogsmeade Village",
+   "x": 1550,
+   "z": 4550,
+   "elevation": null,
+   "kind": "village",
+   "site": "pad",
+   "radius": 230,
+   "blend": 260,
+   "flatten": 0.85
+  },
+  {
+   "id": "shrieking-shack",
+   "name": "Shrieking Shack",
+   "x": 1950,
+   "z": 4270,
+   "elevation": null,
+   "kind": "building",
+   "site": "knoll",
+   "radius": 14,
+   "rise": 26,
+   "knollRadius": 140
+  },
+  {
+   "id": "hogsmeade-station",
+   "name": "Hogsmeade Station",
+   "x": 2850,
+   "z": 1650,
+   "elevation": 338,
+   "kind": "station",
+   "site": "pad",
+   "radius": 70,
+   "blend": 120
+  },
+  {
+   "id": "boathouse",
+   "name": "First-Year Boathouse",
+   "x": 2850,
+   "z": 2050,
+   "elevation": 305,
+   "kind": "boathouse",
+   "site": "shore",
+   "radius": 16,
+   "blend": 40
+  },
+  {
+   "id": "lakeside-landing",
+   "name": "Castle Lakeside Landing",
+   "x": 3450,
+   "z": 2510,
+   "elevation": 306,
+   "kind": "landing",
+   "site": "shore",
+   "radius": 14,
+   "blend": 30
+  },
+  {
+   "id": "passage-entrance",
+   "name": "Underground Passage Entrance",
+   "x": 3570,
+   "z": 2690,
+   "elevation": null,
+   "kind": "entrance",
+   "site": "cliff-foot",
+   "radius": 6
+  },
+  {
+   "id": "merpeople-cove",
+   "name": "Merpeople Cove",
+   "x": 1900,
+   "z": 2850,
+   "elevation": null,
+   "kind": "habitat",
+   "site": "underwater",
+   "radius": 400
+  },
+  {
+   "id": "giant-squid-deepwater",
+   "name": "Giant Squid Deepwater",
+   "x": 2900,
+   "z": 2200,
+   "elevation": null,
+   "kind": "habitat",
+   "site": "underwater",
+   "radius": 420
+  },
+  {
+   "id": "unicorn-glade",
+   "name": "Unicorn Glade",
+   "x": 5700,
+   "z": 3700,
+   "elevation": null,
+   "kind": "clearing",
+   "site": "pad",
+   "radius": 70,
+   "blend": 90
+  },
+  {
+   "id": "centaur-uplands",
+   "name": "Centaur Uplands",
+   "x": 6300,
+   "z": 4400,
+   "elevation": null,
+   "kind": "upland",
+   "site": "pad",
+   "radius": 300,
+   "blend": 350,
+   "flatten": 0.6
+  },
+  {
+   "id": "forest-waterfall",
+   "name": "Forest Waterfall",
+   "x": 6850,
+   "z": 5050,
+   "elevation": null,
+   "kind": "waterfall",
+   "site": "river-step",
+   "radius": 20
+  },
+  {
+   "id": "aragogs-hollow",
+   "name": "Aragog's Hollow",
+   "x": 7600,
+   "z": 5500,
+   "elevation": null,
+   "kind": "hollow",
+   "site": "hollow",
+   "radius": 170,
+   "depth": 38
+  },
+  {
+   "id": "south-viaduct",
+   "name": "South Viaduct",
+   "x": 5750,
+   "z": 750,
+   "elevation": null,
+   "kind": "viaduct",
+   "site": "railway",
+   "radius": 30
+  }
+ ],
+ "regions": {
+  "comment": "Regional base elevation and relief amplitude (metres), blended with a smooth inverse-distance kernel. Macrostructure first: these shape valleys, uplands and mountain walls before any noise. Valleys pull the base elevation towards a profile along a polyline (the railway corridor).",
+  "kernelRadius": 700,
+  "anchors": [
+   [
+    2200,
+    2900,
+    318,
+    15
+   ],
+   [
+    2600,
+    2500,
+    322,
+    15
+   ],
+   [
+    1500,
+    3200,
+    330,
+    25
+   ],
+   [
+    3950,
+    2900,
+    386,
+    14
+   ],
+   [
+    4300,
+    2700,
+    390,
+    18
+   ],
+   [
+    3000,
+    3750,
+    352,
+    12
+   ],
+   [
+    3700,
+    3400,
+    372,
+    18
+   ],
+   [
+    2850,
+    1650,
+    340,
+    16
+   ],
+   [
+    2200,
+    1500,
+    360,
+    40
+   ],
+   [
+    3600,
+    1500,
+    365,
+    40
+   ],
+   [
+    3000,
+    500,
+    520,
+    130
+   ],
+   [
+    4600,
+    300,
+    560,
+    150
+   ],
+   [
+    1600,
+    700,
+    520,
+    140
+   ],
+   [
+    500,
+    1500,
+    600,
+    180
+   ],
+   [
+    300,
+    2800,
+    640,
+    220
+   ],
+   [
+    400,
+    4200,
+    660,
+    230
+   ],
+   [
+    1550,
+    4550,
+    378,
+    18
+   ],
+   [
+    2300,
+    4350,
+    380,
+    30
+   ],
+   [
+    1950,
+    4270,
+    382,
+    25
+   ],
+   [
+    900,
+    5000,
+    520,
+    120
+   ],
+   [
+    1500,
+    5800,
+    760,
+    260
+   ],
+   [
+    3000,
+    5400,
+    600,
+    180
+   ],
+   [
+    2800,
+    4500,
+    420,
+    60
+   ],
+   [
+    4500,
+    3600,
+    408,
+    30
+   ],
+   [
+    5100,
+    3300,
+    430,
+    40
+   ],
+   [
+    5700,
+    3700,
+    452,
+    35
+   ],
+   [
+    5300,
+    4500,
+    500,
+    60
+   ],
+   [
+    6300,
+    4400,
+    540,
+    30
+   ],
+   [
+    6850,
+    5050,
+    575,
+    60
+   ],
+   [
+    7600,
+    5500,
+    610,
+    70
+   ],
+   [
+    7200,
+    4200,
+    590,
+    90
+   ],
+   [
+    6600,
+    2900,
+    520,
+    90
+   ],
+   [
+    5600,
+    2200,
+    450,
+    60
+   ],
+   [
+    4900,
+    1800,
+    410,
+    45
+   ],
+   [
+    5750,
+    750,
+    400,
+    50
+   ],
+   [
+    6900,
+    900,
+    520,
+    130
+   ],
+   [
+    7700,
+    2200,
+    620,
+    170
+   ],
+   [
+    4400,
+    5400,
+    640,
+    200
+   ],
+   [
+    6000,
+    5800,
+    700,
+    220
+   ],
+   [
+    8000,
+    6000,
+    760,
+    240
+   ],
+   [
+    1000,
+    1900,
+    470,
+    110
+   ],
+   [
+    2150,
+    1150,
+    470,
+    110
+   ],
+   [
+    3300,
+    4300,
+    460,
+    80
+   ],
+   [
+    2600,
+    5000,
+    560,
+    160
+   ],
+   [
+    700,
+    4100,
+    600,
+    200
+   ],
+   [
+    1700,
+    1600,
+    420,
+    70
+   ],
+   [
+    4700,
+    4700,
+    520,
+    90
+   ],
+   [
+    5900,
+    3200,
+    470,
+    60
+   ]
+  ],
+  "outsideRise": 380,
+  "outsideRiseDistance": 3000,
+  "outsideRelief": 300,
+  "valleys": [
+   {
+    "id": "railway-corridor",
+    "comment": "A broad valley the railway follows: macrostructure, not a carve.",
+    "points": [
+     [
+      10600,
+      900
+     ],
+     [
+      8000,
+      640
+     ],
+     [
+      6800,
+      600
+     ],
+     [
+      5750,
+      750
+     ],
+     [
+      4900,
+      1050
+     ],
+     [
+      4100,
+      1350
+     ],
+     [
+      3400,
+      1590
+     ],
+     [
+      2850,
+      1650
+     ],
+     [
+      2540,
+      1645
+     ]
+    ],
+    "elevations": [
+     420,
+     400,
+     388,
+     378,
+     364,
+     353,
+     343,
+     338,
+     337
+    ],
+    "halfWidth": 260,
+    "blend": 420,
+    "relief": 0.25
+   }
+  ]
+ },
+ "rivers": [
+  {
+   "id": "forest-burn",
+   "name": "Forest Burn",
+   "comment": "From the uplands over the Forest Waterfall, south-west through the forest, into the lake's north bay beside the castle.",
+   "points": [
+    [
+     7350,
+     5600
+    ],
+    [
+     7050,
+     5250
+    ],
+    [
+     6850,
+     5050
+    ],
+    [
+     6650,
+     4750
+    ],
+    [
+     6250,
+     4150
+    ],
+    [
+     5800,
+     3950
+    ],
+    [
+     5300,
+     3850
+    ],
+    [
+     4800,
+     3700
+    ],
+    [
+     4300,
+     3560
+    ],
+    [
+     3900,
+     3420
+    ],
+    [
+     3600,
+     3270
+    ],
+    [
+     3470,
+     3200
+    ]
+   ],
+   "width": 9,
+   "depth": 3.5,
+   "bank": 26,
+   "fallAt": 2,
+   "fallHeight": 24
+  },
+  {
+   "id": "viaduct-glen",
+   "name": "Viaduct Glen Burn",
+   "comment": "From the southern hills north under the South Viaduct, joining the Forest Burn.",
+   "points": [
+    [
+     5800,
+     -900
+    ],
+    [
+     5760,
+     200
+    ],
+    [
+     5750,
+     750
+    ],
+    [
+     5650,
+     1400
+    ],
+    [
+     5450,
+     2200
+    ],
+    [
+     5150,
+     2900
+    ],
+    [
+     4800,
+     3700
+    ]
+   ],
+   "width": 6,
+   "depth": 3.0,
+   "bank": 22,
+   "glenWidth": 520,
+   "glenDepth": 72
+  }
+ ],
+ "railway": {
+  "id": "hogwarts-express",
+  "name": "Hogwarts Express line",
+  "comment": "Planning route (not verified engineering). The vertical profile is computed from the terrain with a gradient cap; tests validate gradient, curvature, the station level and the viaduct clearance.",
+  "points": [
+   [
+    10600,
+    900
+   ],
+   [
+    8000,
+    640
+   ],
+   [
+    6800,
+    600
+   ],
+   [
+    5750,
+    750
+   ],
+   [
+    4900,
+    1050
+   ],
+   [
+    4100,
+    1350
+   ],
+   [
+    3400,
+    1590
+   ],
+   [
+    2850,
+    1650
+   ],
+   [
+    2540,
+    1645
+   ]
+  ],
+  "maxGradient": 0.02,
+  "minCurveRadius": 300,
+  "formationHalfWidth": 5,
+  "station": {
+   "at": [
+    2850,
+    1650
+   ],
+   "elevation": 338,
+   "platformLength": 260
+  },
+  "viaduct": {
+   "at": [
+    5750,
+    750
+   ],
+   "minClearance": 15
+  }
+ },
+ "paths": [
+  {
+   "id": "station-to-boathouse",
+   "name": "Station path to the boathouse",
+   "width": 3,
+   "points": [
+    [
+     2850,
+     1700
+    ],
+    [
+     2820,
+     1820
+    ],
+    [
+     2860,
+     1940
+    ],
+    [
+     2850,
+     2030
+    ]
+   ]
+  },
+  {
+   "id": "landing-to-passage",
+   "name": "Landing steps",
+   "width": 2,
+   "points": [
+    [
+     3450,
+     2510
+    ],
+    [
+     3520,
+     2600
+    ],
+    [
+     3570,
+     2690
+    ]
+   ]
+  },
+  {
+   "id": "castle-to-hut",
+   "name": "Castle grounds path",
+   "width": 3,
+   "points": [
+    [
+     3760,
+     2950
+    ],
+    [
+     3800,
+     3000
+    ],
+    [
+     3830,
+     3060
+    ]
+   ]
+  },
+  {
+   "id": "hut-to-forest",
+   "name": "Forest trail",
+   "width": 2.5,
+   "points": [
+    [
+     3830,
+     3060
+    ],
+    [
+     3900,
+     3170
+    ],
+    [
+     4000,
+     3290
+    ],
+    [
+     4300,
+     3500
+    ],
+    [
+     4900,
+     3640
+    ],
+    [
+     5400,
+     3700
+    ],
+    [
+     5700,
+     3700
+    ],
+    [
+     6150,
+     4100
+    ],
+    [
+     6300,
+     4400
+    ],
+    [
+     6700,
+     4900
+    ],
+    [
+     7150,
+     5250
+    ],
+    [
+     7600,
+     5500
+    ]
+   ]
+  },
+  {
+   "id": "castle-to-greenhouses",
+   "name": "Greenhouse path",
+   "width": 3,
+   "points": [
+    [
+     3740,
+     2860
+    ],
+    [
+     3850,
+     2780
+    ],
+    [
+     3950,
+     2720
+    ],
+    [
+     4220,
+     2620
+    ]
+   ]
+  },
+  {
+   "id": "castle-to-owlery",
+   "name": "Owlery path",
+   "width": 2,
+   "points": [
+    [
+     3800,
+     2920
+    ],
+    [
+     4100,
+     3020
+    ],
+    [
+     4480,
+     3180
+    ]
+   ]
+  },
+  {
+   "id": "castle-to-pitch",
+   "name": "Pitch path",
+   "width": 3,
+   "points": [
+    [
+     3700,
+     3000
+    ],
+    [
+     3640,
+     3320
+    ],
+    [
+     3300,
+     3620
+    ],
+    [
+     3000,
+     3750
+    ]
+   ]
+  },
+  {
+   "id": "hogsmeade-road",
+   "name": "Hogsmeade road",
+   "width": 5,
+   "points": [
+    [
+     3800,
+     2950
+    ],
+    [
+     3700,
+     3330
+    ],
+    [
+     3400,
+     3700
+    ],
+    [
+     2800,
+     4050
+    ],
+    [
+     2300,
+     4250
+    ],
+    [
+     1950,
+     4380
+    ],
+    [
+     1550,
+     4550
+    ]
+   ]
+  },
+  {
+   "id": "station-road",
+   "name": "Station road",
+   "width": 4,
+   "points": [
+    [
+     2850,
+     1650
+    ],
+    [
+     3300,
+     1900
+    ],
+    [
+     3800,
+     2300
+    ],
+    [
+     3950,
+     2600
+    ],
+    [
+     3800,
+     2860
+    ]
+   ]
+  }
+ ],
+ "forest": {
+  "name": "Forbidden Forest",
+  "comment": "Forest outline (x/z polygon; it continues into the scenic margin so depth is not measured from the playable boundary). Forest depth = distance inside the outline; ecological zones follow depth bands. Habitats override zones locally.",
+  "outline": [
+   [
+    3880,
+    3230
+   ],
+   [
+    4100,
+    3150
+   ],
+   [
+    4330,
+    3340
+   ],
+   [
+    4660,
+    3370
+   ],
+   [
+    5000,
+    3060
+   ],
+   [
+    5300,
+    2850
+   ],
+   [
+    6000,
+    2700
+   ],
+   [
+    6800,
+    2550
+   ],
+   [
+    7600,
+    2700
+   ],
+   [
+    8000,
+    2900
+   ],
+   [
+    12500,
+    2900
+   ],
+   [
+    12500,
+    10500
+   ],
+   [
+    3600,
+    10500
+   ],
+   [
+    3600,
+    6000
+   ],
+   [
+    3500,
+    5200
+   ],
+   [
+    3700,
+    4500
+   ],
+   [
+    3850,
+    3900
+   ],
+   [
+    3800,
+    3500
+   ]
+  ],
+  "zones": [
+   {
+    "id": "familiar",
+    "name": "Familiar woodland",
+    "fromDepth": 0,
+    "toDepth": 220
+   },
+   {
+    "id": "outer",
+    "name": "Outer forest",
+    "fromDepth": 220,
+    "toDepth": 700
+   },
+   {
+    "id": "ancient",
+    "name": "Ancient woodland",
+    "fromDepth": 700,
+    "toDepth": 1300
+   },
+   {
+    "id": "deep",
+    "name": "Deep forest",
+    "fromDepth": 1300,
+    "toDepth": 99999
+   }
+  ],
+  "habitats": [
+   {
+    "id": "unicorn-glade",
+    "x": 5700,
+    "z": 3700,
+    "radius": 160,
+    "kind": "clearing"
+   },
+   {
+    "id": "centaur-uplands",
+    "x": 6300,
+    "z": 4400,
+    "radius": 380,
+    "kind": "open-upland"
+   },
+   {
+    "id": "aragogs-hollow",
+    "x": 7600,
+    "z": 5500,
+    "radius": 420,
+    "kind": "acromantula"
+   },
+   {
+    "id": "forest-waterfall",
+    "x": 6850,
+    "z": 5050,
+    "radius": 120,
+    "kind": "ravine"
+   }
+  ]
+ },
+ "encounterZones": [
+  {
+   "id": "giant-squid",
+   "creature": "giant-squid",
+   "x": 2900,
+   "z": 2200,
+   "radius": 520,
+   "minDepth": 20,
+   "medium": "water"
+  },
+  {
+   "id": "merpeople",
+   "creature": "merpeople",
+   "x": 1900,
+   "z": 2850,
+   "radius": 480,
+   "minDepth": 15,
+   "medium": "water"
+  },
+  {
+   "id": "aragog",
+   "creature": "aragog",
+   "x": 7600,
+   "z": 5500,
+   "radius": 320,
+   "medium": "land"
+  },
+  {
+   "id": "unicorns",
+   "creature": "unicorn",
+   "x": 5700,
+   "z": 3700,
+   "radius": 220,
+   "medium": "land"
+  },
+  {
+   "id": "centaurs",
+   "creature": "centaur",
+   "x": 6300,
+   "z": 4400,
+   "radius": 450,
+   "medium": "land"
+  }
+ ],
+ "viewpoints": [
+  {
+   "id": "boat-crossing",
+   "name": "Boat crossing, castle ahead",
+   "x": 3000,
+   "z": 2160,
+   "agl": 4,
+   "yaw": 50,
+   "pitch": 6
+  },
+  {
+   "id": "castle-from-lake-high",
+   "name": "Castle from above the lake",
+   "x": 2700,
+   "z": 2600,
+   "agl": 160,
+   "yaw": 80,
+   "pitch": -12
+  },
+  {
+   "id": "castle-grounds",
+   "name": "Grounds by Hagrid's hut",
+   "x": 3880,
+   "z": 3120,
+   "agl": 2,
+   "yaw": 235,
+   "pitch": 4
+  },
+  {
+   "id": "hogsmeade",
+   "name": "Hogsmeade from the road",
+   "x": 2000,
+   "z": 4380,
+   "agl": 30,
+   "yaw": 290,
+   "pitch": -6
+  },
+  {
+   "id": "station",
+   "name": "Hogsmeade Station platform",
+   "x": 2980,
+   "z": 1640,
+   "agl": 2,
+   "yaw": 285,
+   "pitch": 1
+  },
+  {
+   "id": "viaduct",
+   "name": "South Viaduct from the glen",
+   "x": 5600,
+   "z": 450,
+   "agl": 25,
+   "yaw": 25,
+   "pitch": 4
+  },
+  {
+   "id": "forest-deep",
+   "name": "Deep forest near Aragog's Hollow",
+   "x": 7300,
+   "z": 5250,
+   "agl": 60,
+   "yaw": 50,
+   "pitch": -12
+  },
+  {
+   "id": "world-overview",
+   "name": "World overview from the south-west",
+   "x": 600,
+   "z": 600,
+   "agl": 900,
+   "yaw": 50,
+   "pitch": -24
+  },
+  {
+   "id": "lake-west",
+   "name": "Western lake, Merpeople Cove",
+   "x": 1250,
+   "z": 2350,
+   "agl": 40,
+   "yaw": 330,
+   "pitch": -5
+  },
+  {
+   "id": "pitch",
+   "name": "Quidditch Pitch",
+   "x": 2800,
+   "z": 3550,
+   "agl": 40,
+   "yaw": 40,
+   "pitch": -12
+  }
+ ]
+}

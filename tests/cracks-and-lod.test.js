@@ -3,18 +3,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TerrainQuadtree } from '../src/terrain/quadtree.js';
-import { buildIndexPatterns, EDGE_N, EDGE_E, EDGE_S, EDGE_W } from '../src/terrain/index-patterns.js';
+import { buildIndexPatterns, EDGE_Z0, EDGE_X1, EDGE_Z1, EDGE_X0 } from '../src/terrain/index-patterns.js';
 import { morphFactor } from '../src/terrain/morph.js';
 import { WORLD, CHUNK_VERTS as V } from '../src/config.js';
 import { chunk, gen, rng } from './helpers.js';
 
-const Q = WORLD.chunkQuads, HALF = WORLD.rootSize / 2;
+const Q = WORLD.chunkQuads, RX = WORLD.rootMinX, RZ = WORLD.rootMinZ;
 const P = buildIndexPatterns();
 const keyToNode = (k) => [Math.floor(k / 4294967296), Math.floor(k / 65536) % 65536, k % 65536];
-const boundsOf = (k) => { const [d, x, z] = keyToNode(k); return d <= 8 ? chunk(d, x, z) : null; };
+const boundsOf = (k) => { const [d, x, z] = keyToNode(k); return chunk(d, x, z); };
 
 function vertexPos(tree, l, i, j, cam) {
-  const size = WORLD.rootSize / 2 ** l.depth, s = size / Q, x = l.ix * size - HALF + i * s, z = l.iz * size - HALF + j * s;
+  const size = WORLD.rootSize / 2 ** l.depth, s = size / Q, x = RX + l.ix * size + i * s, z = RZ + l.iz * size + j * s;
   const f = new Float32Array(chunk(l.depth, l.ix, l.iz).buffer), v = j * V + i, h = f[v * 4], hc = f[v * 4 + 1];
   const dist = Math.hypot(x - cam[0], h - cam[1], z - cam[2]);
   const m = morphFactor(dist, tree.morphRange(l.depth), l.finer, i, j, tree.morphStart);
@@ -23,8 +23,8 @@ function vertexPos(tree, l, i, j, cam) {
 
 test('drawn chunks are watertight (no T-junctions, shared vertices bit-identical) with morphing active', () => {
   const r = rng(5);
-  const cams = [[0, 60, 0], [-300, 25, 120], [420, 300, -380]];
-  for (let k = 0; k < 3; k++) cams.push([(r() - 0.5) * 1800, 15 + r() * 250, (r() - 0.5) * 1800]);
+  const cams = [[3650, 450, 2850], [2900, 330, 2150], [6800, 700, 5000]];
+  for (let k = 0; k < 2; k++) { const x = r() * 8000, z = r() * 6000; cams.push([x, gen.heightAt(x, z) + 15 + r() * 250, z]); }
   for (const cam of cams) {
     const tree = new TerrainQuadtree({ lodFactor: 2.5, isResident: () => true, boundsOf });
     tree.select(...cam);
@@ -35,7 +35,7 @@ test('drawn chunks are watertight (no T-junctions, shared vertices bit-identical
       const used = new Set();
       const idx = P.indices.subarray(P.offsets[l.coarser], P.offsets[l.coarser] + P.counts[l.coarser]);
       for (const v of idx) used.add(v);
-      const edgeVerts = [[(t) => [t, 0], EDGE_N], [(t) => [Q, t], EDGE_E], [(t) => [t, Q], EDGE_S], [(t) => [0, t], EDGE_W]];
+      const edgeVerts = [[(t) => [t, 0], EDGE_Z0], [(t) => [Q, t], EDGE_X1], [(t) => [t, Q], EDGE_Z1], [(t) => [0, t], EDGE_X0]];
       for (const [f] of edgeVerts) {
         let prev = null;
         for (let t = 0; t <= Q; t++) {
@@ -69,8 +69,9 @@ test('LOD switches along a low flight are geometrically continuous (sub-pixel po
   const tree = new TerrainQuadtree({ lodFactor: 2.5, isResident: () => true, boundsOf });
   const path = [];
   for (let t = 0; t <= 1; t += 1 / 400) {
-    const x = -700 + 1300 * t, z = 140 - 520 * t * t;
-    path.push([x, gen.heightAt(x, z) + 18 + 120 * t * t, z]);
+    // over the boat crossing, up the castle cliffs and across the grounds
+    const x = 2850 + 1300 * t, z = 2050 + 900 * t * t;
+    path.push([x, Math.max(gen.heightAt(x, z), WORLD.waterLevel) + 18 + 120 * t * t, z]);
   }
   const surface = (tr, l, i, j, cam) => vertexPos(tr, l, i, j, cam)[1];
   let prev = null, switches = 0, worstPx = 0, worstM = 0;

@@ -21,6 +21,7 @@ struct Draw {
 @group(0) @binding(2) var<storage, read> pool: array<vec4u>;
 @group(0) @binding(3) var overview: texture_2d<f32>;
 @group(0) @binding(4) var linearSampler: sampler;
+@group(0) @binding(5) var materials: texture_2d<f32>;
 
 const VERTS: u32 = ${CHUNK_VERTS}u;
 const LAST: u32 = ${WORLD.chunkQuads}u;
@@ -91,6 +92,11 @@ fn lodColor(d: u32) -> vec3f {
   let v2 = fbm2(wp.xz * 0.021 + 11.0);
   let v3 = vnoise(wp.xz * 0.19);
 
+  // biome / material layers from the baked materials map (forest, lawn, path) and overview alpha (paved, ballast)
+  let ouv = overviewUV(wp.xz);
+  var mat = vec4f(0.0); var ov = vec4f(1.0, 1.0, 0.0, 0.0);
+  if (inOverview(ouv)) { mat = textureSampleLevel(materials, linearSampler, ouv, 0.0); ov = textureSampleLevel(overview, linearSampler, ouv, 0.0); }
+
   // albedos (linear)
   let grassA = vec3f(0.052, 0.066, 0.030);
   let grassB = vec3f(0.090, 0.084, 0.046);   // drier, straw-coloured moor grass
@@ -119,15 +125,25 @@ fn lodColor(d: u32) -> vec3f {
   albedo = mix(albedo, shingle * (0.85 + 0.3 * v3), shore * (1.0 - rockAmt * 0.5));
   albedo = mix(albedo, mud, smoothstep(0.0, -3.0, hAbove));
 
+  // managed lawn (castle grounds, pitch, village greens): short, brighter, even grass
+  let lawnCol = mix(vec3f(0.060, 0.095, 0.030), vec3f(0.075, 0.105, 0.035), v2) * (0.92 + 0.16 * v3);
+  albedo = mix(albedo, lawnCol, mat.b * (1.0 - rockAmt));
+  // forest floor: moss and needles, darker with depth; from a distance a clumped canopy tone (no trees yet)
+  let depth = mat.g;
+  let clump = vnoise(wp.xz * 0.11) * 0.6 + vnoise(wp.xz * 0.031 + 7.0) * 0.4;
+  let floorCol = mix(vec3f(0.040, 0.050, 0.022), vec3f(0.022, 0.030, 0.016), depth) * (0.75 + 0.5 * clump);
+  let canopyCol = mix(vec3f(0.030, 0.052, 0.022), vec3f(0.016, 0.030, 0.016), depth) * (0.55 + 0.9 * clump);
+  let farK = smoothstep(150.0, 900.0, dist);
+  albedo = mix(albedo, mix(floorCol, canopyCol, farK), mat.r * (1.0 - rockAmt * 0.7));
+  // paths and roads (dirt), paved stone and railway ballast
+  let pathCol = vec3f(0.115, 0.095, 0.070) * (0.85 + 0.3 * v3);
+  albedo = mix(albedo, pathCol, mat.a * 0.9);
+  albedo = mix(albedo, vec3f(0.150, 0.145, 0.138) * (0.8 + 0.4 * v3), ov.a * 0.9);
+
   // ----------------------------------------------------------------------------------- lighting
-  let ext = F.params.z;
-  let ouv = (wp.xz + vec2f(ext)) / (2.0 * ext);
-  var shadow = 1.0; var skyVis = 1.0;
-  if (all(ouv > vec2f(0.0)) && all(ouv < vec2f(1.0))) {
-    let o = textureSampleLevel(overview, linearSampler, ouv, 0.0);
-    shadow = mix(1.0, o.r, F.params.w);
-    skyVis = mix(1.0, o.g, F.params.w);
-  }
+  let shadow = mix(1.0, ov.r, F.params.w);
+  var skyVis = mix(1.0, ov.g, F.params.w);
+  skyVis *= 1.0 - 0.45 * mat.r * (1.0 - farK); // under-canopy darkening near the ground
   let L = F.sunDir.xyz;
   let ndl = max(dot(n, L), 0.0);
   let sun = sunIrradiance(max(wp.y, 0.0)) * ndl * shadow;

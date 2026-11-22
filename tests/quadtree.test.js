@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TerrainQuadtree, nodeKey } from '../src/terrain/quadtree.js';
-import { EDGE_N, EDGE_E, EDGE_S, EDGE_W } from '../src/terrain/index-patterns.js';
+import { EDGE_Z0, EDGE_X1, EDGE_Z1, EDGE_X0 } from '../src/terrain/index-patterns.js';
 import { WORLD } from '../src/config.js';
 import { rng } from './helpers.js';
 
-const OPP = { [EDGE_N]: EDGE_S, [EDGE_S]: EDGE_N, [EDGE_E]: EDGE_W, [EDGE_W]: EDGE_E };
-const DIRS = [[0, -1, EDGE_N], [1, 0, EDGE_E], [0, 1, EDGE_S], [-1, 0, EDGE_W]];
+const OPP = { [EDGE_Z0]: EDGE_Z1, [EDGE_Z1]: EDGE_Z0, [EDGE_X1]: EDGE_X0, [EDGE_X0]: EDGE_X1 };
+const DIRS = [[0, -1, EDGE_Z0], [1, 0, EDGE_X1], [0, 1, EDGE_Z1], [-1, 0, EDGE_X0]];
 
 function checkTree(tree) {
   // coverage: leaf areas sum to the root area and no leaf is inside another leaf or an internal node's sibling chain
@@ -35,7 +35,7 @@ test('full residency: balanced, exact cover, consistent edge masks at many camer
   const r = rng(11);
   for (let k = 0; k < 60; k++) {
     const tree = new TerrainQuadtree({ lodFactor: [2, 2.5, 3.2, 4.5][k % 4], isResident: () => true, boundsOf: () => null });
-    tree.select((r() - 0.5) * 2200, r() * 900, (r() - 0.5) * 2200);
+    tree.select(r() * 8000, 250 + r() * 900, r() * 6000);
     checkTree(tree);
     assert.ok(tree.leaves.some((l) => l.depth === WORLD.maxDepth), 'finest level reached near the camera');
   }
@@ -48,7 +48,7 @@ test('partial residency: still a hole-free, balanced cover (fallback + forced co
     const p = 0.55 + 0.4 * r();
     const isResident = (key) => { if (!resident.has(key) && !resident.has(-key - 1)) (r() < p ? resident.add(key) : resident.add(-key - 1)); return resident.has(key); };
     const tree = new TerrainQuadtree({ lodFactor: 3, isResident, boundsOf: () => null });
-    tree.select((r() - 0.5) * 2000, 20 + r() * 400, (r() - 0.5) * 2000);
+    tree.select(r() * 8000, 320 + r() * 400, r() * 6000);
     checkTree(tree);
     for (const l of tree.leaves) if (l.depth > 0) assert.ok(isResident(l.key), 'only resident nodes are drawn');
   }
@@ -56,7 +56,7 @@ test('partial residency: still a hole-free, balanced cover (fallback + forced co
 
 test('requests: missing children of a node that wants to split come before prefetches', () => {
   const tree = new TerrainQuadtree({ lodFactor: 3, isResident: (k) => k === nodeKey(0, 0, 0), boundsOf: () => null });
-  tree.select(0, 100, 0);
+  tree.select(4000, 400, 3000);
   const pri = [...tree.requests.values()];
   assert.equal(tree.requests.size, 4);
   assert.ok(pri.every((p) => p < 1000));

@@ -1,8 +1,8 @@
-import { TerrainGenerator } from '../src/terrain/generator.js';
+import { WorldTerrain } from '../src/world/world-terrain.ts';
 import { buildChunk } from '../src/terrain/chunk-mesher.js';
 import { WORLD } from '../src/config.js';
 
-export const gen = new TerrainGenerator(WORLD.seed);
+export const gen = new WorldTerrain();
 const cache = new Map();
 /** Cached chunk generation keyed by depth/ix/iz (tests only). */
 export function chunk(d, ix, iz) {

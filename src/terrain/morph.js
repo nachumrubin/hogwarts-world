@@ -2,7 +2,7 @@
 // Keep in sync with src/gpu/shaders/terrain.wgsl.js (function `morphFactor`).
 
 import { WORLD, CHUNK_VERTS } from '../config.js';
-import { EDGE_N, EDGE_E, EDGE_S, EDGE_W } from './index-patterns.js';
+import { EDGE_Z0, EDGE_X1, EDGE_Z1, EDGE_X0 } from './index-patterns.js';
 import { nodeKey } from './quadtree.js';
 
 const Q = WORLD.chunkQuads;
@@ -10,8 +10,8 @@ const Q = WORLD.chunkQuads;
 /** Morph factor of a vertex at grid (i, j) of a chunk, given its distance to the camera. */
 export function morphFactor(dist, morphRange, finerMask, i, j, morphStart) {
   if (!(morphRange < Infinity)) return 0;
-  if (((finerMask & EDGE_N) && j === 0) || ((finerMask & EDGE_S) && j === Q) ||
-      ((finerMask & EDGE_W) && i === 0) || ((finerMask & EDGE_E) && i === Q)) return 0;
+  if (((finerMask & EDGE_Z0) && j === 0) || ((finerMask & EDGE_Z1) && j === Q) ||
+      ((finerMask & EDGE_X0) && i === 0) || ((finerMask & EDGE_X1) && i === Q)) return 0;
   const m = (dist - morphStart * morphRange) / ((1 - morphStart) * morphRange);
   return m < 0 ? 0 : m > 1 ? 1 : m;
 }
@@ -22,15 +22,15 @@ export function morphFactor(dist, morphRange, finerMask, i, j, morphStart) {
  * (difference ≤ the morph delta of one edge vertex).
  */
 export function renderedHeightAt(tree, getChunkF32, x, z, cx, cy, cz) {
-  const root = tree.rootSize, half = root / 2;
-  if (x < -half || z < -half || x >= half || z >= half) return NaN;
+  const root = tree.rootSize, rx = tree.rootMinX, rz = tree.rootMinZ;
+  if (x < rx || z < rz || x >= rx + root || z >= rz + root) return NaN;
   // descend through internal nodes to the drawn leaf
   let d = 0, ix = 0, iz = 0;
   for (;;) {
     if (!tree.internal.has(nodeKey(d, ix, iz))) break;
     d++;
     const size = root / 2 ** d;
-    ix = Math.floor((x + half) / size); iz = Math.floor((z + half) / size);
+    ix = Math.floor((x - rx) / size); iz = Math.floor((z - rz) / size);
   }
   const key = nodeKey(d, ix, iz);
   const f32 = getChunkF32(key);
@@ -38,7 +38,7 @@ export function renderedHeightAt(tree, getChunkF32, x, z, cx, cy, cz) {
   let leaf = null;
   for (const l of tree.leaves) if (l.key === key) { leaf = l; break; }
   const finer = leaf ? leaf.finer : 0;
-  const size = root / 2 ** d, s = size / Q, x0 = ix * size - half, z0 = iz * size - half;
+  const size = root / 2 ** d, s = size / Q, x0 = rx + ix * size, z0 = rz + iz * size;
   const fx = (x - x0) / s, fz = (z - z0) / s;
   const i = Math.min(Q - 1, Math.max(0, Math.floor(fx))), j = Math.min(Q - 1, Math.max(0, Math.floor(fz)));
   const u = fx - i, w = fz - j;

@@ -11,7 +11,7 @@
 // neighbours: along the edge for edge-midpoints, along the diagonal for quad centres. A fully morphed chunk
 // therefore reproduces the parent's geometry exactly, which is what makes LOD switches invisible.
 //
-// World positions are computed from integers: x = (ix·Q + i)·s − rootSize/2, with s a power of two. That is exact in
+// World positions are computed from integers: x = rootMinX + (ix·Q + i)·s, with s a power of two. That is exact in
 // f64, so a vertex shared by two chunks (same or different level) gets a bit-identical height.
 
 import { WORLD, CHUNK_VERTS, CHUNK_VERTEX_COUNT } from '../config.js';
@@ -25,7 +25,7 @@ export function nodeSpacing(depth, rootSize = WORLD.rootSize) { return rootSize 
 /** World-space minimum corner of a node. */
 export function nodeOrigin(depth, ix, iz, rootSize = WORLD.rootSize) {
   const s = nodeSize(depth, rootSize);
-  return [ix * s - rootSize / 2, iz * s - rootSize / 2];
+  return [WORLD.rootMinX + ix * s, WORLD.rootMinZ + iz * s];
 }
 
 function packSnorm16x2(a, b) {
@@ -47,12 +47,12 @@ export function unpackSnorm16x2(u, out) {
  * @returns {{buffer: ArrayBuffer, minY: number, maxY: number}}
  */
 export function buildChunk(gen, depth, ix, iz, rootSize = WORLD.rootSize) {
-  const s = nodeSpacing(depth, rootSize), half = rootSize / 2;
+  const s = nodeSpacing(depth, rootSize), x0 = WORLD.rootMinX, z0 = WORLD.rootMinZ;
   const bx = ix * Q, bz = iz * Q;
   const H = new Float64Array(SN * SN);
   for (let j = 0; j < SN; j++) {
-    const z = (bz + j - B) * s - half;
-    for (let i = 0; i < SN; i++) H[j * SN + i] = gen.heightAt((bx + i - B) * s - half, z);
+    const z = z0 + (bz + j - B) * s;
+    for (let i = 0; i < SN; i++) H[j * SN + i] = gen.heightAt(x0 + (bx + i - B) * s, z);
   }
   const h = (i, j) => H[(j + B) * SN + (i + B)];
 

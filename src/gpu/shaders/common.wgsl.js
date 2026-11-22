@@ -20,11 +20,13 @@ struct Frame {
   camUp: vec4f,       // xyz, w = tan(fovY/2)
   camFwd: vec4f,      // xyz, w = near plane
   viewport: vec4f,    // width, height, 1/width, 1/height
-  params: vec4f,      // morphStart, debug mode, overview half-extent (m), overview fade 0..1
+  params: vec4f,      // morphStart, debug mode, unused, overview fade 0..1
   atmo: vec4f,        // haze multiplier, exposure, mie g, ambient strength
   camWorld: vec4f,    // camera world position (for noise / height-dependent fog), w = camera altitude
-  pad0: vec4f,
+  ovRect: vec4f,      // overview maps: world minX, minZ, 1/sizeX, 1/sizeZ
 };
+fn overviewUV(p: vec2f) -> vec2f { return (p - F.ovRect.xy) * F.ovRect.zw; }
+fn inOverview(uv: vec2f) -> bool { return all(uv > vec2f(0.0)) && all(uv < vec2f(1.0)); }
 
 const PI = 3.14159265;
 const BETA_R = vec3f(5.8e-6, 13.5e-6, 33.1e-6);

@@ -9,7 +9,7 @@ import { TERRAIN_WGSL } from './shaders/terrain.wgsl.js';
 export const DRAW_STRIDE = 32; // bytes, matches struct Draw in terrain.wgsl.js
 
 export class TerrainRenderer {
-  constructor(device, { poolSlots, sampleCount, colorFormat, depthFormat, frameBuffer, overviewView, sampler }) {
+  constructor(device, { poolSlots, sampleCount, colorFormat, depthFormat, frameBuffer, overviewView, materialsView, sampler }) {
     this.device = device;
     this.poolSlots = poolSlots;
     this.pool = device.createBuffer({ label: 'chunk pool', size: poolSlots * CHUNK_BYTES, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST });
@@ -31,15 +31,15 @@ export class TerrainRenderer {
       layout: 'auto',
       vertex: { module, entryPoint: 'vs' },
       fragment: { module, entryPoint: 'fs', targets: [{ format: colorFormat }] },
-      primitive: { topology: 'triangle-list', cullMode: 'back', frontFace: 'ccw' },
+      primitive: { topology: 'triangle-list', cullMode: 'back', frontFace: 'cw' },
       depthStencil: { format: depthFormat, depthWriteEnabled: true, depthCompare: 'greater' },
       multisample: { count: sampleCount },
     });
     this.frameBuffer = frameBuffer; this.sampler = sampler;
-    this.setOverview(overviewView);
+    this.setOverview(overviewView, materialsView);
   }
 
-  setOverview(view) {
+  setOverview(view, materialsView) {
     this.bindGroup = this.device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(0),
       entries: [
@@ -48,6 +48,7 @@ export class TerrainRenderer {
         { binding: 2, resource: { buffer: this.pool } },
         { binding: 3, resource: view },
         { binding: 4, resource: this.sampler },
+        { binding: 5, resource: materialsView },
       ],
     });
   }

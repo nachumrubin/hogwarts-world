@@ -73,7 +73,7 @@ try {
   if (mode === 'shots') {
     const views = (process.env.VIEWS || '1,2,3,4,5,6,7,8').split(',');
     for (const v of views) {
-      const page = await open({ view: v, hud: '0', debug: process.env.DEBUG || 'normal' });
+      const page = await open({ view: v, hud: '0', labels: process.env.LABELS || '0', debug: process.env.DEBUG || 'normal' }, { timeout: 300000 });
       const file = `${out}/view${v}${process.env.DEBUG ? '-' + process.env.DEBUG : ''}.png`;
       writeFileSync(file, await grab(page));
       report.results.push({ view: +v, file, ...(await info(page)) });

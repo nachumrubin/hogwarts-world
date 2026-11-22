@@ -5,12 +5,14 @@
 
 import { WORLD } from '../config.js';
 
-// x, z (m), clearance above ground or water (m)
+// x (east), z (north) in metres, clearance above ground or water (m). Station → boat crossing → castle → grounds →
+// Forbidden Forest → Aragog's Hollow → high pass back → pitch → Hogsmeade → western lake.
 export const ROUTE_POINTS = [
-  [-900, 430, 30], [-660, 250, 12], [-320, 170, 9], [-140, 30, 16], [110, -10, 14], [340, -160, 18],
-  [430, -470, 35], [540, -800, 70], [300, -960, 230], [-120, -820, 330], [-470, -460, 110], [-620, -150, 35],
-  [-860, 150, 55], [-720, 700, 200], [-200, 900, 380], [400, 720, 450], [860, 300, 240], [900, -300, 120],
-  [700, -850, 300], [0, -950, 600],
+  [2700, 1500, 20], [2850, 1700, 14], [2850, 2000, 10], [2950, 2200, 8], [3200, 2380, 8], [3400, 2500, 10],
+  [3500, 2650, 40], [3650, 2850, 60], [3830, 3060, 25], [4000, 3290, 25], [4600, 3550, 45], [5300, 3700, 45],
+  [5700, 3700, 30], [6300, 4400, 50], [6850, 5050, 40], [7400, 5400, 45], [7600, 5500, 55], [7200, 5700, 300],
+  [5500, 5000, 500], [3500, 4200, 350], [3000, 3750, 80], [2400, 4150, 60], [1950, 4270, 40], [1550, 4550, 40],
+  [1200, 4100, 80], [900, 3400, 30], [1300, 3000, 25], [1900, 2850, 20], [2500, 2500, 60],
 ];
 
 export function buildRoute(gen, { points = ROUTE_POINTS, step = 2, maxSlope = 0.38, smoothWindow = 70 } = {}) {
@@ -63,11 +65,11 @@ export function routePose(route, s, out) {
   out.x = L(route.x); out.y = L(route.y); out.z = L(route.z);
   const ahead = Math.min(n - 1, i + Math.round(110 / route.step));
   const dx = route.x[ahead] - out.x, dy = route.y[ahead] - out.y - 6, dz = route.z[ahead] - out.z;
-  out.yaw = Math.atan2(dx, -dz);
+  out.yaw = Math.atan2(dx, dz); // clockwise from north (Z north)
   out.pitch = Math.atan2(dy, Math.hypot(dx, dz));
   // heading change over ±40 m → horizontal curvature → coordinated-turn bank angle
   const a = Math.max(0, i - 20), b = Math.min(n - 1, i + 20);
-  const h1 = Math.atan2(route.x[i] - route.x[a], -(route.z[i] - route.z[a])), h2 = Math.atan2(route.x[b] - route.x[i], -(route.z[b] - route.z[i]));
+  const h1 = Math.atan2(route.x[i] - route.x[a], route.z[i] - route.z[a]), h2 = Math.atan2(route.x[b] - route.x[i], route.z[b] - route.z[i]);
   let dh = h2 - h1; while (dh > Math.PI) dh -= 2 * Math.PI; while (dh < -Math.PI) dh += 2 * Math.PI;
   out.curvature = dh / Math.max(1, (b - a) * route.step);
   return out;

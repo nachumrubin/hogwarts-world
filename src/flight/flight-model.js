@@ -17,6 +17,11 @@ export const FLIGHT = Object.freeze({
   eyeClearance: 1.7, ringRadius: 0.6, ringClearance: 0.4, cushion: 4, cushionRate: 7, edgeSoft: 60, maxClimb: 1.2,
 });
 
+/** Walking (first person on foot). */
+export const WALK = Object.freeze({
+  eye: 1.7, walk: 2.4, run: 6.0, accel: 10, gravity: 9.81, jump: 4.6, maxSlope: 0.85, stepUp: 0.45, wadeDepth: 1.1,
+});
+
 export class FlightModel {
   constructor() {
     this.x = 0; this.y = 100; this.z = 0;
@@ -25,6 +30,8 @@ export class FlightModel {
     this.speedScale = 1;
     this._l1x = 0; this._l1y = 0; this._l2x = 0; this._l2y = 0; this._yawRate = 0;
     this.groundHeight = 0; this.agl = 0; this.collided = false;
+    /** 'broom' or 'walk'. */
+    this.mode = 'broom'; this.onGround = false;
     this._m = new Float64Array(2);
   }
 
@@ -49,6 +56,7 @@ export class FlightModel {
     const yawRate = dt > 0 ? dyaw / dt : 0;
     this._yawRate += (yawRate - this._yawRate) * damp(8, dt);
 
+    if (this.mode === 'walk') { this._walk(dt, input, groundAt); return; }
     // --- thrust
     if (input.wheel) { this.speedScale = clamp(this.speedScale * Math.pow(1.15, -input.wheel), 0.1, 8); input.wheel = 0; }
     let sp = C.baseSpeed * this.speedScale;
@@ -56,7 +64,7 @@ export class FlightModel {
     if (input.down('AltLeft', 'ControlLeft')) sp *= C.slow;
     const fwd = input.axis(['KeyS'], ['KeyW']), strafe = input.axis(['KeyA'], ['KeyD']), lift = input.axis(['KeyQ', 'KeyC'], ['KeyE', 'Space']);
     const cp = Math.cos(this.pitch), sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
-    const fx = sy * cp, fy = Math.sin(this.pitch), fz = -cy * cp, rx = cy, rz = sy;
+    const fx = sy * cp, fy = Math.sin(this.pitch), fz = cy * cp, rx = cy, rz = -sy; // X east, Z north
     const tvx = (fx * fwd + rx * strafe) * sp, tvy = (fy * fwd + lift) * sp, tvz = (fz * fwd + rz * strafe) * sp;
     const k = damp(C.accel, dt);
     const ovx = this.vx, ovz = this.vz;
@@ -70,16 +78,17 @@ export class FlightModel {
     // --- integrate
     let x = this.x + this.vx * dt, y = this.y + this.vy * dt, z = this.z + this.vz * dt;
     // soft walls at the edge of the playable square, hard ceiling
-    const lim = WORLD.playableHalf;
-    for (const axis of [0, 1]) {
-      const p = axis ? z : x, over = Math.abs(p) - (lim - C.edgeSoft);
+    const P = WORLD.playable;
+    for (let axis = 0; axis < 2; axis++) {
+      const lo = axis ? P.minZ : P.minX, hi = axis ? P.maxZ : P.maxX, c = (lo + hi) / 2, half = (hi - lo) / 2;
+      const p = axis ? z : x, over = Math.abs(p - c) - (half - C.edgeSoft);
       if (over > 0) {
-        const s = Math.sign(p), push = Math.min(over, C.edgeSoft) / C.edgeSoft;
-        if (axis) { z -= s * over * damp(3, dt); if (this.vz * s > 0) this.vz *= 1 - push; z = clamp(z, -lim, lim); }
-        else { x -= s * over * damp(3, dt); if (this.vx * s > 0) this.vx *= 1 - push; x = clamp(x, -lim, lim); }
+        const s = Math.sign(p - c), push = Math.min(over, C.edgeSoft) / C.edgeSoft;
+        if (axis) { z -= s * over * damp(3, dt); if (this.vz * s > 0) this.vz *= 1 - push; z = clamp(z, lo, hi); }
+        else { x -= s * over * damp(3, dt); if (this.vx * s > 0) this.vx *= 1 - push; x = clamp(x, lo, hi); }
       }
     }
-    const ceil = WORLD.waterLevel + WORLD.ceiling;
+    const ceil = WORLD.ceiling;
     if (y > ceil) { y = ceil; if (this.vy > 0) this.vy = 0; }
 
     // --- collision
@@ -114,6 +123,40 @@ export class FlightModel {
     this.agl = y - ground;
   }
 }
+
+FlightModel.prototype.setMode = function (mode) {
+  this.mode = mode;
+  if (mode === 'broom') this.vy = Math.max(this.vy, 3); // a little lift on mounting
+  this.roll = 0;
+};
+
+/** Walking step: horizontal movement on the ground, gravity, jumping, slope and deep-water limits. */
+FlightModel.prototype._walk = function (dt, input, groundAt) {
+  const C = WALK;
+  const fwd = input.axis(['KeyS'], ['KeyW']), strafe = input.axis(['KeyA'], ['KeyD']);
+  const sp = input.down('ShiftLeft', 'ShiftRight') ? C.run : C.walk;
+  const sy = Math.sin(this.yaw), cy = Math.cos(this.yaw);
+  let tx = sy * fwd + cy * strafe, tz = cy * fwd - sy * strafe; // X east, Z north
+  const tl = Math.hypot(tx, tz); if (tl > 1) { tx /= tl; tz /= tl; }
+  const k = damp(C.accel, dt);
+  this.vx += (tx * sp - this.vx) * k; this.vz += (tz * sp - this.vz) * k;
+  const foot = this.y - C.eye;
+  let x = this.x + this.vx * dt, z = this.z + this.vz * dt;
+  // blocked by steep ground or deep water: the step is refused, sliding along the axis that is allowed
+  const ok = (px, pz) => {
+    const g = groundAt(px, pz), d = Math.hypot(px - this.x, pz - this.z) || 1e-6;
+    if (g < WORLD.waterLevel - C.wadeDepth) return false;
+    return !(this.onGround && g - foot > C.stepUp && (g - foot) / d > C.maxSlope);
+  };
+  if (!ok(x, z)) { if (ok(x, this.z)) { z = this.z; this.vz = 0; } else if (ok(this.x, z)) { x = this.x; this.vx = 0; } else { x = this.x; z = this.z; this.vx = this.vz = 0; } }
+  const P = WORLD.playable; x = clamp(x, P.minX, P.maxX); z = clamp(z, P.minZ, P.maxZ);
+  const g = groundAt(x, z);
+  if (this.onGround && input.down('Space')) { this.vy = C.jump; this.onGround = false; }
+  this.vy -= C.gravity * dt;
+  let y = this.y + this.vy * dt;
+  if (y - C.eye <= g) { y = g + C.eye; this.vy = 0; this.onGround = true; } else if (this.onGround && y - C.eye - g < 0.6 && this.vy <= 0) { y = g + C.eye; this.vy = 0; } else this.onGround = false;
+  this.x = x; this.y = y; this.z = z; this.groundHeight = g; this.agl = y - g; this.roll *= 1 - damp(6, dt);
+};
 
 const RING = new Float64Array(16);
 for (let a = 0; a < 8; a++) { RING[a * 2] = Math.cos(a * Math.PI / 4); RING[a * 2 + 1] = Math.sin(a * Math.PI / 4); }

@@ -28,7 +28,7 @@ export const WATER_WGSL = COMMON_WGSL + /* wgsl */ `
 @group(0) @binding(2) var linearSampler: sampler;
 
 struct WOut { @builtin(position) pos: vec4f, @location(0) rel: vec3f };
-const EXTENT = 4096.0;
+const EXTENT = 12000.0;
 @vertex fn vsWater(@builtin(vertex_index) i: u32) -> WOut {
   // a quad centred on the camera's snapped origin, large enough to reach the terrain backdrop's edge
   let c = vec2f(f32(i & 1u), f32(i >> 1u)) * 2.0 - 1.0;
@@ -60,11 +60,10 @@ const EXTENT = 4096.0;
   let glint = sunIrradiance(0.0) * sp;
 
   // depth below the surface from the overview height (approximate; exact edge comes from the depth test)
-  let ext = F.params.z;
-  let ouv = (wp.xz + vec2f(ext)) / (2.0 * ext);
+  let ouv = overviewUV(wp.xz);
   var depth = 30.0;
   var shadow = 1.0;
-  if (all(ouv > vec2f(0.0)) && all(ouv < vec2f(1.0))) {
+  if (inOverview(ouv)) {
     let o = textureSampleLevel(overview, linearSampler, ouv, 0.0);
     depth = max(F.origin.w - o.b, 0.0);
     shadow = mix(1.0, o.r, F.params.w);

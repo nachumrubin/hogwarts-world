@@ -1,18 +1,26 @@
 // World constants and quality presets. Everything that a later milestone may want to tune lives here.
 
+// World convention (data/world.json, docs/WORLD_ARCHITECTURE.md): metres, X = east, Y = up (elevation above sea level),
+// Z = north, origin = south-west corner of the playable area.
 export const WORLD = Object.freeze({
   seed: 1337,
-  /** Side of the quadtree root (m). The terrain backdrop extends this far; must be chunkQuads · 2^maxDepth · minSpacing. */
-  rootSize: 8192,
+  /** Side of the quadtree root (m): playable 8 × 6 km plus ≈ 4–5 km of scenic terrain. chunkQuads · 2^maxDepth · 1 m. */
+  rootSize: 16384,
+  /** World position of the root's minimum corner: the root is centred on the playable area's centre (4000, 3000). */
+  rootMinX: -4192,
+  rootMinZ: -5192,
   /** Quads per chunk side. Every chunk at every LOD has this grid, so one set of index buffers serves all. */
   chunkQuads: 32,
   /** Depth of the finest chunks: rootSize / 2^maxDepth = 32 m chunks with 1 m vertex spacing. */
-  maxDepth: 8,
-  /** Half-size of the flyable square (m): the 2 km × 2 km prototype area. */
-  playableHalf: 1024,
-  waterLevel: 0,
-  /** Flight ceiling (m above water). */
-  ceiling: 1800,
+  maxDepth: 9,
+  /** Playable area (m). Flight and walking are kept inside it. */
+  playable: Object.freeze({ minX: 0, minZ: 0, maxX: 8000, maxZ: 6000 }),
+  /** Great Lake surface (m above sea level). */
+  waterLevel: 300,
+  /** Flight ceiling (m above sea level). */
+  ceiling: 2100,
+  /** Region baked into the overview maps (shadows, sky visibility, materials): playable area + 1 km. */
+  overview: Object.freeze({ minX: -1024, minZ: -1024, maxX: 9216, maxZ: 7168 }),
   /** Render-origin snap (m, power of two). Keeps GPU vertex coordinates exact; see docs/ARCHITECTURE.md §3.4. */
   originSnap: 256,
 });
@@ -47,17 +55,17 @@ export const BOUNDS_PAD_MIN = 2;
  *   msaa         1 or 4
  *   poolSlots    GPU chunk slots (each CHUNK_BYTES)
  *   uploadsPerFrame  chunk uploads per frame
- *   overviewRes  resolution of the baked shadow/sky-visibility map
+ *   overviewCell texel size (m) of the baked shadow / sky-visibility / material maps
  */
 export const PRESETS = Object.freeze({
-  low: { name: 'Low', lodFactor: 2.0, renderScale: 0.7, msaa: 1, poolSlots: 640, uploadsPerFrame: 6, overviewRes: 512, minScale: 0.5 },
-  medium: { name: 'Medium', lodFactor: 2.5, renderScale: 0.85, msaa: 1, poolSlots: 896, uploadsPerFrame: 10, overviewRes: 768, minScale: 0.55 },
-  high: { name: 'High', lodFactor: 3.2, renderScale: 1.0, msaa: 4, poolSlots: 1600, uploadsPerFrame: 14, overviewRes: 1024, minScale: 0.6 },
-  ultra: { name: 'Ultra', lodFactor: 4.5, renderScale: 1.0, msaa: 4, poolSlots: 2560, uploadsPerFrame: 20, overviewRes: 1024, minScale: 0.7 },
+  low: { name: 'Low', lodFactor: 2.0, renderScale: 0.7, msaa: 1, poolSlots: 704, uploadsPerFrame: 6, overviewCell: 16, minScale: 0.5 },
+  medium: { name: 'Medium', lodFactor: 2.5, renderScale: 0.85, msaa: 1, poolSlots: 960, uploadsPerFrame: 10, overviewCell: 12, minScale: 0.55 },
+  high: { name: 'High', lodFactor: 3.2, renderScale: 1.0, msaa: 4, poolSlots: 1664, uploadsPerFrame: 14, overviewCell: 8, minScale: 0.6 },
+  ultra: { name: 'Ultra', lodFactor: 4.5, renderScale: 1.0, msaa: 4, poolSlots: 2624, uploadsPerFrame: 20, overviewCell: 8, minScale: 0.7 },
 });
 export const DEFAULT_PRESET = 'high';
 
-/** Sun and atmosphere. Direction points towards the sun (y up, x east, z south): mid-afternoon, from the south-west. */
+/** Sun and atmosphere. Direction points towards the sun (x east, y up, z north): mid-afternoon, from the south-west. */
 export const SUN = Object.freeze({
   azimuthDeg: 218, // clockwise from north
   elevationDeg: 31,

@@ -10,11 +10,13 @@ const options = {
   preset,
   seed: q.has('seed') ? (parseInt(q.get('seed'), 10) | 0) : WORLD.seed,
   bench: q.get('bench') === '1',
-  duration: Math.max(5, +(q.get('duration') || 90)),
+  duration: Math.max(5, +(q.get('duration') || 180)),
   view: Math.max(0, (+(q.get('view') || 1)) - 1),
   debug: q.get('debug') || 'normal',
   hud: q.get('hud') !== '0',
   dynres: q.get('dynres') !== '0',
+  walk: q.get('walk') === '1',
+  labels: q.get('labels') === '1',
   cam: q.has('cam') ? q.get('cam').split(',').map(Number) : null,
   scale: q.has('scale') ? Math.max(0.25, Math.min(2, +q.get('scale'))) : 0,
 };
@@ -32,7 +34,7 @@ function fail(msg, unsupported) {
   const why = GpuContext.unsupportedReason();
   if (why) return fail(why, true);
   try {
-    const app = new App({ canvas: $('view'), overlayEl: $('overlay'), statusEl: $('status'), resultEl: $('result'), options });
+    const app = new App({ canvas: $('view'), overlayEl: $('overlay'), statusEl: $('status'), resultEl: $('result'), mapEl: $('map'), labelsEl: $('labels'), options });
     await app.start();
     $('help').hidden = false;
     setTimeout(() => $('help').classList.add('fade'), 9000);

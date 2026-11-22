@@ -6,14 +6,17 @@
 
 export const DEG = Math.PI / 180;
 
-/** Camera basis from yaw (clockwise from north, i.e. from −z towards +x), pitch (up positive) and roll (right-wing-down positive). */
+/**
+ * Camera basis in the world frame (X east, Y up, Z north — left-handed) from yaw (clockwise from north, towards east),
+ * pitch (up positive) and roll (right-wing-down positive). up = forward × right in this frame.
+ */
 export function cameraBasis(yaw, pitch, roll, out) {
   const cp = Math.cos(pitch), sp = Math.sin(pitch), sy = Math.sin(yaw), cy = Math.cos(yaw);
   // forward
-  const fx = sy * cp, fy = sp, fz = -cy * cp;
+  const fx = sy * cp, fy = sp, fz = cy * cp;
   // unrolled right (horizontal) and up
-  let rx = cy, ry = 0, rz = sy;
-  let ux = ry * fz - rz * fy, uy = rz * fx - rx * fz, uz = rx * fy - ry * fx;
+  let rx = cy, ry = 0, rz = -sy;
+  let ux = fy * rz - fz * ry, uy = fz * rx - fx * rz, uz = fx * ry - fy * rx;
   // roll around forward
   const cr = Math.cos(roll), sr = Math.sin(roll);
   const rx2 = rx * cr - ux * sr, ry2 = ry * cr - uy * sr, rz2 = rz * cr - uz * sr;

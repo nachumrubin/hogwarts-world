@@ -13,7 +13,7 @@ function fakeInput(keys) {
 test('flight: diving at full boost into cliffs and the loch never puts the eye below the clearance', () => {
   const f = new FlightModel();
   const ground = (x, z) => gen.heightAt(x, z);
-  for (const [x, z, yawDeg] of [[-380, 60, 0], [-300, 300, 180], [600, -700, 250], [100, 100, 90]]) {
+  for (const [x, z, yawDeg] of [[3300, 2850, 90], [3000, 2400, 45], [7300, 5300, 30], [1500, 4300, 200]]) {
     f.place(x, Math.max(gen.heightAt(x, z), 0) + 60, z, yawDeg * Math.PI / 180, -0.6);
     const input = fakeInput(['KeyW', 'ShiftLeft', 'KeyQ']);
     let minClear = Infinity, maxStep = 0, prevY = f.y;
@@ -22,7 +22,7 @@ test('flight: diving at full boost into cliffs and the loch never puts the eye b
       const g = Math.max(gen.heightAt(f.x, f.z), WORLD.waterLevel);
       minClear = Math.min(minClear, f.y - g);
       maxStep = Math.max(maxStep, Math.abs(f.y - prevY)); prevY = f.y;
-      assert.ok(Math.abs(f.x) <= WORLD.playableHalf + 1e-9 && Math.abs(f.z) <= WORLD.playableHalf + 1e-9, 'stays inside the playable area');
+      const P = WORLD.playable; assert.ok(f.x >= P.minX - 1e-9 && f.x <= P.maxX + 1e-9 && f.z >= P.minZ - 1e-9 && f.z <= P.maxZ + 1e-9, 'stays inside the playable area');
     }
     assert.ok(minClear >= Math.min(FLIGHT.eyeClearance, 0.8) - 1e-6, `clearance ${minClear}`);
     assert.ok(maxStep < 4, `vertical jump per frame ${maxStep} m`);
@@ -31,7 +31,7 @@ test('flight: diving at full boost into cliffs and the loch never puts the eye b
 
 test('flight: acceleration is smooth (no velocity step larger than accel·dt allows)', () => {
   const f = new FlightModel();
-  f.place(0, 300, 0, 0, 0);
+  f.place(4000, 900, 3000, 0, 0);
   const input = fakeInput(['KeyW']);
   let prev = 0, maxDv = 0;
   for (let i = 0; i < 240; i++) { f.update(1 / 60, input, () => 0); const v = Math.hypot(f.vx, f.vy, f.vz); maxDv = Math.max(maxDv, v - prev); prev = v; }

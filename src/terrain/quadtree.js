@@ -17,15 +17,15 @@
 // Node key = (depth · 2^16 + ix) · 2^16 + iz  (exact in a double for depth ≤ 16).
 
 import { WORLD, PREFETCH, BOUNDS_PAD_FRACTION, BOUNDS_PAD_MIN, morphStartFor } from '../config.js';
-import { EDGE_N, EDGE_E, EDGE_S, EDGE_W } from './index-patterns.js';
+import { EDGE_Z0, EDGE_X1, EDGE_Z1, EDGE_X0 } from './index-patterns.js';
 
 export const nodeKey = (d, ix, iz) => (d * 65536 + ix) * 65536 + iz;
 export const keyDepth = (k) => Math.floor(k / 4294967296);
 export const keyIx = (k) => Math.floor(k / 65536) % 65536;
 export const keyIz = (k) => k % 65536;
 
-const SIDES = [[0, -1, EDGE_N], [1, 0, EDGE_E], [0, 1, EDGE_S], [-1, 0, EDGE_W]];
-const GLOBAL_MIN_Y = -80, GLOBAL_MAX_Y = 1500;
+const SIDES = [[0, -1, EDGE_Z0], [1, 0, EDGE_X1], [0, 1, EDGE_Z1], [-1, 0, EDGE_X0]];
+const GLOBAL_MIN_Y = 150, GLOBAL_MAX_Y = 1800;
 
 export class TerrainQuadtree {
   /**
@@ -34,8 +34,8 @@ export class TerrainQuadtree {
    * @param {(key:number)=>boolean} o.isResident
    * @param {(key:number)=>(null|{minY:number,maxY:number})} o.boundsOf  known vertical bounds of a node, if generated
    */
-  constructor({ lodFactor, isResident, boundsOf, rootSize = WORLD.rootSize, maxDepth = WORLD.maxDepth }) {
-    this.rootSize = rootSize; this.maxDepth = maxDepth; this.lodFactor = lodFactor;
+  constructor({ lodFactor, isResident, boundsOf, rootSize = WORLD.rootSize, maxDepth = WORLD.maxDepth, rootMinX = WORLD.rootMinX, rootMinZ = WORLD.rootMinZ }) {
+    this.rootSize = rootSize; this.maxDepth = maxDepth; this.lodFactor = lodFactor; this.rootMinX = rootMinX; this.rootMinZ = rootMinZ;
     this.morphStart = morphStartFor(lodFactor);
     this.isResident = isResident; this.boundsOf = boundsOf;
     this.forced = new Set(); // nodes forced to stay leaves
@@ -64,7 +64,7 @@ export class TerrainQuadtree {
 
   /** Distance from point to a node's padded 3D box. */
   distance(d, ix, iz, cx, cy, cz) {
-    const size = this.rootSize / 2 ** d, x0 = ix * size - this.rootSize / 2, z0 = iz * size - this.rootSize / 2;
+    const size = this.rootSize / 2 ** d, x0 = this.rootMinX + ix * size, z0 = this.rootMinZ + iz * size;
     const yb = this.bounds(d, ix, iz, this._yb || (this._yb = [0, 0]));
     const dx = cx < x0 ? x0 - cx : cx > x0 + size ? cx - x0 - size : 0;
     const dz = cz < z0 ? z0 - cz : cz > z0 + size ? cz - z0 - size : 0;

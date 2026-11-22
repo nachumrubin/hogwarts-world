@@ -6,12 +6,13 @@
 // everything is re-uploaded from it.
 
 import { nodeKey, keyDepth, keyIx, keyIz } from '../terrain/quadtree.js';
-import { TerrainGenerator } from '../terrain/generator.js';
+import { WorldTerrain } from '../world/world-terrain.ts';
 import { buildChunk } from '../terrain/chunk-mesher.js';
-import { shadeOverview, sampleHeights } from '../terrain/overview.js';
+import { shadeOverview, sampleHeights, sampleMaterials } from '../terrain/overview.js';
 
 export class TerrainStreamer {
-  constructor({ seed, poolSlots, uploadsPerFrame, workerCount }) {
+  constructor({ seed, poolSlots, uploadsPerFrame, workerCount, workerUrl }) {
+    this.workerUrl = workerUrl;
     this.seed = seed;
     this.poolSlots = poolSlots;
     this.uploadsPerFrame = uploadsPerFrame;
@@ -26,15 +27,14 @@ export class TerrainStreamer {
     this.stats = { generated: 0, genMsTotal: 0, uploadsThisFrame: 0, evictions: 0, pending: 0, backlog: 0, maxBacklog: 0, resident: 0, cached: 0, maxPending: 0, workers: 0 };
     this.cpuLimit = poolSlots * 3;
     this.workers = [];
-    this.mainGen = new TerrainGenerator(seed);
+    this.mainGen = new WorldTerrain();
     this._startWorkers(workerCount);
   }
 
   _startWorkers(n) {
     for (let i = 0; i < n; i++) {
       try {
-        const w = new Worker(new URL('../terrain/terrain-worker.js', import.meta.url), { type: 'module' });
-        w.postMessage({ type: 'init', seed: this.seed });
+        const w = new Worker(this.workerUrl, { type: 'module' });
         w.onmessage = (e) => this._onMessage(i, e.data);
         w.onerror = (e) => { console.error('terrain worker error', e.message || e); };
         this.workers.push({ w, inflight: 0 });
@@ -195,32 +195,36 @@ export class TerrainStreamer {
     return n;
   }
 
-  /** Bake the overview map: heights split across workers, shading on one worker. Resolves with {res, halfExtent, data}. */
-  bakeOverview(res, halfExtent, sun) {
+  /**
+   * Bake the overview maps over grid g: heights and materials split across workers, shading on one worker.
+   * Resolves with {grid, data (rgba16f), materials (rgba8)}.
+   */
+  bakeOverview(g, sun) {
     return new Promise((resolve) => {
       const id = Math.random();
-      const heights = new Float32Array(res * res);
+      const n = g.nx * g.nz, heights = new Float32Array(n), mats = new Uint8Array(n * 4), paved = new Uint8Array(n);
       if (!this.workers.length) {
-        heights.set(sampleHeights(this.mainGen, res, halfExtent));
-        resolve({ res, halfExtent, data: shadeOverview(heights, res, halfExtent, sun) });
+        heights.set(sampleHeights(this.mainGen, g));
+        const m = sampleMaterials(this.mainGen, g, heights, 0, g.nz);
+        resolve({ grid: g, data: shadeOverview(heights, g, sun, m.paved), materials: m.rgba });
         return;
       }
-      const parts = this.workers.length;
-      let done = 0;
+      const parts = this.workers.length, rows = (p) => [Math.floor(g.nz * p / parts), Math.floor(g.nz * (p + 1) / parts)];
+      let doneH = 0, doneM = 0;
       this._overviewJob = (m) => {
         if (m.id !== id) return;
         if (m.type === 'heights') {
-          heights.set(m.data, m.rowStart * res);
-          if (++done === parts) this.workers[0].w.postMessage({ type: 'shade', id, heights, res, half: halfExtent, sun }, [heights.buffer]);
+          heights.set(m.data, m.rowStart * g.nx);
+          if (++doneH === parts) for (let p = 0; p < parts; p++) { const [r0, r1] = rows(p); this.workers[p].w.postMessage({ type: 'materials', id, grid: g, heights, rowStart: r0, rowEnd: r1 }); }
+        } else if (m.type === 'materials') {
+          mats.set(m.rgba, m.rowStart * g.nx * 4); paved.set(m.paved, m.rowStart * g.nx);
+          if (++doneM === parts) this.workers[0].w.postMessage({ type: 'shade', id, heights, grid: g, sun, paved });
         } else if (m.type === 'shade') {
           this._overviewJob = null;
-          resolve({ res, halfExtent, data: m.data });
+          resolve({ grid: g, data: m.data, materials: mats, heights });
         }
       };
-      for (let p = 0; p < parts; p++) {
-        const r0 = Math.floor(res * p / parts), r1 = Math.floor(res * (p + 1) / parts);
-        this.workers[p].w.postMessage({ type: 'heights', id, res, half: halfExtent, rowStart: r0, rowEnd: r1 });
-      }
+      for (let p = 0; p < parts; p++) { const [r0, r1] = rows(p); this.workers[p].w.postMessage({ type: 'heights', id, grid: g, rowStart: r0, rowEnd: r1 }); }
     });
   }
 

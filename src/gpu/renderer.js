@@ -4,6 +4,7 @@
 // Everything here is rebuilt from scratch by build() after a device loss.
 
 import { TerrainRenderer } from './terrain-renderer.js';
+import { PropRenderer } from './prop-renderer.ts';
 import { SKY_WGSL, WATER_WGSL, POST_WGSL } from './shaders/sky-water-post.wgsl.js';
 import { FRAME_FLOATS } from './shaders/common.wgsl.js';
 
@@ -17,7 +18,9 @@ export class Renderer {
     this.post = new Float32Array(4);
     this.width = 0; this.height = 0;
     this.overviewData = null;
-    this.stats = { triangles: 0, drawCalls: 0, terrainDraws: 0 };
+    this.stats = { triangles: 0, drawCalls: 0, terrainDraws: 0, propDraws: 0 };
+    /** External draw callbacks (creature modules), recorded in the scene pass after terrain and props. */
+    this.drawCallbacks = [];
   }
 
   build() {
@@ -29,8 +32,10 @@ export class Renderer {
     this._createOverviewTexture();
     this.terrain = new TerrainRenderer(d, {
       poolSlots: this.preset.poolSlots, sampleCount: sc, colorFormat: HDR, depthFormat: DEPTH,
-      frameBuffer: this.frameBuffer, overviewView: this.overviewView, sampler: this.sampler,
+      frameBuffer: this.frameBuffer, overviewView: this.overviewView, materialsView: this.materialsView, sampler: this.sampler,
     });
+    const propOpts = { sampleCount: sc, colorFormat: HDR, depthFormat: DEPTH, frameBuffer: this.frameBuffer, overviewView: this.overviewView, sampler: this.sampler };
+    if (this.props) this.props.recreate(d, propOpts); else this.props = new PropRenderer(d, propOpts);
     const sky = d.createShaderModule({ label: 'sky', code: SKY_WGSL });
     this.skyPipe = d.createRenderPipeline({
       label: 'sky', layout: 'auto',
@@ -58,12 +63,17 @@ export class Renderer {
     if (this.overviewData) this.setOverview(this.overviewData);
   }
 
-  _createOverviewTexture(res = 1, data = null) {
+  _createOverviewTexture(nx = 1, nz = 1, data = null, mats = null) {
     if (this.overview) this.overview.destroy();
-    this.overview = this.device.createTexture({ label: 'overview', size: [res, res], format: 'rgba16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
-    const px = data || new Uint16Array([0x3c00, 0x3c00, 0xd780, 0x3c00]); // (1, 1, -120, 1) in half floats
-    this.device.queue.writeTexture({ texture: this.overview }, px, { bytesPerRow: res * 8 }, [res, res]);
+    if (this.materials) this.materials.destroy();
+    const usage = GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST;
+    this.overview = this.device.createTexture({ label: 'overview', size: [nx, nz], format: 'rgba16float', usage });
+    this.materials = this.device.createTexture({ label: 'materials', size: [nx, nz], format: 'rgba8unorm', usage });
+    const px = data || new Uint16Array([0x3c00, 0x3c00, 0x5c00, 0]); // (1, 1, 256, 0) in half floats
+    this.device.queue.writeTexture({ texture: this.overview }, px, { bytesPerRow: nx * 8 }, [nx, nz]);
+    this.device.queue.writeTexture({ texture: this.materials }, mats || new Uint8Array(4), { bytesPerRow: nx * 4 }, [nx, nz]);
     this.overviewView = this.overview.createView();
+    this.materialsView = this.materials.createView();
   }
 
   _waterBG() {
@@ -71,11 +81,12 @@ export class Renderer {
       { binding: 0, resource: { buffer: this.frameBuffer } }, { binding: 1, resource: this.overviewView }, { binding: 2, resource: this.sampler }] });
   }
 
-  /** Overview map: {res, halfExtent, data: Uint16Array rgba16f}. Kept on the CPU for device-loss recovery. */
+  /** Overview maps: {grid, data: Uint16Array rgba16f, materials: Uint8Array rgba8}. Kept on the CPU for device-loss recovery. */
   setOverview(ov) {
     this.overviewData = ov;
-    this._createOverviewTexture(ov.res, ov.data);
-    this.terrain.setOverview(this.overviewView);
+    this._createOverviewTexture(ov.grid.nx, ov.grid.nz, ov.data, ov.materials);
+    this.terrain.setOverview(this.overviewView, this.materialsView);
+    this.props.setOverview(this.overviewView);
     this._waterBG();
   }
 
@@ -118,6 +129,8 @@ export class Renderer {
     this.postPass.timestampWrites = ts ? ts.end : undefined;
     const pass = enc.beginRenderPass(this.scenePass);
     const tris = this.terrain.record(pass);
+    this.props.record(pass);
+    for (const cb of this.drawCallbacks) cb(pass);
     pass.setPipeline(this.skyPipe); pass.setBindGroup(0, this.skyBG); pass.draw(3);
     pass.setPipeline(this.waterPipe); pass.setBindGroup(0, this.waterBG); pass.draw(4);
     pass.end();
@@ -134,8 +147,9 @@ export class Renderer {
     this.gpu.afterSubmit(ts);
     const s = this.stats;
     s.terrainDraws = this.terrain.count;
-    s.drawCalls = this.terrain.count + 3;
-    s.triangles = tris + 1 + 2 + 1;
+    s.propDraws = this.props.stats.draws;
+    s.drawCalls = this.terrain.count + this.props.stats.draws + 3;
+    s.triangles = tris + this.props.stats.triangles + 1 + 2 + 1;
     return s;
   }
 
