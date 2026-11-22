@@ -37,7 +37,7 @@ function surfaceMaterial(hex, surface, lake, clock) {
        habitatP=(modelMatrix*hp).xyz;
        #include <project_vertex>
      `);
-    shader.fragmentShader = 'varying vec3 habitatP;\nuniform float habitatTime;\n'+noiseGLSL+shader.fragmentShader.replace('#include <color_fragment>',`
+    shader.fragmentShader = 'varying vec3 habitatP;\nuniform float habitatTime;\n'+noiseGLSL+'\n'+shader.fragmentShader.replace('#include <color_fragment>',`
       #include <color_fragment>
       vec3 p=habitatP;
       float l=landscapeNoise(p*.75), m=landscapeNoise(p*3.6), s=landscapeNoise(p*18.);

@@ -20,11 +20,11 @@ One moving specimen, LOD 0, day habitat, three-quarter camera, 640 × 480 frameb
 
 | Specimen | Behavior | Triangles | Draw calls | Geometry MiB | Frame ms | CPU ms | GPU ms |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Centaur | Walk | 420,516 | 67 | 1.69 | 383.4 | 1.6 | 416.3 |
-| Unicorn | Walk | 413,796 | 60 | 1.51 | 366.6 | 1.1 | 352.1 |
-| Barn Owl | Fly | 411,238 | 131 | 1.51 | 333.3 | 1.1 | 336.2 |
-| Hippogriff | Walk | 420,272 | 173 | 1.68 | 366.6 | 1.5 | 361.4 |
-| Merperson | Swim | 353,358 | 55 | 1.38 | 333.4 | 1.3 | 316.6 |
+| Centaur | Walk | 420,516 | 67 | 1.69 | 500.0 | 1.0 | 493.4 |
+| Unicorn | Walk | 413,796 | 60 | 1.51 | 483.2 | 1.1 | 471.0 |
+| Barn Owl | Fly | 411,238 | 131 | 1.51 | 516.6 | 1.4 | 510.2 |
+| Hippogriff | Walk | 420,272 | 173 | 1.68 | 516.6 | 2.1 | 521.6 |
+| Merperson | Swim | 353,358 | 55 | 1.38 | 533.3 | 1.0 | 535.5 |
 
 [Machine-readable baselines, including frame-time p95 and animation cost](baselines.json)
 
@@ -32,4 +32,4 @@ One moving specimen, LOD 0, day habitat, three-quarter camera, 640 × 480 frameb
 
 The new modules under `creature-lab/species/` build indexed surfaces and articulated hierarchies in metres. The equine rig shares barrel sections, hoof geometry and sagittal leg solving. The avian rig shares shoulder and wrist pivots, cambered feather vanes and talons. The merperson deforms one continuous torso and tail surface, with the same traveling wave applied to both fin lobes. LOD swaps geometry on the existing hierarchy and retains behavior time and joint transforms. A future WebGPU adapter can reuse the section data, vertex buffers, joint transforms and gait equations. The current host remains the Three.js lab.
 
-Giant Squid and Aragog loaded after each species checkpoint. All new behavior states were exercised and checked for finite, stable joint transforms across LOD 0 → 1 → 2 → 0. The gallery uses the same capture function exposed in the inspector. The modular entry point is `creature-lab/index.html`. The bundled `creature-lab/standalone.html` opens directly in a WebGL 2 browser. Rebuild it with `node tools/build-creature-lab.mjs` after installing the repository dependencies.
+Giant Squid and Aragog loaded after each species checkpoint. All new behavior states were exercised and checked for finite, stable joint transforms across LOD 0 → 1 → 2 → 0. The full survey ZIP was exercised through the Captures tab and contained 84 PNGs, 14 WebM clips and 28 benchmark runs. The gallery uses the same capture function exposed in the inspector. The modular entry point is `creature-lab/index.html`. The bundled `creature-lab/standalone.html` opens directly in a WebGL 2 browser. Rebuild it with `node tools/build-creature-lab.mjs` after installing the repository dependencies.

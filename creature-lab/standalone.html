@@ -3885,7 +3885,8 @@ float landscapeNoise(vec3 p) {
        #include <project_vertex>
      `),s.fragmentShader=`varying vec3 habitatP;
 uniform float habitatTime;
-`+Oc+s.fragmentShader.replace("#include <color_fragment>",`
+`+Oc+`
+`+s.fragmentShader.replace("#include <color_fragment>",`
       #include <color_fragment>
       vec3 p=habitatP;
       float l=landscapeNoise(p*.75), m=landscapeNoise(p*3.6), s=landscapeNoise(p*18.);
