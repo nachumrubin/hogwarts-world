@@ -10,7 +10,23 @@ export function joint(parent,x=0,y=0,z=0) {
 
 // Sweep elliptical cross sections along a path. The reference axis stays
 // fixed between rings so the cross sections do not twist at inflections.
-export function sweep(rows,sides) {
+function smoothSections(rows,steps){
+  const samples=[];
+  for(let i=0;i<rows.length-1;i++){
+    const a=rows[i],b=rows[i+1],prev=rows[Math.max(0,i-1)],next=rows[Math.min(i+2,rows.length-1)];
+    for(let j=0;j<steps;j++){
+      const t=j/steps;
+      samples.push(a.map((v,k)=>{
+        const d=b[k]-v,left=v-prev[k],right=next[k]-b[k];
+        const m=left*d>0?2*left*d/(left+d):0,n=right*d>0?2*right*d/(right+d):0;
+        return v+(3-2*t)*t*t*d+t*(1-t)*((1-t)*m-t*n);
+      }));
+    }
+  }
+  return [...samples,rows.at(-1)];
+}
+export function sweep(sections,sides) {
+  const rows=smoothSections(sections,sides>=20?3:sides>=12?2:1);
   const points=rows.map(r=>new T.Vector3(...r.slice(0,3)));
   const axis=new T.Vector3(1,0,0);
   const direction=points.at(-1).clone().sub(points[0]).normalize();

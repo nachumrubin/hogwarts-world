@@ -34,11 +34,15 @@ export function wing(a,parent,s,pivot,size,palette){
     feather(a,wrist,i%3?tip:mid,[s*.25*t,-.012,.015],[s*(.22+.73*t),-.045-.024*t,-.46+.36*t*t],.076);
     feather(a,wrist,mid,[s*.18*t,.023,.022],[s*(.16+.43*t),.004,-.26+.16*t],.065);
   }
+  const across=new T.Vector3(.12,-s*.46,-s*.88).normalize();
+  const back=new T.Vector3(-s*.09,.88,-.46);
+  const outward=back.clone().cross(across).normalize();
+  back.crossVectors(across,outward).normalize();
+  const folded=new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(across,outward,back));
+  const spread=new T.Quaternion(),flap=new T.Euler();
   return (open,stroke)=>{
-    shoulder.rotation.order='YXZ';
-    shoulder.rotation.y=s*(1-open)*1.22;
-    shoulder.rotation.z=s*(stroke*open-.38*(1-open));
-    shoulder.rotation.x=(1-open)*.95;
+    spread.setFromEuler(flap.set(0,0,s*stroke));
+    shoulder.quaternion.copy(folded).slerp(spread,open);
     wrist.rotation.y=s*(1-open)*.38;
     wrist.rotation.z=s*open*(stroke*.38-.13);
   };

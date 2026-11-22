@@ -27,7 +27,7 @@ export class Hippogriff extends Specimen {
       this.loft(upper,slate,[[0,.13,0,.15,.18],[0,-.14,-.03,.14,.19],[0,-.36,-.09,.101,.14],[0,-.55,-.11,.065,.086]]);
       const shank=joint(upper,0,-.50,-.11);
       this.loft(shank,0xa79161,[[0,.035,0,.076,.077],[0,-.18,.028,.056,.059],[0,-.50,.08,.046,.05],[0,-.79,.122,.04,.049],[0,-.88,.15,.055,.07]]);
-      talon(this,shank,s,1.19).position.set(0,-.88,.15);
+      talon(this,shank,s,1.4).position.set(0,-.88,.15);
       this.forelegs.push({upper,shank});
     }
     this.open=0;this.flight=0;this.update(0,0,'Idle');
@@ -38,7 +38,7 @@ export class Hippogriff extends Specimen {
     this.open+=((flap||action==='Unfold'?1:0)-this.open)*blend;
     this.flight+=((fly?1:0)-this.flight)*blend;
     this.horse.animate(t,walk);this.body.position.y=this.flight*(.65+.09*Math.cos(t*4.4));
-    this.wings.forEach(pose=>pose(this.open,flap?.67*Math.sin(t*4.4):.13));
+    this.wings.forEach(pose=>pose(this.open,flap?.67*Math.sin(t*4.4):.36));
     this.neck.rotation.x=.036*Math.sin(t*(walk?5:1.7))+this.flight*.24;
     this.head.rotation.y=.12*Math.sin(t*.8);
     this.forelegs.forEach(({upper,shank},i)=>{

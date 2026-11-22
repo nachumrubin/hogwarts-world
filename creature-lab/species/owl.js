@@ -1,5 +1,23 @@
+import * as T from '../vendor/three.module.js';
 import {Specimen,joint} from './form.js';
 import {wing,feather,talon} from './avian.js';
+// A single shallow heart-shaped bowl joins both eyes at the beak.
+function disc(level){
+  const n=[60,40,24][level],positions=[],indices=[];
+  for(const [scale,depth] of [[.012,.121],[.45,.116],[.81,.117],[.94,.130],[1,.116],[.98,.092]]){
+    for(let i=0;i<n;i++){
+      const t=2*Math.PI*i/n,sin=Math.sin(t),cos=Math.cos(t);
+      const x=.151*sin*(.91+.23*cos);
+      const y=.127*cos-.030*Math.exp(-12*sin*sin)*Math.max(0,cos)-.019*Math.pow(Math.max(0,-cos),6);
+      positions.push(scale*x,.026+scale*y,depth-.036*scale*sin*sin);
+    }
+  }
+  for(let ring=1;ring<6;ring++)for(let i=0;i<n;i++){
+    const a=(ring-1)*n+i,b=(ring-1)*n+(i+1)%n;indices.push(a,b,a+n,a+n,b,b+n);
+  }
+  for(let i=1;i<n-1;i++)indices.push(0,i,i+1);
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();return g;
+}
 export class Owl extends Specimen {
   constructor(){
     super();
@@ -9,12 +27,10 @@ export class Owl extends Specimen {
     for(let i=-3;i<=3;i++)feather(this,this.body,buff,[i*.017,.25,-.07],[i*.024,.045,-.24+Math.abs(i)*.012],.029);
     this.head=joint(this.body,0,.46,.033);
     this.oval(this.head,buff,0,.028,0,.162,.143,.126);
+    this.mesh(this.head,cream,disc);
     for(const s of [-1,1]){
-      for(const [c,z,w,h] of [[edge,.066,.089,.126],[cream,.077,.083,.119]]){
-        const disc=this.oval(this.head,c,s*.059,.022,z,w,h,.060);disc.rotation.z=-s*.37;
-      }
-      this.oval(this.head,0x503e2f,s*.064,.048,.131,.035,.040,.018);
-      this.oval(this.head,0x191b1c,s*.064,.05,.143,.026,.031,.013);
+      this.oval(this.head,edge,s*.061,.05,.115,.036,.041,.015);
+      this.oval(this.head,0x191b1c,s*.061,.052,.125,.029,.034,.014);
     }
     this.loft(this.head,0xa8987c,[[0,.03,.129,.026,.023],[0,.001,.15,.021,.022],[0,-.027,.154,.012,.012],[0,-.046,.148,.003,.003]]);
     this.wings=[];this.feet=[];
