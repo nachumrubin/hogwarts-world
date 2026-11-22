@@ -130,7 +130,7 @@ fn fernMask(uv: vec2f, kind: u32, seed: f32) -> f32 {
   // pinnae: lanceolate leaflets angled towards the frond tip, with gaps between them; each pinna is made of
   // rounded pinnules (bracken, buckler fern) or is entire (hard fern)
   var np = 15.0; var lean = 0.5; var npl = 8.0; var hw0 = 0.30;
-  if (kind == 0u) { np = 11.0; lean = 0.4; npl = 10.0; hw0 = 0.34; if (v < 0.32) { return 0.0; } }
+  if (kind == 0u) { np = 11.0; lean = 0.4; npl = 13.0; hw0 = 0.40; if (v < 0.32) { return 0.0; } }
   if (kind == 2u) { np = 24.0; lean = 0.12; npl = 0.0; hw0 = 0.30; }
   let alt = select(0.0, 0.5, uv.x < 0.0 && kind != 0u);
   let pv = v * np - au * lean * 1.4 + alt;
@@ -160,7 +160,7 @@ fn fernMask(uv: vec2f, kind: u32, seed: f32) -> f32 {
   if (KIND == 0u) {
     alpha = fernMask(i.uv, kind, seed);
     if (kind == 0u) {
-      alb = mix(vec3f(0.034, 0.062, 0.014), vec3f(0.052, 0.078, 0.018), hs);
+      alb = mix(vec3f(0.028, 0.050, 0.016), vec3f(0.044, 0.066, 0.020), hs);
       alb = mix(alb, vec3f(0.17, 0.10, 0.035), ssf(0.88, 1.0, hs) * 0.9); // the odd frond already bronzing
       if (i.uv.y < 0.32) { alb = vec3f(0.07, 0.05, 0.025); }
     } else if (kind == 1u) { alb = mix(vec3f(0.024, 0.050, 0.013), vec3f(0.040, 0.068, 0.016), hs); }

@@ -58,15 +58,17 @@ try {
       await page.close();
     }
   } else if (mode === 'record') {
-    const page = await open({ forest: process.env.MODE || 'C', view: '1', light: process.env.LIGHT || 'day', t: '0' });
-    const fps = +(process.env.FPS || 24), secs = +(process.env.SECS || 20), n = Math.round(fps * secs);
-    await page.evaluate(() => { const a = window.__app; a.startBenchmark(false); a.bench.duration = 1e9; });
+    // frame-stepped: the app advances one fixed time step per capture, so the clip is smooth however slow rendering is
+    const fps = +(process.env.FPS || 12), secs = +(process.env.SECS || 15), n = Math.round(fps * secs);
+    const page = await open({ forest: process.env.MODE || 'C', record: process.env.ROUTE || 'walk', fps: String(fps), secs: String(secs), light: process.env.LIGHT || 'day' });
+    await page.waitForFunction(() => window.__app && window.__app._settled, { timeout: 1800000, polling: 500 });
     for (let i = 0; i < n; i++) {
-      const t = i / fps;
-      await page.evaluate((t, total) => { const a = window.__app; a.opt.time = t; const p = a.route.at ? null : null; a.bench._t = t; a.bench.forceU = t / total; }, t, secs);
-      writeFileSync(`${out}/f${String(i).padStart(5, '0')}.png`, await grab(page));
-      if (i % 24 === 0) console.log('frame', i, '/', n);
+      const url = await page.evaluate(() => { const a = window.__app; a._stepReq = true; return Promise.race([a.renderer.capture(), new Promise((r) => setTimeout(() => r('timeout'), 600000))]); });
+      if (url === 'timeout') throw new Error('capture timeout at frame ' + i);
+      writeFileSync(`${out}/f${String(i).padStart(5, '0')}.png`, Buffer.from(url.split(',')[1], 'base64'));
+      if (i % 12 === 0) console.log('frame', i, '/', n);
     }
+    report.results.push({ frames: n, fps, secs, ...(await info(page)) });
   }
 } catch (e) { report.error = String(e.stack || e); console.error(e); }
 report.log = log.filter((l) => !l.includes('[verbose]')).slice(-60);

@@ -20,6 +20,8 @@ import { COVER_WGSL } from './shaders/cover.wgsl.ts';
 import { IMPOSTOR_WGSL, SHAFTS_WGSL } from './shaders/impostor-shafts.wgsl.ts';
 import { FOREST_STRUCT_WGSL, FOREST_BINDINGS_WGSL, FOREST_FUNCS_WGSL } from './shaders/forest-common.wgsl.ts';
 import { LIGHT_PRESETS, type LightPreset } from './presets.ts';
+import { ExposureMeter } from './exposure-meter.ts';
+import { GpuProfiler } from './gpu-profiler.ts';
 
 export type ForestMode = 'B' | 'C';
 export const FOREST_UNIFORM_FLOATS = 16 + 4 * 10;
@@ -627,7 +629,7 @@ export class ForestRenderer {
     this.computeShadowVP();
     const u = this.uniformBase(); u.set(this.uni.subarray(16, 20), 16);
     this.device.queue.writeBuffer(this.ubuf, 0, u);
-    const pass = enc.beginRenderPass({ colorAttachments: [], depthStencilAttachment: { view: this.shadowTex.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' } });
+    const pass = enc.beginRenderPass({ colorAttachments: [], depthStencilAttachment: { view: this.shadowTex.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' }, timestampWrites: this.profiler ? this.profiler.writes('shadow') : undefined });
     pass.setBindGroup(0, this.frameBG); pass.setBindGroup(1, this.forestBGNoShadow);
     pass.setVertexBuffer(0, this.vbuf); pass.setIndexBuffer(this.ibuf!, 'uint32');
     // all trees at LOD1, rocks, wood, the site terrain; every instance, regardless of the camera
@@ -683,7 +685,7 @@ export class ForestRenderer {
         d.createBindGroup({ layout: this.texBGLf, entries: [{ binding: 0, resource: this.shaftTex[1].createView() }] }),
       ];
     }
-    let p = enc.beginRenderPass({ colorAttachments: [{ view: this.shaftTex[0].createView(), loadOp: 'clear', storeOp: 'store' }] });
+    let p = enc.beginRenderPass({ colorAttachments: [{ view: this.shaftTex[0].createView(), loadOp: 'clear', storeOp: 'store' }], timestampWrites: this.profiler ? this.profiler.writes('shafts') : undefined });
     p.setPipeline(this.pipes.shafts); p.setBindGroup(0, this.frameBG); p.setBindGroup(1, this.forestBG); p.setBindGroup(2, this.shaftBG[0]); p.draw(3); p.end();
     p = enc.beginRenderPass({ colorAttachments: [{ view: this.shaftTex[1].createView(), loadOp: 'clear', storeOp: 'store' }] });
     p.setPipeline(this.pipes.shaftBlur); for (let g = 0; g < 3; g++) p.setBindGroup(g, this.emptyBG); p.setBindGroup(3, this.shaftBG[1]); p.draw(3); p.end();
@@ -691,48 +693,51 @@ export class ForestRenderer {
     p.setPipeline(this.pipes.shaftComp); p.setBindGroup(0, this.emptyBG); p.setBindGroup(1, this.forestBG); p.setBindGroup(2, this.emptyBG); p.setBindGroup(3, this.shaftBG[2]); p.draw(3); p.end();
   }
 
-  // ------------------------------------------------------------------------------------------------ eye adaptation
-  /** Exposure multiplier from the metered scene (smoothed by the app). 1 = the preset's exposure. */
-  autoExposure = 1;
-  /** meter every n-th frame (power of two); 1 for fixed-camera captures */
-  meterEvery = 4;
-  meteredLum = 0;
-  private meterTex: GPUTexture | null = null; private meterBuf: GPUBuffer[] = []; private meterBusy = [false, false]; private meterPipe: GPURenderPipeline | null = null; private meterBG: GPUBindGroup | null = null; private meterVersion = -1; private meterFrame = 0;
-  /** Post-scene: centre-weighted average log luminance of the HDR image (read back asynchronously every 4th frame). */
-  recordMeter(enc: GPUCommandEncoder, r: any): void {
-    const d = this.device;
-    if (!this.meterPipe) {
-      const m = d.createShaderModule({ code: METER_WGSL });
-      this.meterPipe = d.createRenderPipeline({ layout: 'auto', vertex: { module: m, entryPoint: 'vsFull' }, fragment: { module: m, entryPoint: 'fsMeter', targets: [{ format: 'r32float' }] } });
-      this.meterTex = d.createTexture({ size: [64, 36], format: 'r32float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
-      this.meterBuf = [0, 1].map(() => d.createBuffer({ size: 256 * 36, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ }));
-    }
-    if (this.meterVersion !== r.targetsVersion) {
-      this.meterVersion = r.targetsVersion;
-      this.meterBG = d.createBindGroup({ layout: this.meterPipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: r.hdrView }, { binding: 1, resource: d.createSampler({ magFilter: 'linear', minFilter: 'linear' }) }] });
-    }
-    if ((this.meterFrame++ & (this.meterEvery - 1)) !== 0) return;
-    const slot = this.meterBusy[0] ? (this.meterBusy[1] ? -1 : 1) : 0;
-    if (slot < 0) return;
-    const p = enc.beginRenderPass({ colorAttachments: [{ view: this.meterTex!.createView(), loadOp: 'clear', storeOp: 'store' }] });
-    p.setPipeline(this.meterPipe); p.setBindGroup(0, this.meterBG!); p.draw(3); p.end();
-    enc.copyTextureToBuffer({ texture: this.meterTex! }, { buffer: this.meterBuf[slot], bytesPerRow: 256 }, [64, 36]);
-    this.meterBusy[slot] = true;
-    const buf = this.meterBuf[slot];
-    queueMicrotask(() => d.queue.onSubmittedWorkDone().then(() => buf.mapAsync(GPUMapMode.READ)).then(() => {
-      const f = new Float32Array(buf.getMappedRange().slice(0));
-      buf.unmap(); this.meterBusy[slot] = false;
-      let s = 0, w = 0;
-      for (let y = 0; y < 36; y++) for (let x = 0; x < 64; x++) {
-        const dx = (x - 31.5) / 32, dy = (y - 17.5) / 18, wt = Math.exp(-(dx * dx + dy * dy) * 1.2);
-        s += f[y * 64 + x] * wt; w += wt;
-      }
-      this.meteredLum = Math.pow(2, s / w);
-      // key value: interiors are allowed to stay darker than the open landscape (partial adaptation)
-      const target = Math.pow(METER_REF / Math.max(this.meteredLum, 1e-4), 0.62);
-      this.autoExposure = Math.min(2.6, Math.max(0.5, target));
-    }, () => { this.meterBusy[slot] = false; }));
+  // ------------------------------------------------------------------------------------------------ profiling (?profile=1)
+  profiler: GpuProfiler | null = null;
+  private pendingMap: (() => void) | null = null;
+  private dummy: GPUTexture | null = null;
+  drawCallback: ((p: GPURenderPassEncoder) => void) | null = null;
+  enableProfiling(): boolean {
+    if (!this.device.features.has('timestamp-query')) return false;
+    this.profiler = new GpuProfiler(this.device, ['shadow', 'terrain', 'trees', 'cover', 'skywater', 'shafts']);
+    return true;
   }
+  /** The scene recorded as separate, individually timed passes (replaces the renderer's single scene pass). */
+  recordProfiled(enc: GPUCommandEncoder, r: any): number {
+    const d = this.device, P = this.profiler!;
+    if (!this.dummy) this.dummy = d.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: GPUTextureUsage.RENDER_ATTACHMENT });
+    // the whole-frame timestamp of GpuContext goes on an empty pass so both query sets stay valid
+    const e0 = enc.beginRenderPass({ colorAttachments: [{ view: this.dummy.createView(), loadOp: 'clear', storeOp: 'discard' }], timestampWrites: r.scenePass.timestampWrites });
+    e0.end();
+    const ms = r.sampleCount > 1;
+    const colour = ms ? r.msaa.createView() : r.hdrView;
+    const desc = (name: string, load: boolean, last: boolean): GPURenderPassDescriptor => ({
+      colorAttachments: [{ view: colour, resolveTarget: last && ms ? r.hdrView : undefined, loadOp: load ? 'load' : 'clear', storeOp: last && ms ? 'discard' : 'store', clearValue: [0, 0, 0, 1] }],
+      depthStencilAttachment: { view: r.depthView, depthLoadOp: load ? 'load' : 'clear', depthClearValue: 0, depthStoreOp: 'store' },
+      timestampWrites: P.writes(name),
+    });
+    let p = enc.beginRenderPass(desc('terrain', false, false));
+    const tris = r.terrain.record(p); r.props.record(p); p.end();
+    p = enc.beginRenderPass(desc('trees', true, false)); this.record(p, 'trees'); const t1 = this.stats.triangles, d1 = this.stats.draws; p.end();
+    p = enc.beginRenderPass(desc('cover', true, false)); this.record(p, 'cover'); this.stats.draws += d1; p.end();
+    void t1;
+    p = enc.beginRenderPass(desc('skywater', true, true));
+    for (const cb of r.drawCallbacks) if (cb !== this.drawCallback) cb(p);
+    p.setPipeline(r.skyPipe); p.setBindGroup(0, r.skyBG); p.draw(3);
+    p.setPipeline(r.waterPipe); p.setBindGroup(0, r.waterBG); p.draw(4);
+    p.end();
+    return tris;
+  }
+  /** Post-scene, last: resolve this frame's pass timestamps. */
+  finishProfile(enc: GPUCommandEncoder): void { if (this.profiler) this.pendingMap = this.profiler.finish(enc); }
+  afterSubmit(): void { if (this.pendingMap) { this.pendingMap(); this.pendingMap = null; } }
+
+  // ------------------------------------------------------------------------------------------------ eye adaptation
+  meter = new ExposureMeter();
+  get autoExposure(): number { return this.meter.autoExposure; }
+  set meterEvery(n: number) { this.meter.every = n; }
+  recordMeter(enc: GPUCommandEncoder, r: any): void { this.meter.record(this.device, enc, r); }
 
   /** Trees per species and archetype triangle counts, for the report. */
   summary(): Record<string, unknown> {
@@ -760,24 +765,6 @@ function impostorMatrix(k: number, R: number, H: number): Float32Array {
   m[15] = 1;
   return m;
 }
-
-/** Average luminance of the open landscape at the base exposure (measured), the eye-adaptation reference. */
-const METER_REF = 0.35;
-const METER_WGSL = /* wgsl */ `
-struct FsOut { @builtin(position) pos: vec4f };
-@vertex fn vsFull(@builtin(vertex_index) i: u32) -> FsOut { var o: FsOut; o.pos = vec4f(f32(i32(i & 1u) * 4 - 1), f32(i32(i >> 1u) * 4 - 1), 0.0, 1.0); return o; }
-@group(0) @binding(0) var hdr: texture_2d<f32>;
-@group(0) @binding(1) var smp: sampler;
-@fragment fn fsMeter(i: FsOut) -> @location(0) vec4f {
-  var s = 0.0;
-  for (var y = 0; y < 3; y++) { for (var x = 0; x < 3; x++) {
-    let uv = (i.pos.xy - 0.5 + (vec2f(f32(x), f32(y)) + 0.5) / 3.0) / vec2f(64.0, 36.0);
-    let c = textureSampleLevel(hdr, smp, uv, 0.0).rgb;
-    s += log2(max(dot(c, vec3f(0.2126, 0.7152, 0.0722)), 1e-4));
-  } }
-  return vec4f(s / 9.0, 0.0, 0.0, 1.0);
-}
-`;
 
 const MIP_ARRAY_WGSL = /* wgsl */ `
 struct FsOut { @builtin(position) pos: vec4f };

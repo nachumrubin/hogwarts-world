@@ -92,7 +92,10 @@ fn barkColor(layer: u32, d: DS, hn: f32, varr: f32, seed: f32) -> vec3f {
   switch layer {
     case 0u: { c = mix(vec3f(0.045, 0.040, 0.034), vec3f(0.115, 0.102, 0.088), ssf(0.2, 0.8, h)); c = mix(c, vec3f(0.17, 0.18, 0.15), ssf(0.62, 0.8, m) * 0.6); }   // oak + lichen
     case 1u: { c = mix(vec3f(0.30, 0.12, 0.055), vec3f(0.42, 0.20, 0.09), m) * (0.55 + 0.55 * h); c = mix(c, vec3f(0.16, 0.13, 0.11), ssf(0.75, 0.95, m) * 0.6); }  // pine upper: orange flakes
-    case 2u: { c = mix(vec3f(0.12, 0.055, 0.030), vec3f(0.115, 0.098, 0.085), ssf(0.3, 0.7, m)) * (0.55 + 0.6 * h); }  // pine lower: red fissures, grey plates
+    case 2u: { // pine lower: red fissures, grey plates; the upper stem turns orange and flaky
+      c = mix(vec3f(0.12, 0.055, 0.030), vec3f(0.115, 0.098, 0.085), ssf(0.3, 0.7, m)) * (0.55 + 0.6 * h);
+      c = mix(c, mix(vec3f(0.30, 0.13, 0.06), vec3f(0.40, 0.19, 0.085), m) * (0.6 + 0.5 * h), ssf(0.35, 0.6, hn));
+    }
     case 3u: { // birch: white with black lenticels and diamonds; black fissured base
       c = mix(vec3f(0.52, 0.50, 0.46), vec3f(0.035, 0.030, 0.028), m) * (0.8 + 0.25 * h);
       c = mix(c, vec3f(0.045, 0.040, 0.035) * (0.6 + 0.8 * h), ssf(0.22, 0.05, hn));

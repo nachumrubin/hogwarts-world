@@ -28,6 +28,8 @@ export class Renderer {
     this.depthSampleable = false;
     /** Optional profiling split: record the scene in several passes so per-pass GPU timestamps exist. */
     this.profilePasses = null;
+    /** Called right after the frame's queue submission (e.g. to map profiling readbacks). */
+    this.afterSubmitCallbacks = [];
   }
 
   build() {
@@ -158,6 +160,7 @@ export class Renderer {
     let cap = null;
     if (this._captureResolve) cap = this._recordCapture(enc, canvasTex);
     d.queue.submit([enc.finish()]);
+    for (const cb of this.afterSubmitCallbacks) cb();
     if (cap) this._finishCapture(cap);
     this.gpu.afterSubmit(ts);
     const s = this.stats;

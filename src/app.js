@@ -26,8 +26,9 @@ import { PlaceholderCreature } from './creatures/placeholder-module.ts';
 import { COMMON_WGSL } from './gpu/shaders/common.wgsl.js';
 import { buildEcology } from './forest/ecology.ts';
 import { ForestRenderer } from './forest/forest-renderer.ts';
-import { FOREST_VIEWS, FOREST_ROUTE, toWorldView } from './forest/views.ts';
+import { FOREST_VIEWS, FOREST_ROUTE, FOREST_WALK, FOREST_FLIGHT, toWorldView } from './forest/views.ts';
 import { LIGHT_PRESETS } from './forest/presets.ts';
+import { ExposureMeter } from './forest/exposure-meter.ts';
 
 const FOV_Y = 60 * DEG, NEAR = 0.2, EXPOSURE = 0.82;
 const DEBUG_MODES = ['normal', 'lod', 'crack'];
@@ -86,6 +87,11 @@ export class App {
       this.forestMs = performance.now() - tf;
       console.log('forest POC', JSON.stringify({ ms: Math.round(this.forestMs), build: this.forest.stats.buildMs, eco: this.eco.stats }));
     }
+    if (fm === 'A') { // baseline: no forest, but the same eye adaptation as B and C, so comparisons are fair
+      this.meterA = new ExposureMeter();
+      if (this.opt.freeze) this.meterA.every = 1;
+      this.renderer.postSceneCallbacks.push((enc, rr) => this.meterA.record(this.gpu.device, enc, rr));
+    }
     this.proxies = buildLandmarkProxies(this.gen);
     this.renderer.props.setMeshes(this.proxies.meshes);
     this.renderer.props.setInstances(this.proxies.instances);
@@ -115,7 +121,8 @@ export class App {
     this.route = buildRoute(this.gen);
     this.bench = null;
     const c = this.opt.cam;
-    if (fm) this.route = buildRoute(this.gen, { points: FOREST_ROUTE, step: 0.5, maxSlope: 0.9, smoothWindow: 12 });
+    if (fm) this.route = buildRoute(this.gen, { points: this.opt.record === 'walk' ? FOREST_WALK : this.opt.record === 'flight' ? FOREST_FLIGHT : FOREST_ROUTE, step: 0.5, maxSlope: 0.9, smoothWindow: 12 });
+    if (this.opt.record) { this.startBenchmark(false); this.bench.duration = this.opt.recordSecs; this.bench.speed = this.route.length / this.opt.recordSecs; this.bench.warmup = 0; }
     const fv = fm ? toWorldView(FOREST_VIEWS[Math.min(this.opt.view, FOREST_VIEWS.length - 1)]) : null;
     const v = c && c.length === 5 ? { x: c[0], agl: c[1], z: c[2], yaw: c[3], pitch: c[4] } : fv || VIEWS[this.opt.view] || VIEWS[0];
     this.applyView(v);
@@ -134,12 +141,16 @@ export class App {
     const fr = this.forest, r = this.renderer;
     fr.build(this.gpu.device, r);
     r.terrain.setForest(fr.terrainHook);
+    if (this.opt.profile && fr.enableProfiling()) r.profilePasses = (enc, rr) => fr.recordProfiled(enc, rr);
     if (!this._forestHooked) {
       this._forestHooked = true;
       r.preSceneCallbacks.push((enc) => fr.recordShadow(enc));
-      r.drawCallbacks.push((pass) => fr.record(pass));
+      fr.drawCallback = (pass) => fr.record(pass);
+      r.drawCallbacks.push(fr.drawCallback);
       r.postSceneCallbacks.push((enc, rr) => fr.recordShafts(enc, rr));
       r.postSceneCallbacks.push((enc, rr) => fr.recordMeter(enc, rr));
+      r.postSceneCallbacks.push((enc) => fr.finishProfile(enc));
+      r.afterSubmitCallbacks.push(() => fr.afterSubmit());
       r.extraStats = fr.stats;
     }
   }
@@ -197,10 +208,14 @@ export class App {
     if (this.paused) { this.last = t; return; }
     // backpressure: never queue more than two frames on the GPU (keeps latency bounded when GPU-bound)
     if (this.inflight >= 2) { this.skipped++; return; }
-    const frameMs = t - this.last; this.last = t;
+    // frame-stepped recording: advance exactly one fixed step per request from the capture tool
+    if (this.opt.record && this._settled) { if (!this._stepReq) { this.last = t; return; } this._stepReq = false; }
+    let frameMs = t - this.last; this.last = t;
+    if (this.opt.record) frameMs = 1000 / this.opt.recordFps;
     const dt = Math.min(frameMs / 1000, 0.1);
+    const cpu0 = performance.now();
     this.time += dt; this.frameIndex++;
-    if (this.opt.time !== null && this.opt.time !== undefined) this.time = this.opt.time;
+    if (this.opt.time !== null && this.opt.time !== undefined && !this.opt.record) this.time = this.opt.time;
     this._keys();
     const f = this.flight;
 
@@ -225,7 +240,7 @@ export class App {
     if (this.renderer.overviewData && this.overviewFade < 1) this.overviewFade = Math.min(1, this.overviewFade + dt / 1.2);
     // fixed-camera captures: stream without rendering until the terrain is complete, then render (saves many slow
     // software-rendered frames in headless runs)
-    if (this.opt.freeze && !this._settled) {
+    if ((this.opt.freeze || this.opt.record) && !this._settled) {
       if (this.streamer.stats.backlog === 0 && this.streamer.pending.size === 0 && this.renderer.overviewData && this.frameIndex > 2) { this._settled = true; this.overviewFade = 1; this.settledFrames = 0; }
       else return;
     }
@@ -256,7 +271,7 @@ export class App {
       F[46] = lp.overcast; F[48] = lp.haze; F[27] = lp.illuminance;
       // eye adaptation (forest modes): smoothed towards the metered target, ~1 s time constant
       this.adapt = this.adapt || 1;
-      if (this.forest || this.forestMode === 'A') { const tgt = this.forest ? this.forest.autoExposure : 1; this.adapt += (tgt - this.adapt) * Math.min(1, (this.opt.freeze ? 1 : dt * 1.5)); }
+      if (this.forest || this.forestMode === 'A') { const tgt = this.forest ? this.forest.autoExposure : this.meterA ? this.meterA.autoExposure : 1; this.adapt += (tgt - this.adapt) * Math.min(1, (this.opt.freeze ? 1 : dt * 1.5)); }
       exposure = EXPOSURE * lp.exposure * this.adapt;
     }
     F[52] = f.x; F[53] = f.y; F[54] = f.z; F[55] = f.agl;
@@ -286,7 +301,14 @@ export class App {
     const gpuMs = this.gpu.gpuMs;
     this.overlay.pushFrame(frameMs);
     if (this.bench) {
-      if (this.bench.active) this.bench.record(frameMs, gpuMs, stats, this.streamer.stats.backlog);
+      if (this.bench.active) {
+        this.bench.record(frameMs, gpuMs, stats, this.streamer.stats.backlog);
+        // CPU time of the frame's JavaScript (culling, LOD, streaming, command recording), and forest load
+        const acc = this._benchAcc || (this._benchAcc = { cpu: [], inst: 0, lod: [0, 0, 0, 0], cover: 0, fdraws: 0, ftris: 0, n: 0 });
+        acc.cpu.push(performance.now() - cpu0);
+        if (this.forest) { const fs = this.forest.stats; acc.inst += fs.instances; fs.lod.forEach((v, i) => { acc.lod[i] += v; }); acc.cover += fs.cover; acc.fdraws += fs.draws; acc.ftris += fs.triangles; }
+        acc.n++;
+      }
       else if (this.bench.done && !this.bench.reported) this._finishBenchmark();
     } else if (this.dyn.update(frameMs, gpuMs)) { /* resize happens next frame */ }
     this.overlay.update(frameMs, () => this._overlayText(stats, frameMs, gpuMs));
@@ -317,6 +339,25 @@ export class App {
       chunks: { generated: this.streamer.stats.generated, avgGenMs: +(this.streamer.stats.genMsTotal / Math.max(1, this.streamer.stats.generated)).toFixed(2), maxPending: this.streamer.stats.maxPending, maxBacklog: this.streamer.stats.maxBacklog, evictions: this.streamer.stats.evictions, workers: this.streamer.stats.workers },
       webgpuErrors: this.gpu.errors.length, deviceLosses: this.losses,
     });
+    const acc = this._benchAcc; this._benchAcc = null;
+    if (acc && acc.n) {
+      const c = acc.cpu.slice().sort((a, b) => a - b), q = (p) => +c[Math.min(c.length - 1, Math.floor(c.length * p))].toFixed(2);
+      res.cpuTimeMs = { avg: +(c.reduce((a, b) => a + b, 0) / c.length).toFixed(2), p50: q(0.5), p95: q(0.95), p99: q(0.99), max: +c[c.length - 1].toFixed(2) };
+    }
+    if (this.forestMode) {
+      const r = this.renderer, px = r.width * r.height, sc = this.preset.msaa;
+      const targets = px * (8 + 4 * sc + (sc > 1 ? 8 * sc : 0)) + (this.forest && this.forest.opts.shafts ? px * 4 : 0);
+      res.forest = {
+        mode: this.forestMode, light: this.lightKey, site: { x0: 6900, z0: 3700, size: 200 },
+        avgVisibleTreeInstances: acc && acc.n ? Math.round(acc.inst / acc.n) : 0,
+        avgTreeLod: acc && acc.n ? acc.lod.map((v) => Math.round(v / acc.n)) : null,
+        avgGroundCoverInstances: acc && acc.n ? Math.round(acc.cover / acc.n) : 0,
+        avgForestDraws: acc && acc.n ? Math.round(acc.fdraws / acc.n) : 0, avgForestTriangles: acc && acc.n ? Math.round(acc.ftris / acc.n) : 0,
+        gpuPassMs: this.forest && this.forest.profiler ? this.forest.profiler.summary() : 'run with &profile=1 for per-pass GPU times',
+        gpuMemoryEstimateMB: Math.round(((this.forest ? this.forest.stats.gpuBytes : 0) + this.preset.poolSlots * 17424 + targets) / 1048576),
+        build: this.forest ? this.forest.stats.buildMs : null, ecology: this.eco ? this.eco.stats : null,
+      };
+    }
     window.__benchResult = res;
     console.log('HIGHLANDS_BENCHMARK ' + JSON.stringify(res));
     this.resultEl.hidden = false;

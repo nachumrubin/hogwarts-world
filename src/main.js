@@ -25,6 +25,10 @@ const options = {
   forestLod: q.has('flod') ? Math.max(0.3, Math.min(3, +q.get('flod'))) : 0,
   shafts: q.get('shafts') !== '0',
   freeze: q.get('freeze') === '1',
+  profile: q.get('profile') === '1',
+  record: ['walk', 'flight'].includes(q.get('record')) ? q.get('record') : null,
+  recordSecs: +(q.get('secs') || 15),
+  recordFps: +(q.get('fps') || 12),
   time: q.has('t') ? +q.get('t') : null,
 };
 

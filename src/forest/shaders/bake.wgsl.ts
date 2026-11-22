@@ -142,8 +142,9 @@ fn layerH(uv: vec2f, layer: i32) -> vec2f {
       return vec2f(sat(0.45 + 0.35 * edge + 0.2 * w.z * edge + 0.1 * tf(uv, vec2f(40.0, 60.0), 3, 62.0)), w.z);
     }
     case 9: { // pine lower: large plates, deep fissures (red-brown inner bark shows in them)
-      let p = uv * vec2f(4.0, 2.0);
-      let w = tw(p + vec2f(0.0, tf(uv, vec2f(2.0, 1.0), 3, 71.0) * 0.5), vec2f(4.0, 2.0), 72.0);
+      let p = uv * vec2f(6.0, 3.0);
+      let warp = vec2f(tf(uv, vec2f(3.0, 2.0), 3, 70.0), tf(uv + 0.37, vec2f(2.0, 3.0), 3, 71.0)) - 0.5;
+      let w = tw(p + warp * vec2f(1.4, 1.0), vec2f(6.0, 3.0), 72.0);
       let fis = ss(0.0, 0.18, w.y - w.x);
       let sub = tw(uv * vec2f(16.0, 10.0), vec2f(16.0, 10.0), 73.0);
       let flake = ss(0.0, 0.08, sub.y - sub.x);

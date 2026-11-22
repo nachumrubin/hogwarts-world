@@ -180,7 +180,7 @@ fn forestGround(ps: vec3f, ng: vec3f, dpx: vec3f, dpy: vec3f, dist: f32) -> Grou
         c = mix(c, vec3f(0.24, 0.16, 0.05), ssf(0.94, 1.0, hashf(id * 7.0)) * 0.5);
         c *= 0.45 + 0.8 * h; r = 0.85;
       }
-      default: { c = mix(mix(vec3f(0.062, 0.046, 0.034), vec3f(0.100, 0.062, 0.034), ssf(0.75, 1.0, hashf(m * 23.0))), vec3f(0.048, 0.042, 0.036), ssf(0.0, 0.5, hashf(m * 11.0)) * 0.6) * (0.55 + 0.5 * h); } // needles: mostly old grey-brown, a few fresh russet
+      default: { c = mix(mix(vec3f(0.050, 0.040, 0.032), vec3f(0.085, 0.055, 0.032), ssf(0.75, 1.0, hashf(m * 23.0))), vec3f(0.042, 0.038, 0.034), ssf(0.0, 0.5, hashf(m * 11.0)) * 0.6) * (0.55 + 0.5 * h); } // needles: mostly old grey-brown, a few fresh russet
     }
     alb += c * k; sl += ss[i] * k * bumpK; hgt += h * k; rough += r * k; wet += we * k;
   }
