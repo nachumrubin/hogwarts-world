@@ -148,7 +148,8 @@ async function main() {
   const eyeOf = () => [cam.target[0] + Math.sin(cam.az) * Math.cos(cam.el) * cam.dist, cam.target[1] + Math.sin(cam.el) * cam.dist, cam.target[2] + Math.cos(cam.az) * Math.cos(cam.el) * cam.dist];
   if (q.get('hud') === '0') $('hud').hidden = true;
   let last = performance.now(), fps = 0;
-  (window as any).__lab = { viewer, built: built.map((b) => ({ id: b.def.id, info: b.info, growMs: Math.round(b.growMs), lods: b.lods.map((l) => ({ tris: l.tris, ms: Math.round(l.ms), bytes: l.v.byteLength + l.i.byteLength })) })), genMs: Math.round(genMs), ready: false, frames: 0 };
+  const api = { setView: (v: string, mode?: string) => { setView(v); viewer.mode = (MODES.includes(mode as Mode) ? mode : viewer.mode) as Mode; }, setLod: (k: number) => { lod = k; upload(); }, setLight: (o: number) => { viewer.overcast = o; upload(); } };
+  (window as any).__lab = { ...api, viewer, built: built.map((b) => ({ id: b.def.id, info: b.info, growMs: Math.round(b.growMs), lods: b.lods.map((l) => ({ tris: l.tris, ms: Math.round(l.ms), bytes: l.v.byteLength + l.i.byteLength })) })), genMs: Math.round(genMs), ready: false, frames: 0 };
   const frame = (t: number) => {
     const dt = Math.min(0.1, (t - last) / 1000); last = t; fps = fps * 0.9 + (1 / Math.max(dt, 1e-3)) * 0.1;
     viewer.time += dt;
@@ -162,7 +163,7 @@ async function main() {
     } else { eye = eyeOf(); target = cam.target; }
     const vp = viewProj(eye, target, FOV, canvas.width / canvas.height);
     const s = sunDir();
-    viewer.render(vp, eye, [s[0], s[1], s[2], viewer.overcast ? 2.2 : 3.2]);
+    viewer.render(vp, eye, [s[0], s[1], s[2], viewer.overcast ? 1.5 : 2.1]);
     (window as any).__lab.frames++; (window as any).__lab.ready = true;
     if (!$('hud').hidden && ((window as any).__lab.frames % 10 === 0)) {
       $('hud').textContent = [

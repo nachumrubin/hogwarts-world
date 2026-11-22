@@ -15,7 +15,7 @@ import { Skeleton, type TNode, growRoots } from '../framework/skeleton.ts';
 
 export const PINE = { name: 'Ancient Scots pine', latin: 'Pinus sylvestris', seed: 1714, baseRadius: 0.62 };
 
-interface Shoot { node: TNode; dir: V3; order: number; age: number; vigor: number; shaded: number; alive: boolean; leader: boolean; born: number }
+interface Shoot { node: TNode; dir: V3; order: number; age: number; vigor: number; shaded: number; alive: boolean; leader: boolean; born: number; dom?: boolean; vig?: number }
 
 export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string, unknown> } {
   const r = rng(seed);
@@ -28,7 +28,7 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
   const root2 = sk.add(sk.root, [0, 0, 0], 0);
   shoots.push({ node: root2, dir: leaderDir, order: 0, age: 0, vigor: 1, shaded: 0, alive: true, leader: true, born: 0 });
   const VOX = 1.2;
-  let leaderLosses = 0;
+  let leaderLosses = 0, domCount = 0;
   for (let t = 0; t < PERIODS; t++) {
     // light: count live tips per voxel, then shade = sum of tips above within a widening cone
     const grid = new Map<string, number>();
@@ -47,24 +47,27 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
       s.age++;
       s.vigor = lightAt(s.node.p);
       if (s.vigor < 0.22) s.shaded++; else s.shaded = Math.max(0, s.shaded - 1);
-      if (!s.leader && (s.shaded > 4 || (s.order === 2 && s.age > 9) || (s.order === 3 && s.age > 4))) { s.alive = false; continue; }
+      // self-pruning with age: branches laid down while young die once the crown has risen far above them
+      if (!s.leader && !s.dom && s.order === 1 && t > 30 && s.node.p[1] < 11) { s.alive = false; continue; }
+      if (!s.leader && !s.dom && (s.shaded > 4 || (s.order === 2 && s.age > 9) || (s.order === 3 && s.age > 4))) { s.alive = false; continue; }
       // extension
       let L: number;
       if (s.leader) L = (old ? 0.08 : 1.15 * Math.exp(-t / 13) + 0.18) * (0.85 + 0.3 * r());
       // laterals slow down as they age (and as the tree ages): old pines do not have endlessly long limbs
-      else L = (s.order === 1 ? 0.5 : s.order === 2 ? 0.36 : 0.2) * (0.4 + 0.6 * s.vigor) * Math.exp(-s.age / (s.order === 1 ? 15 : 6));
+      // laterals slow down with age; dominant upper limbs (fed by the crown they carry) keep growing for a century
+      else L = (s.order === 1 ? 0.5 : s.order === 2 ? 0.36 : 0.2) * (0.4 + 0.6 * s.vigor) * (s.vig ?? 1) * Math.exp(-s.age / (s.dom ? 19 : s.order === 1 ? 13 : 6));
       // wind: less growth on the windward side, shoots bend leeward
       const h = [s.dir[0], 0, s.dir[2]]; const hl = Math.hypot(h[0], h[2]);
       if (hl > 0.2) L *= 1 + 0.25 * (h[0] * wind[0] + h[2] * wind[2]) / hl;
       let d = s.dir;
       if (s.leader) {
         d = norm(add(d, [(r() - 0.5) * 0.22 + wind[0] * 0.02, 0.4, (r() - 0.5) * 0.22 + wind[2] * 0.02]));
-        if (!old && r() < 0.07) { // leader lost (weevil, storm): a lateral takes over at an angle → kink in the stem
-          d = norm(add(d, [(r() - 0.5) * 0.9, 0, (r() - 0.5) * 0.9])); leaderLosses++;
+        if (!old && r() < 0.035) { // leader lost (weevil, storm): a lateral takes over at an angle → kink in the stem
+          d = norm(add(d, [(r() - 0.5) * 0.5, 0, (r() - 0.5) * 0.5])); leaderLosses++;
         }
       } else {
         // laterals: near horizontal, tips turning up towards light; old upper laterals rise to form the flat crown
-        const up = s.order === 1 && old && s.node.p[1] > 13 ? 0.09 : 0.03 * s.vigor;
+        const up = s.dom ? (s.age > 12 ? 0.06 : 0.02) : s.order === 1 && old && s.node.p[1] > 13 ? 0.09 : 0.03 * s.vigor;
         d = norm(add(d, [(r() - 0.5) * 0.25 + wind[0] * 0.04, up - 0.02 * s.order, (r() - 0.5) * 0.25 + wind[2] * 0.04]));
       }
       s.dir = d;
@@ -72,12 +75,18 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
       s.node = nn;
       // branching
       if (s.leader && (!old || r() < 0.5)) {
-        const nw = 3 + Math.floor(r() * 3), a0 = r() * 6.283;
+        // irregular whorls: 2–5 laterals, sometimes a whole whorl missing (frost, browsing)
+        if (r() < 0.22) { /* skipped whorl */ } else {
+        const nw = 2 + Math.floor(r() * 4), a0 = r() * 6.283;
         for (let i = 0; i < nw; i++) {
           if (r() < 0.2) continue;
           const az = a0 + (i / nw) * 6.283 + (r() - 0.5) * 0.5;
           const el = 0.18 - t * 0.008 + (r() - 0.5) * 0.25; // lower whorls (laid down early) end up drooping
-          next.push({ node: nn, dir: norm([Math.cos(az), el, Math.sin(az)]), order: 1, age: 0, vigor: 1, shaded: 0, alive: true, leader: false, born: t });
+          // dominant limbs: a few laterals laid down in the upper stem when the tree was 100–170 years old
+          const dom = t >= 14 && t <= 28 && r() < 0.28 && domCount < 6;
+          if (dom) domCount++;
+          next.push({ node: nn, dir: norm([Math.cos(az), dom ? 0.12 : el, Math.sin(az)]), order: 1, age: 0, vigor: 1, shaded: 0, alive: true, leader: false, born: t, dom, vig: dom ? 1.05 : 0.5 + 0.7 * r() });
+        }
         }
       } else if (!s.leader && s.order < 3 && r() < (s.order === 1 ? 0.85 : 0.55)) {
         // planar sprays: forks to either side in the branch plane
@@ -85,7 +94,7 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
         const nf = s.order === 1 ? 2 : 1;
         for (let i = 0; i < nf; i++) {
           const sg = i === 0 ? 1 : -1;
-          next.push({ node: nn, dir: norm(add(mul(d, 0.65), mul(side, sg * (0.7 + 0.3 * r())))), order: s.order + 1, age: 0, vigor: s.vigor, shaded: 0, alive: true, leader: false, born: t });
+          next.push({ node: nn, dir: norm(add(add(mul(d, 0.65), mul(side, sg * (0.7 + 0.3 * r()))), [0, (r() - 0.4) * 0.5, 0])), order: s.order + 1, age: 0, vigor: s.vigor, shaded: 0, alive: true, leader: false, born: t, vig: 0.7 + 0.6 * r() });
         }
       }
       if (old && s.leader && r() < 0.15) s.alive = false; // the old leader dies back
@@ -94,8 +103,8 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
   }
   const growMs = performance.now() - t0;
   // ---- radii, sag
-  sk.computeRadii({ tipR: 0.006, n: 2.3, taper: 0.035, targetBase: PINE.baseRadius });
-  sk.sag({ stiffness: 0.8, maxAngle: 0.07, minOrder: 1, upturn: 0.02 });
+  sk.computeRadii({ tipR: 0.006, n: 2.75, taper: 0.03, targetBase: PINE.baseRadius });
+  sk.sag({ stiffness: 1.6, maxAngle: 0.025, minOrder: 1, upturn: 0.01 });
   // ---- self-pruning: branches whose every tip is dead are dead wood; the lowest are shed, leaving stubs
   const liveTips = new Set<TNode>();
   for (const s of shoots) if (s.alive) liveTips.add(s.node);
@@ -107,9 +116,14 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
   const shed: TNode[] = [];
   for (const p of primaries) {
     if (!p.dead) continue;
-    if (r() < (p.p[1] < 8 ? 0.75 : 0.4)) { shed.push(p); continue; }      // fallen away, bark grown over
-    // stub: keep 1–3 nodes along the limb, everything beyond falls
-    let m: TNode = p; const keep = 1 + Math.floor(r() * 3);
+    const h = p.p[1];
+    // the lowest few metres were cleared long ago (occluded knots); higher up: a mix of long dead branches still
+    // carrying their twigs, snapped stubs of every length, and bare knots
+    if (h < 4 || r() < (h < 8 ? 0.6 : 0.35)) { shed.push(p); continue; }
+    const q = r();
+    let m: TNode = p;
+    if (q < 0.25) continue; // whole dead branch still attached
+    const keep = q < 0.6 ? 1 + Math.floor(r() * 2) : 2 + Math.floor(r() * 5);
     for (let i = 0; i < keep && m.children.length; i++) m = m.children.find((c) => c.order === 1) || m.children[0];
     shed.push(...m.children); m.broken = true;
   }
@@ -118,7 +132,7 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
   sk.removeMany(sk.nodes.filter((n) => n.dead && n.order >= 2 && n.parent && !n.parent.dead && r() < 0.85));
   sk.removeMany(sk.nodes.filter((n) => n.dead && n.order >= 2 && n.parent && n.parent.dead && n.parent.order < n.order));
   growRoots(sk, { count: 6, length: [1.8, 3.5], seed: r, ground: groundAt, startR: 0.32, exposure: 0.6 });
-  sk.computeRadii({ tipR: 0.006, n: 2.3, taper: 0.035, targetBase: PINE.baseRadius });
+  sk.computeRadii({ tipR: 0.006, n: 2.75, taper: 0.03, targetBase: PINE.baseRadius });
   sk.rootRadii(0.3, 0.02);
   sk.root.r = PINE.baseRadius * 1.1;
   return { sk, info: { growMs: Math.round(growMs), periods: PERIODS, leaderLosses, ...sk.stats() } };

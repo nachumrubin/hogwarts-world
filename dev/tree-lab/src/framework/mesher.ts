@@ -9,7 +9,8 @@
 import { type V3, add, sub, mul, norm, len, dot, cross, perp, lerp, clamp } from './math.ts';
 import type { Chain, Skeleton, TNode } from './skeleton.ts';
 
-export const VFLOATS = 12; // pos3 normal3 attr4 (order, flags, radius, flex) uv2
+export const VFLOATS = 12;
+export const FUSE_OVERLAP = 0.45; // pos3 normal3 attr4 (order, flags, radius, flex) uv2
 
 export class MeshOut {
   v: number[] = []; i: number[] = [];
@@ -51,7 +52,9 @@ export function meshChains(sk: Skeleton, chains: Chain[], lod: LodSpec, bark: Ba
     if (opts.skip && opts.skip(ch)) continue;
     const n0 = ch.nodes[0];
     if (n0.r < lod.minRadius && !n0.root) continue;
-    tube(ch, lod, bark, out, opts.startCut ? opts.startCut(ch) : 0);
+    const cut = opts.startCut ? opts.startCut(ch) : 0;
+    if (cut === Infinity) continue;
+    tube(ch, lod, bark, out, cut);
   }
   out.normals(from, fromIdx);
 }
@@ -64,7 +67,7 @@ function catmull(p0: V3, p1: V3, p2: V3, p3: V3, t: number): V3 {
   return [f(p0[0], p1[0], p2[0], p3[0]), f(p0[1], p1[1], p2[1], p3[1]), f(p0[2], p1[2], p2[2], p3[2])];
 }
 
-function samples(ch: Chain, lod: LodSpec): Sample[] {
+function samples(ch: Chain, lod: LodSpec, noCollar = false): Sample[] {
   const nodes = ch.nodes;
   // control points: start inside the parent (on its axis) for attached chains
   const P: V3[] = [], R: number[] = [], N: TNode[] = [];
@@ -91,7 +94,7 @@ function samples(ch: Chain, lod: LodSpec): Sample[] {
   out.push({ p: P[P.length - 1], r: R[R.length - 1], node: N[N.length - 1], t: acc, collar: 0 });
   // collar: the branch runs inside its parent from the parent's axis, emerges at distance e (depends on the
   // branching angle) and is widened just around the emergence point, so it flows out of the parent's surface
-  if (ch.attach && out.length > 2) {
+  if (ch.attach && out.length > 2 && !noCollar) {
     const r0 = out[Math.min(2, out.length - 1)].r;
     const pd = ch.attach.parent ? norm(sub(ch.attach.p, ch.attach.parent.p)) : [0, 1, 0] as V3;
     const cd = norm(sub(out[Math.min(2, out.length - 1)].p, out[0].p));
@@ -113,8 +116,10 @@ function smoothstep(a: number, b: number, x: number) { const t = clamp((x - a) /
 function sidesFor(r: number, lod: LodSpec): number { return clamp(Math.round((2 * Math.PI * r) / lod.edge), lod.minSides, lod.maxSides); }
 
 function tube(ch: Chain, lod: LodSpec, bark: BarkFn | null, out: MeshOut, startCut: number): void {
-  const S = samples(ch, lod).filter((s) => s.t >= startCut);
+  const S = samples(ch, lod, startCut > 0).filter((s) => s.t >= startCut);
   if (S.length < 2) return;
+  // taking over from a fused (implicit) surface: start slightly inside it and ramp up to full radius
+  if (startCut > 0) for (const s of S) { const k = (s.t - startCut) / (FUSE_OVERLAP * 0.45); if (k < 1) s.r *= 0.9 + 0.1 * Math.max(0, k); }
   let T = norm(sub(S[1].p, S[0].p));
   let Nf = perp(T);
   let prev: { idx: number[]; n: number } | null = null;

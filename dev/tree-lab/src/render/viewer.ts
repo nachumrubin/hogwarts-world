@@ -38,7 +38,7 @@ fn shadow(wp: vec3f, n: vec3f) -> f32 {
   let uv = vec2f(s.x * 0.5 + 0.5, 0.5 - s.y * 0.5);
   if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { return 1.0; }
   var a = 0.0;
-  let e = 1.0 / 4096.0;
+  let e = 1.0 / f32(textureDimensions(shadowMap).x);
   for (var y = -1; y <= 1; y++) { for (var x = -1; x <= 1; x++) { a += textureSampleCompareLevel(shadowMap, cmp, uv + vec2f(f32(x), f32(y)) * e * 1.5, s.z - 0.0004); } }
   return a / 9.0;
 }
@@ -58,7 +58,7 @@ fn hierCol(order: f32, flags: f32) -> vec3f {
   let kind = u32(u.off.w + 0.5);
   if (mode == 2u) { return vec4f(select(vec3f(0.0), vec3f(0.92), kind == 1u), 1.0); }        // silhouette: black tree, light ground
   if (mode == 4u) { return vec4f(n * 0.5 + 0.5, 1.0); }
-  var alb = vec3f(0.42);
+  var alb = vec3f(0.36);
   if (kind == 1u) { alb = vec3f(0.30, 0.31, 0.27); }
   if (kind == 2u) { alb = vec3f(0.55, 0.30, 0.20); }
   if (mode == 5u && kind == 0u) { alb = hierCol(i.a.x, i.a.y); }
@@ -84,7 +84,7 @@ fn hierCol(order: f32, flags: f32) -> vec3f {
   // gentle aerial perspective
   let d = length(u.cam.xyz - i.wp);
   c = mix(c, vec3f(0.62, 0.70, 0.82) * mix(1.0, 1.1, ov), 1.0 - exp(-d * 0.0025));
-  return vec4f(srgb(aces(c * 0.9)), 1.0);
+  return vec4f(srgb(aces(c * 0.55)), 1.0);
 }
 @fragment fn fsWire(i: VOut) -> @location(0) vec4f {
   let kind = u32(u.off.w + 0.5);
@@ -144,7 +144,8 @@ export class Viewer {
     this.sky = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsSky' }, fragment: { module: m, entryPoint: 'fsSky', targets: [{ format: this.format }] }, depthStencil: { format: 'depth32float', depthWriteEnabled: false, depthCompare: 'less-equal' }, multisample: { count: 4 } });
     this.shadowPipe = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsShadow', buffers: vb }, primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'less', depthBias: 2, depthBiasSlopeScale: 2 } });
     this.ubuf = d.createBuffer({ size: 256 * 64, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.shadowTex = d.createTexture({ size: [4096, 4096], format: 'depth32float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
+    const ss = +(new URLSearchParams(location.search).get('shadow') || 4096);
+    this.shadowTex = d.createTexture({ size: [ss, ss], format: 'depth32float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
     const dummy = d.createTexture({ size: [1, 1], format: 'depth32float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT });
     const cmp = d.createSampler({ compare: 'less-equal', magFilter: 'linear', minFilter: 'linear' });
     this.bgs = [this.shadowTex, dummy].map((t) => d.createBindGroup({ layout: bgl, entries: [{ binding: 0, resource: { buffer: this.ubuf, size: 256 } }, { binding: 1, resource: t.createView() }, { binding: 2, resource: cmp }] }));

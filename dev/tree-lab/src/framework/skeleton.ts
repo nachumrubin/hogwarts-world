@@ -196,8 +196,10 @@ export function growRoots(sk: Skeleton, o: { count: number; length: [number, num
       const step = L / segs;
       x += dx * step; z += dz * step;
       // radius falls quickly; the root rides at the surface (half buried), then dives
-      const hump = o.exposure * Math.sin(Math.PI * Math.min(1, s * 1.3)) * o.startR * (1 - s) * 0.8;
-      const y = o.ground(x, z) + hump - s * s * o.startR * 1.4 - 0.05;
+      // the root rides half-exposed near the trunk and sinks steadily: its upper surface stays at or below ground
+      const rr = o.startR * Math.pow(1 - s, 1.6);
+      const hump = o.exposure * Math.sin(Math.PI * Math.min(1, s * 1.6)) * rr * 0.35;
+      const y = o.ground(x, z) + hump - rr * (0.45 + 0.9 * s) - 0.03 - s * 0.15;
       const n = sk.add(m, [x, y, z], -1); n.root = true; m = n;
     }
   }

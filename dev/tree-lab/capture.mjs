@@ -20,14 +20,17 @@ for (const tree of (process.env.TREES || 'pine,oak,birch').split(',')) {
   const page = await browser.newPage();
   await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });
   page.on('console', (m) => log.push(`[${tree}] ${m.text()}`)); page.on('pageerror', (e) => log.push(`[${tree}] pageerror ${e.message}`));
+  const q = new URLSearchParams({ tree, view: 'three', hud: '0', lod: process.env.LOD || '0', light: process.env.LIGHT || 'day', shadow: process.env.SHADOW || '4096' });
+  await page.goto(`http://127.0.0.1:${PORT}/dev/tree-lab/?${q}`, { waitUntil: 'load' });
+  await page.waitForFunction('(window.__lab && window.__lab.frames > 1) || window.__labError', { timeout: 900000, polling: 500 });
+  const err = await page.evaluate('window.__labError || null'); if (err) { log.push(err); await page.close(); continue; }
   for (const view of (process.env.VIEWS || 'three').split(',')) {
-    const q = new URLSearchParams({ tree, view, hud: '0', lod: process.env.LOD || '0', light: process.env.LIGHT || 'day' });
-    if (process.env.MODE) q.set('mode', process.env.MODE);
-    await page.goto(`http://127.0.0.1:${PORT}/dev/tree-lab/?${q}`, { waitUntil: 'load' });
-    await page.waitForFunction('(window.__lab && window.__lab.frames > 2) || window.__labError', { timeout: 900000, polling: 500 });
-    const err = await page.evaluate('window.__labError || null'); if (err) { log.push(err); continue; }
+    // a view may carry its display mode: front:silhouette
+    const [vname, vmode] = view.split(':');
+    await page.evaluate((v, m) => window.__lab.setView(v, m), vname, vmode || process.env.MODE || 'lit');
+    await page.evaluate(() => new Promise((r) => { const f0 = window.__lab.frames; const t = () => (window.__lab.frames > f0 + 1 ? r(0) : setTimeout(t, 200)); t(); }));
     const url = await page.evaluate(() => window.__lab.viewer.capture());
-    const file = `${out}/${tree}-${view}${process.env.MODE ? '-' + process.env.MODE : ''}${process.env.LOD && process.env.LOD !== '0' ? '-lod' + process.env.LOD : ''}.png`;
+    const file = `${out}/${tree}-${vname}-${vmode || process.env.MODE || 'lit'}.png`;
     writeFileSync(file, Buffer.from(url.split(',')[1], 'base64'));
     const info = await page.evaluate(() => ({ built: window.__lab.built, genMs: window.__lab.genMs, errors: window.__errors || [] }));
     report.push({ tree, view, file, ...info }); console.log(file);
