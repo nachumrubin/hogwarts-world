@@ -62,39 +62,91 @@ test('Merperson geometry is deterministic, closed at the shoulders, and reduced 
   }
 });
 
-test('Swimming eases through action changes and keeps the same pose when LOD changes',()=>{
-  const actor=new Merperson(),dt=1/60,pos=new Vector3();
-  const distal=new Vector3(),previous=new Vector3();
-  let maxStep=0,locomotionDistance=0,lastPhase=actor.phase;
+test('The continuous tail preserves its curved length and transverse sections at every LOD',()=>{
+  const actor=new Merperson(),dt=1/60,pos=new Vector3(),other=new Vector3();
   try {
-    for(let frame=0;frame<420;frame++) {
-      const action=frame<60?'Idle':frame<180?'Swim':frame<310?'Turn':'Idle';
-      actor.update(dt,frame*dt,action);
-      actor.root.updateMatrixWorld(true);
-      actor.caudal.getWorldPosition(distal);
-      if(frame>0) maxStep=Math.max(maxStep,previous.distanceTo(distal));
-      previous.copy(distal);
-      assert.ok((actor.phase-lastPhase+Math.PI*2)%(Math.PI*2)<.10);
-      lastPhase=actor.phase;
-      if(frame===179) locomotionDistance=actor.root.position.length();
-      if(frame%30===0) {
-        const boneTransforms=actor.skin.skeleton.bones.map(b=>b.matrixWorld.toArray());
-        const geometry=actor.skin.geometry;
-        actor.setLOD((actor.level+1)%3);
-        assert.notEqual(actor.skin.geometry,geometry);
-        actor.root.updateMatrixWorld(true);
-        assert.deepEqual(actor.skin.skeleton.bones.map(b=>b.matrixWorld.toArray()),boneTransforms);
-        const count=actor.skin.geometry.attributes.position.count;
-        for(let vertex=0;vertex<count;vertex+=13) {
-          actor.skin.getVertexPosition(vertex,pos);
-          assert.ok(pos.toArray().every(Number.isFinite));
-        }
+    const bindCenters=actor.tail.centers.map(p=>p.clone());
+    let excursion=0;
+    for(let frame=0;frame<200;frame++) {
+      actor.update(dt,frame*dt,'Swim');
+      excursion=Math.max(excursion,Math.abs(actor.tail.centers.at(-1).y-bindCenters.at(-1).y));
+      for(let i=1;i<bindCenters.length;i++) {
+        const expected=bindCenters[i].distanceTo(bindCenters[i-1]);
+        const actual=actor.tail.centers[i].distanceTo(actor.tail.centers[i-1]);
+        assert.ok(Math.abs(actual-expected)<1e-10);
+      }
+      if(frame%30!==0) continue;
+      const caudal=actor.caudal.position.toArray();
+      const boneTransforms=actor.skin.skeleton.bones.map(b=>b.quaternion.toArray());
+      actor.setLOD((actor.level+1)%3);
+      assert.deepEqual(actor.caudal.position.toArray(),caudal);
+      assert.deepEqual(actor.skin.skeleton.bones.map(b=>b.quaternion.toArray()),boneTransforms);
+      const g=actor.skin.geometry, sections=new Map();
+      for(const [i,z] of g.userData.tailStations.entries()) {
+        if(z>=0) continue;
+        if(!sections.has(z)) sections.set(z,i);
+        const a=sections.get(z);
+        const current=g.attributes.position, rest=g.attributes.merpersonRest;
+        const span=pos.fromBufferAttribute(current,a).distanceTo(other.fromBufferAttribute(current,i));
+        const original=pos.fromBufferAttribute(rest,a).distanceTo(other.fromBufferAttribute(rest,i));
+        assert.ok(Math.abs(span-original)<1e-6);
       }
     }
-    assert.ok(locomotionDistance>1.4,'The swimming cycle produces forward motion');
-    assert.ok(actor.heading>1,'The turning action changes heading');
-    assert.ok(maxStep<.12,'The caudal attachment moves continuously through action changes');
-    assert.ok(actor.drive<.01,'The merperson settles on returning to Idle');
+    assert.ok(excursion>.38,'The moving tail should depart substantially from its neutral pose');
+  } finally {
+    actor.dispose();
+  }
+});
+
+test('Swim states change speed and steering continuously and articulate the hands',()=>{
+  const actor=new Merperson();
+  try {
+    let frame=0;
+    const advance=(action,seconds)=>{
+      const ending=frame+Math.round(60*seconds);
+      const last=actor.root.position.clone();
+      for(;frame<ending;frame++) {
+        actor.update(1/60,frame/60,action);
+        assert.ok(last.distanceTo(actor.root.position)<.038);
+        last.copy(actor.root.position);
+      }
+    };
+    const {motion,arms}=actor;
+    advance('Idle',.8);
+    assert.ok(actor.root.position.length()<1e-10);
+    const hoveringWrist=arms[0].wrist.quaternion.clone();
+    advance('Cruise',2);
+    const cruising=motion.speed;
+    assert.ok(.55<cruising && cruising<.9);
+    advance('Swim',1.6);
+    assert.ok(motion.speed>cruising+.65);
+    const fastest=motion.speed, cruisingFinger=arms[0].digits[1][1].rotation.x;
+    advance('Glide',1);
+    assert.ok(motion.speed<fastest && motion.speed>fastest*.55);
+    assert.ok(motion.stroke<.05);
+    const heading=motion.heading;
+    advance('Turn',1.25);
+    assert.ok(motion.heading>heading+.5);
+    const leftHeading=motion.heading;
+    advance('TurnRight',1.55);
+    assert.ok(motion.heading<leftHeading-.55);
+    assert.ok(!arms[0].wrist.quaternion.equals(hoveringWrist));
+    advance('Swim',1.3);
+    advance('Brake',.25);
+    assert.ok(motion.brake>.4);
+    assert.ok(arms[0].digits[1][1].rotation.x<cruisingFinger-.08);
+    advance('Brake',1.55);
+    advance('Idle',1.3);
+    assert.ok(motion.speed<.002);
+    assert.ok(motion.hover>.9);
+    actor.root.updateMatrixWorld(true);
+    for(const {handMesh} of arms) {
+      const vertex=new Vector3();
+      for(let i=0;i<handMesh.geometry.attributes.position.count;i+=5) {
+        handMesh.getVertexPosition(i,vertex);
+        assert.ok(vertex.toArray().every(Number.isFinite));
+      }
+    }
   } finally {
     actor.dispose();
   }

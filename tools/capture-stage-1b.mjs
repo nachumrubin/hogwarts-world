@@ -1,5 +1,5 @@
 // node tools/capture-stage-1b.mjs <creature-lab directory> before|after [species]
-// Use merperson-runtime instead of merperson to capture and measure the Lab itself.
+// Use merperson-runtime to measure the Lab or merperson-motion for swim footage.
 // The published runtime is captured with: node tools/capture-stage-1b.mjs creature-lab published merperson-runtime
 // Requires Chromium (CHROME_PATH may override) and ffmpeg for the after clips.
 import {spawn} from 'node:child_process';
@@ -9,13 +9,15 @@ import {tmpdir} from 'node:os';
 import {join,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {captureMerpersonRuntime} from './merperson-runtime-evidence.mjs';
+import {captureMerpersonMotion} from './merperson-motion-evidence.mjs';
 
 const [source,revision,selected]=process.argv.slice(2);
-const runtime=selected==='merperson-runtime';
-if(!source||!(['before','after'].includes(revision)||(runtime&&revision==='published'))) {
+const motion=selected==='merperson-motion';
+const runtime=motion||selected==='merperson-runtime';
+if(!source||!(['before','after'].includes(revision)||(selected==='merperson-runtime'&&revision==='published'))) {
   throw Error('Supply a lab directory and before or after, or published for merperson-runtime.');
 }
-const gallery=runtime||selected==='merperson'?'merperson-redesign':'stage-1b';
+const gallery=motion?'merperson-motion':runtime||selected==='merperson'?'merperson-redesign':'stage-1b';
 const root=resolve(source),out=fileURLToPath(new URL('../creature-lab/review/'+gallery+'/',import.meta.url));
 const profile=await mkdtemp(join(tmpdir(),'creature-capture-'));
 await mkdir(out,{recursive:true});
@@ -115,7 +117,8 @@ try{
   }
   if(runtime){
     await send('Runtime.enable',{});
-    await captureMerpersonRuntime({send,evaluate,retry,out,revision,webUrl:'https://nachumrubin.github.io/hogwarts-world/'});
+    if(motion) await captureMerpersonMotion({evaluate,retry,out,revision});
+    else await captureMerpersonRuntime({send,evaluate,retry,out,revision,webUrl:'https://nachumrubin.github.io/hogwarts-world/'});
     const shaderError=browserErrors.find(error=>/THREE.WebGLProgram|Shader Error/i.test(error));
     if(shaderError) throw Error(shaderError);
     console.log('Merperson runtime',revision,'complete');

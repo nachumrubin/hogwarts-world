@@ -1,5 +1,7 @@
 # Bestiary review gallery
 
+[Merperson swimming and articulation](merperson-motion/index.html)
+
 [Merperson redesign and swim review](merperson-redesign/index.html)
 
 [Equine anatomy and grazing correction](equine-correction/README.md)

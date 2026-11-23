@@ -1,16 +1,17 @@
 import * as T from '../vendor/three.module.js';
 import {Specimen,joint} from './form.js';
 import {
-  armPivots,batchSweeps,eyeGeometry,eyeY,faceAt,hairCapGeometry,headPivot,membranes,skullGeometry,
-  tailPivots,torsoGeometry
+  armPivots,batchSweeps,eyeGeometry,eyeY,faceAt,hairCapGeometry,handGeometry,headPivot,
+  membranes,skullGeometry,torsoGeometry
 } from './merperson-anatomy.js';
+import {SwimMotion,SwimTail,bendFluke} from './merperson-swim.js';
 
 const SKIN=0xffffff;
 const FIN=0xfffefa;
 const HAIR=0xfdffff;
 const DETAIL=0xfefeff;
 const hairColors=[0x293a33,0x34473e,0x3b4840,0x263b36,0x4a5142].map(c=>new T.Color(c));
-const TAU=2*Math.PI;
+const V=(x,y,z)=>new T.Vector3(x,y,z);
 
 function bone(parent,point,previous=[0,0,0]) {
   const node=new T.Bone();
@@ -26,13 +27,14 @@ function tinted(specimen,parent,key,roughness,make,Type) {
   return mesh;
 }
 
-function applySkinFinish(material) {
+function applySkinFinish(material,deforming=false) {
+  material.customProgramCacheKey=()=>deforming?'merperson-deforming-skin':'merperson-skin';
   // Rest-space detail travels with the skin and fades as individual scales
   // approach a pixel. Use the standard material's own lighting and roughness.
   material.onBeforeCompile=shader=>{
     shader.vertexShader=shader.vertexShader
-      .replace('#include <common>','#include <common>\nvarying vec3 vMerpersonSkin;')
-      .replace('#include <begin_vertex>','#include <begin_vertex>\nvMerpersonSkin = position;');
+      .replace('#include <common>',`#include <common>\nvarying vec3 vMerpersonSkin;${deforming?'\nattribute vec3 merpersonRest;':''}`)
+      .replace('#include <begin_vertex>',`#include <begin_vertex>\nvMerpersonSkin = ${deforming?'merpersonRest':'position'};`);
     shader.fragmentShader=shader.fragmentShader
       .replace('#include <common>','#include <common>\nvarying vec3 vMerpersonSkin;')
       .replace('#include <color_fragment>',`
@@ -132,7 +134,10 @@ const caudalOutlines=[1,-1].map(sign=>({
     [.020,.294,-.154,.025,.302,-.377],
     [.027,.366,-.303,.031,.360,-.416],
     [.034,.405,-.432,.035,.401,-.442]
-  ].map(([x,y,z,bx,by,bz])=>[x,y*sign*(sign<0?.76:1),z,bx,by*sign*(sign<0?.76:1),bz+(sign<0?.033:0)])
+  ].map(([x,y,z,bx,by,bz])=>{
+    const span=sign<0?.86:1;
+    return [y*sign*span,-x+.17*y,z,by*sign*span,-bx+.17*by,bz+(sign<0?.021:0)];
+  })
 }));
 const dorsalOutline={ribs:[
   [0,.099,.27,0,.102,.273],[0,.113,.180,0,.174,.183],
@@ -167,6 +172,88 @@ function lockPaths(level,group) {
   return result;
 }
 
+const {clamp,smoothstep}=T.MathUtils;
+
+class SwimArm {
+  constructor(chest,sign) {
+    this.sign=sign;
+    const pivots=armPivots.map(([x,y,z])=>[sign*x,y,z]);
+    this.shoulder=bone(chest,pivots[0]);
+    this.elbow=bone(this.shoulder,pivots[1],pivots[0]);
+    this.wrist=bone(this.elbow,pivots[2],pivots[1]);
+    this.upperLength=this.elbow.position.length();
+    this.lowerLength=this.wrist.position.length();
+    this.restUpper=this.elbow.position.clone().normalize();
+    this.restLower=this.wrist.position.clone().normalize();
+    this.restHand=V(.14*sign,-.49,.86).normalize();
+    this.target=V();
+    this.axis=V();
+    this.pole=V();
+    this.upper=V();
+    this.lower=V();
+    this.hand=V();
+    this.q=new T.Quaternion();
+    this.inv=new T.Quaternion();
+    this.wristTurn=new T.Quaternion();
+
+    this.fingers=handRows(sign);
+    this.digits=this.fingers.map(path=>path.slice(0,3).map(row=>row.slice(0,3))
+      .reduce((chain,p,i,points)=>{
+        chain.push(bone(chain.at(-1)||this.wrist,p,points[i-1]));
+        return chain;
+      },[]));
+  }
+
+  update(motion) {
+    const {phase,hover,turn,brake,coast,surge,flow}=motion;
+    const s=this.sign, outside=Math.max(0,-s*turn), inside=Math.max(0,s*turn);
+    const scull=phase+s*.38, flutter=Math.sin(scull);
+    const streamline=smoothstep(flow,0,1.65);
+    this.target.set(
+      s*(.51-.061*streamline+.16*hover+.31*brake+.25*outside-.042*inside
+        +.055*hover*Math.cos(scull-.44)),
+      -.193-.045*streamline+.075*hover+.107*brake+.136*outside+.029*inside
+        +(.022*hover+.009)*Math.cos(scull),
+      .097-.147*streamline-.047*coast+.115*hover+.32*brake+.072*outside-.024*inside
+        +.074*hover*flutter-.026*surge
+    );
+    this.axis.subVectors(this.target,this.shoulder.position);
+    const reach=clamp(this.axis.length(),.28,this.upperLength+this.lowerLength-.018);
+    this.axis.normalize();
+    this.pole.set(s*(.74+.16*outside),-.29,-.68).addScaledVector(this.axis,
+      -this.pole.dot(this.axis)).normalize();
+    // Find the elbow on the circle where both fixed bone lengths agree.
+    const along=(this.upperLength*this.upperLength-this.lowerLength*this.lowerLength+reach*reach)/(2*reach);
+    const out=Math.sqrt(Math.max(0,this.upperLength*this.upperLength-along*along));
+    this.upper.copy(this.axis).multiplyScalar(along).addScaledVector(this.pole,out);
+    this.lower.copy(this.axis).multiplyScalar(reach).sub(this.upper).normalize();
+    this.shoulder.quaternion.setFromUnitVectors(this.restUpper,this.upper.normalize());
+    this.inv.copy(this.shoulder.quaternion).invert();
+    this.elbow.quaternion.setFromUnitVectors(this.restLower,this.hand.copy(this.lower).applyQuaternion(this.inv));
+
+    this.hand.copy(this.lower);
+    this.hand.x+=s*(.27*hover*Math.sin(scull-.63)+.50*brake+.20*outside);
+    this.hand.y+=.18*hover*Math.cos(scull-.76)+.26*brake;
+    this.hand.z+=.2*hover*Math.cos(scull)+.56*brake;
+    this.q.setFromUnitVectors(this.restHand,this.hand.normalize());
+    this.wristTurn.setFromAxisAngle(this.restHand,s*(.39*hover*Math.sin(scull-.58)
+      +.60*brake-.15*streamline+.29*outside));
+    this.inv.multiplyQuaternions(this.shoulder.quaternion,this.elbow.quaternion).invert();
+    this.wrist.quaternion.copy(this.inv).multiply(this.q).multiply(this.wristTurn);
+
+    const spread=.15*hover+.32*brake+.15*outside-.045*streamline;
+    for(let i=0;i<this.digits.length;i++) {
+      const [knuckle,middle,tip]=this.digits[i];
+      const ripple=Math.sin(scull-.96-i*.37);
+      const leverage=i===0?.67:1;
+      const curl=leverage*(.13+.15*streamline-.27*brake+.08*coast+.15*hover*ripple+.05*outside*ripple);
+      knuckle.rotation.set(curl*.74,s*(i-2)*spread*.43,0);
+      middle.rotation.x=curl;
+      tip.rotation.x=curl*.67;
+    }
+  }
+}
+
 export class Merperson extends Specimen {
   constructor() {
     super();
@@ -175,33 +262,21 @@ export class Merperson extends Specimen {
     const chest=bone(this.body,[0,0,0]);
     this.head=bone(chest,headPivot);
     const bones=[chest,this.head];
-    this.tail=[];
-    tailPivots.forEach((point,i)=>{
-      const next=bone(this.tail.at(-1)||chest,point,tailPivots[i-1]);
-      this.tail.push(next);
-      bones.push(next);
-    });
-    this.arms=[];
-    for(const sign of [-1,1]) {
-      const pivots=armPivots.map(([x,y,z])=>[sign*x,y,z]);
-      const shoulder=bone(chest,pivots[0]);
-      const elbow=bone(shoulder,pivots[1],pivots[0]);
-      const wrist=bone(elbow,pivots[2],pivots[1]);
-      this.arms.push({sign,shoulder,elbow,wrist});
-      bones.push(shoulder,elbow,wrist);
-    }
-    const body=tinted(this,this.body,SKIN,.73,torsoGeometry,T.SkinnedMesh);
+    this.motion=new SwimMotion();
+    this.tail=new SwimTail();
+    this.arms=[-1,1].map(sign=>new SwimArm(chest,sign));
+    for(const {shoulder,elbow,wrist} of this.arms) bones.push(shoulder,elbow,wrist);
+    const body=tinted(this,this.body,0xfffefe,.73,torsoGeometry,T.SkinnedMesh);
     body.name='Continuous merperson skin';
-    applySkinFinish(body.material);
+    applySkinFinish(body.material,true);
     this.root.updateMatrixWorld(true);
     body.bind(new T.Skeleton(bones));
-    // The default mesh bound is calculated at bind pose. The flexible tail
-    // can extend outside that bound when the creature banks near the camera.
     body.frustumCulled=false;
     this.skin=body;
 
     const head=tinted(this,this.head,SKIN,.73,skullGeometry);
     head.name='Merperson head';
+    applySkinFinish(head.material);
     this.eyes=[-1,1].map(sign=>addEye(this,sign));
     this.faceScales=tinted(this,this.head,DETAIL,.76,level=>batchSweeps(level,faceDetails(level)));
     tinted(this,this.head,FIN,.65,level=>membranes([-1,1].map(earFin),level));
@@ -213,34 +288,28 @@ export class Merperson extends Specimen {
       return pivot;
     });
 
-    const caudal=tinted(this,this.tail.at(-1),FIN,.65,level=>membranes(caudalOutlines,level));
-    caudal.name='Forked caudal fin';
-    this.caudal=caudal;
-    tinted(this,this.tail[3],FIN,.65,level=>membranes([dorsalOutline],level));
-    this.pectoral=[-1,1].map(s=>{
-      const mount=joint(this.tail[1],s*.134,-.004,-.035);
-      tinted(this,mount,FIN,.65,level=>membranes([pairedOutline(s)],level));
-      return mount;
-    });
-    for(const {sign,wrist} of this.arms) {
-      const fingers=handRows(sign);
-      const hand=tinted(this,wrist,SKIN,.73,level=>batchSweeps(level,
-        fingers.map((path,i)=>({path,color:new T.Color(i===0?0x74867a:0x849285)}))));
-      hand.name='Merperson fingers';
-      const web=new T.Color(0x697c6e);
-      tinted(this,wrist,FIN,.65,level=>membranes(fingers.slice(0,-1).map((a,i)=>{
-        const b=fingers[i+1];
-        const ribs=[0,1,2].map(j=>[...a[j].slice(0,3),...b[j].slice(0,3)]);
-        // The thumb web fades back further than the membranes between fingers.
-        const u=i===0?.61:.87;
-        ribs[2]=ribs[1].map((v,j)=>T.MathUtils.lerp(v,ribs[2][j],u));
-        return {ribs,color:web,edge:new T.Color(0x788a78),reverse:sign<0};
-      }),level));
+    this.caudal=joint(this.body);
+    this.caudalRest=V(0,-.45,-1.91);
+    this.caudalCoordinate=this.tail.coordinate(this.caudalRest.z);
+    this.fluke=tinted(this,this.caudal,FIN,.65,level=>membranes(caudalOutlines,level));
+    this.fluke.name='Forked caudal fin';
+    this.fluke.frustumCulled=false;
+    this.secondaryFins=[
+      tinted(this,this.body,FIN,.65,level=>membranes([dorsalOutline],level).translate(0,-.50,-1.33)),
+      ...[-1,1].map(s=>tinted(this,this.body,FIN,.65,level=>
+        membranes([pairedOutline(s)],level).translate(s*.134,-.424,-.655)))
+    ];
+    for(const fin of this.secondaryFins) fin.frustumCulled=false;
+
+    for(const arm of this.arms) {
+      arm.handMesh=tinted(this,arm.wrist,SKIN,.73,level=>
+        handGeometry(level,arm.fingers),T.SkinnedMesh);
+      arm.handMesh.name=arm.sign===1?'Left articulated webbed hand':'Right articulated webbed hand';
+      arm.handMesh.frustumCulled=false;
+      this.root.updateMatrixWorld(true);
+      arm.handMesh.bind(new T.Skeleton(arm.digits.flat()));
     }
-    this.phase=.36;
-    this.drive=0;
-    this.bank=0;
-    this.heading=0;
+    this.lastTime=0;
     this.update(0,0,'Idle');
   }
 
@@ -248,60 +317,41 @@ export class Merperson extends Specimen {
     super.setLOD(level);
     this.skin.boundingBox=null;
     this.faceScales.visible=level!==2;
+    this.pose(this.lastTime);
   }
 
   update(dt,time,action) {
-    const ease=1-Math.exp(-dt*3.4);
-    const effort=action==='Swim'?1:action==='Turn'?.54:0;
-    this.drive+=(effort-this.drive)*ease;
-    this.bank+=((action==='Turn'?1:0)-this.bank)*ease;
-    const drive=this.drive, turn=this.bank;
-    this.phase=(this.phase+dt*(3.0+2.65*drive))%TAU;
-    const phase=this.phase;
-    const yawSpeed=.92*turn;
-    this.heading=(this.heading+dt*yawSpeed)%TAU;
-    const thrust=drive*(.56+.76*drive)*(.90+.10*Math.cos(phase*2-1.1));
-    this.root.position.x+=dt*thrust*Math.sin(this.heading);
-    this.root.position.z+=dt*thrust*Math.cos(this.heading);
-    this.body.position.y=1.25+(.052-.026*drive)*Math.sin(phase-.92);
-    this.body.rotation.set(-.21*drive+.056*Math.cos(phase-.65),
-      this.heading-(.023+.027*drive)*Math.sin(phase),-.24*turn+.040*Math.sin(phase+.70));
-    this.head.rotation.y=.12*turn+.087*Math.sin(time*.88)-.032*Math.sin(phase);
-    this.head.rotation.x=.14*drive+.032*Math.sin(phase-.42);
-    this.head.rotation.z=.084*turn-.024*Math.sin(phase);
+    const motion=this.motion;
+    motion.update(dt,action);
+    this.root.position.x+=dt*motion.speed*Math.sin(motion.heading);
+    this.root.position.z+=dt*motion.speed*Math.cos(motion.heading);
+    this.lastTime=time;
+    this.pose(time);
+  }
 
-    let previousYaw=0,previousPitch=0;
-    for(let i=0;i<this.tail.length;i++) {
-      const link=this.tail[i],u=(i+1)/this.tail.length;
-      const yaw=(.29+.68*drive)*u**1.48*Math.sin(phase-u*4.48)-.33*turn*u;
-      const pitch=(.045+.038*drive)*u*Math.cos(phase-u*3)-.13*drive*u;
-      link.rotation.y=yaw-previousYaw;
-      link.rotation.x=pitch-previousPitch;
-      previousYaw=yaw;
-      previousPitch=pitch;
-    }
-    this.caudal.rotation.y=(.075+.10*drive)*Math.sin(phase-5.3);
-    this.caudal.rotation.z=.057*Math.cos(phase-4.6);
-    for(let i=0;i<this.pectoral.length;i++) {
-      const fin=this.pectoral[i];
-      fin.rotation.z=(i===0?-1:1)*(.12*Math.sin(phase-1.9+i*.52)+.14*turn);
-      fin.rotation.y=.068*Math.sin(phase-2.1+i*.57);
-    }
-    for(const {sign,shoulder,elbow,wrist} of this.arms) {
-      const scull=Math.sin(phase+sign*.38);
-      shoulder.rotation.x=.18*drive+.18*(1-.63*drive)*scull;
-      shoulder.rotation.z=sign*(.10+.15*(1-drive)*Math.cos(phase))+.15*turn;
-      shoulder.rotation.y=-sign*.14*drive+.12*turn;
-      elbow.rotation.x=.23*drive+.13*(1-drive)*Math.sin(phase-.78);
-      elbow.rotation.y=sign*(.21*drive+.08*Math.cos(phase-.6));
-      wrist.rotation.x=-.09*drive+.19*Math.sin(phase-1.28+sign*.45);
-      wrist.rotation.z=sign*.12*Math.cos(phase-.72);
-    }
+  pose(time) {
+    const motion=this.motion;
+    const {phase,stroke,hover,turn,flow,brake,coast,surge}=motion;
+    const spine=.105*stroke*Math.sin(phase-.22)+.041*hover*Math.sin(phase-.91);
+    const pitch=motion.pitch+spine-.085*brake+.05*surge;
+    const roll=-.33*turn+(.034*hover+.019*stroke)*Math.sin(phase+.68);
+    this.body.position.y=1.25+.045*hover*Math.sin(phase-.76)+.059*stroke*Math.sin(phase-.79)-.062*brake;
+    this.body.rotation.set(pitch,motion.heading+.034*stroke*Math.sin(phase+.37),roll);
+    this.head.rotation.set(-.63*pitch-.034*stroke*Math.sin(phase-.30)+.07*brake,
+      .22*turn+.043*Math.sin(time*.88)-.022*Math.sin(phase+.25),-.72*roll);
+
+    this.tail.update(motion,pitch);
+    this.tail.deform(this.skin,motion);
+    this.tail.attach(this.caudal,this.caudalRest,this.caudalCoordinate);
+    bendFluke(this.fluke,motion);
+    for(const fin of this.secondaryFins) this.tail.deform(fin,motion,1);
+    for(const arm of this.arms) arm.update(motion);
     for(let i=0;i<this.hair.length;i++) {
       const lock=this.hair[i];
-      lock.rotation.y=.14*Math.sin(phase-1.3-i*.51)-.17*turn;
-      lock.rotation.x=.17*drive+.13*Math.cos(phase-1.54-i*.74);
-      lock.rotation.z=.052*Math.sin(phase-.88-i*.66);
+      const drift=time*(1.67+i*.16)-i*.86;
+      lock.rotation.y=.092*Math.sin(drift)-.22*turn;
+      lock.rotation.x=.14*flow+.085*Math.cos(drift-.74)-.17*brake+.08*coast;
+      lock.rotation.z=.049*Math.sin(drift+.42)-.10*turn;
     }
     const blink=Math.max(0,1-Math.abs(time%6.5-3.94)/.11);
     for(const {lens,lid} of this.eyes) {

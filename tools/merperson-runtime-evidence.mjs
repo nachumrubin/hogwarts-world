@@ -3,7 +3,7 @@ import {writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 
 // Run the normal Lab application and use its existing controls and renderer.
-async function openMerperson() {
+export async function openMerperson() {
   const {Lab}=await import(new URL('./lab.js',location.href));
   const control=document.querySelector('[data-creature="merperson"]');
   if(!document.querySelector('#load')?.hidden || !control?.onclick) return false;

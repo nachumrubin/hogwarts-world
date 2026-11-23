@@ -8,5 +8,5 @@ export const catalog={
   unicorn:{model:Unicorn,name:'Unicorn',latin:'Unicorn',id:'004',lab:'Woodland Clearing',taxon:'Equine',size:'2.9 m',zone:'Woodland',mood:'Alert',actions:{Idle:'Quiet stance',Graze:'Grazing',Walk:'Four-beat walk',Alert:'Alert posture'}},
   owl:{model:Owl,name:'Barn Owl',latin:'Tyto alba',id:'005',lab:'Forest Roost',taxon:'Aves',size:'0.6 m',zone:'Forest edge',mood:'Observant',actions:{Perch:'Perching',Look:'Scan the roost',Fly:'Flight cycle',Fold:'Fold wings'}},
   hippogriff:{model:Hippogriff,name:'Hippogriff',latin:'Hippogriff',id:'006',lab:'Highland Paddock',taxon:'Avian–equine',size:'2.5 m',zone:'Uplands',mood:'Proud',actions:{Idle:'Standing',Walk:'Paddock walk',Unfold:'Unfold wings',Flap:'Standing flap',Fly:'Flight pose'}},
-  merperson:{model:Merperson,name:'Merperson',latin:'Great Lake merfolk',id:'007',lab:'Lake Shelf',taxon:'Merfolk',size:'2.8 m',zone:'Freshwater',mood:'Guarded',actions:{Idle:'Treading water',Swim:'Forward propulsion',Turn:'Banking turn'}}
+  merperson:{model:Merperson,name:'Merperson',latin:'Great Lake merfolk',id:'007',lab:'Lake Shelf',taxon:'Merfolk',size:'2.8 m',zone:'Freshwater',mood:'Guarded',actions:{Idle:'Hover in place',Cruise:'Slow cruise',Swim:'Fast swim',Turn:'Bank left',TurnRight:'Bank right',Glide:'Glide',Brake:'Brake and stop'}}
 };

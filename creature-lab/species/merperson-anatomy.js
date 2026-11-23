@@ -15,11 +15,6 @@ const finEdge = new T.Color(0x697c65);
 
 // Tail tip to neck, in metres relative to the swimming pivot. The upper
 // three chest rings form both shoulder openings in the same indexed surface.
-export const tailPivots = [
-  [0,-.27,-.31], [0,-.42,-.62], [0,-.49,-.97],
-  [0,-.50,-1.33], [0,-.48,-1.64], [0,-.45,-1.91]
-];
-const tailBlendStations=[-.23,...tailPivots.map(p=>p[2])];
 export const headPivot = [0,.555,.253];
 const bodySections = [
   [0,-.45,-1.94,.027,.059], [0,-.47,-1.79,.036,.083],
@@ -35,6 +30,8 @@ const bodySections = [
   [0,.625,.249,.106,.100]
 ];
 
+// Sample the same rest centerline at every detail level.
+export const tailCenterline=smoothSections(bodySections.slice(0,13),10).reverse();
 export const armPivots = [
   [.334,.355,.150], [.518,.066,.081], [.591,-.133,.253]
 ];
@@ -49,7 +46,7 @@ const armSections = [
 ];
 
 function surface() {
-  return {position:[], index:[], color:[], joints:[], weights:[]};
+  return {position:[], index:[], color:[], joints:[], weights:[], stations:[]};
 }
 
 function point(mesh, x, y, z, color, first=0, second=first, blend=0) {
@@ -94,6 +91,11 @@ function geometry(mesh, skinned=false) {
     return next;
   });
   const g=new T.BufferGeometry();
+  if(mesh.stations.length) {
+    const stations=new Float32Array(positions.length/3).fill(1);
+    for(const [before,after] of remap) stations[after]=mesh.stations[before]??1;
+    g.userData.tailStations=stations;
+  }
   g.setAttribute('position',new T.Float32BufferAttribute(positions,3));
   g.setAttribute('color',new T.Float32BufferAttribute(colors,3));
   if(skinned) {
@@ -150,22 +152,16 @@ export function torsoGeometry(level) {
         .multiplyScalar(1+scales*scaleVariation*(.14*scaleShade+.045*Math.sin(row*7.2+j*4.7)-.047));
       const side=x<0?0:1;
       let first=0, second=0, blend=0;
-      if(cz<-.23) {
-        const chain=tailBlendStations;
-        for(let k=0;k<chain.length-1;k++) {
-          first=k===0?0:1+k;
-          second=2+k;
-          blend=clamp((chain[k]-cz)/(chain[k]-chain[k+1]),0,1);
-          if(cz>=chain[k+1]) break;
-        }
-      } else if(cy>.485 && ax<.15) {
+      if(cy>.485 && ax<.15) {
         second=1;
         blend=.78*clamp((cy-.485)/.135,0,1);
       } else if(i>=portRow && i<=portRow+portHeight) {
-        second=8+side*3;
+        second=2+side*3;
         blend=.55*clamp((Math.abs(Math.cos(theta))-.53)/.47,0,1);
       }
-      ring.push(point(result,cx+x,y,z,c,first,second,blend));
+      const vertex=point(result,cx+x,y,z,c,first,second,blend);
+      if(cz<=tailCenterline[0][2]) result.stations[vertex]=cz;
+      ring.push(vertex);
     }
     return ring;
   });
@@ -210,7 +206,7 @@ export function torsoGeometry(level) {
       const tangent=V(sign*(bb[0]-aa[0]),bb[1]-aa[1],bb[2]-aa[2]).normalize();
       const across=u.clone().addScaledVector(tangent,-u.dot(tangent)).normalize();
       const normal=tangent.clone().cross(across);
-      const joint=8+side*3;
+      const joint=2+side*3;
       const upperBlend=T.MathUtils.smoothstep(y,.008,.137);
       const wristBlend=1-T.MathUtils.smoothstep(y,-.174,-.089);
       const ring=[];
@@ -234,7 +230,9 @@ export function torsoGeometry(level) {
     }
     cap(result,previous);
   }
-  return geometry(result,true);
+  const g=geometry(result,true);
+  g.setAttribute('merpersonRest',g.attributes.position.clone());
+  return g;
 }
 
 const skull = [
@@ -415,4 +413,59 @@ export function eyeGeometry(level,sign,upperLid=false) {
     }
   }
   return geometry(mesh);
+}
+
+
+function fingerWeights(finger,t) {
+  const first=finger*3;
+  if(t<.35) return [first,first,0];
+  if(t<1.55) return [first,first+1,T.MathUtils.smoothstep(t,.43,1.53)];
+  return [first+1,first+2,T.MathUtils.smoothstep(t,1.56,2.57)];
+}
+
+export function handGeometry(level,fingers) {
+  const mesh=surface(), steps=[4,3,2][level], sides=[10,8,6][level];
+  const skinColors=[new T.Color(0x74867a),new T.Color(0x849285)];
+  const webColor=new T.Color(0x6f8576);
+  const paths=fingers.map(path=>smoothSections(path,steps));
+  for(const [finger,path] of paths.entries()) {
+    const shape=sweep(path,sides), p=shape.attributes.position, start=mesh.position.length/3;
+    for(let i=0;i<p.count;i++) {
+      const controls=fingerWeights(finger,Math.floor(i/sides)/steps);
+      point(mesh,p.getX(i),p.getY(i),p.getZ(i),skinColors[Number(finger!==0)],...controls);
+    }
+    for(const i of shape.index.array) mesh.index.push(start+i);
+    shape.dispose();
+  }
+
+  // Web corners use the same influences as the adjacent finger sections.
+  // Interior vertices interpolate across both fingers, with four weights max.
+  const columns=[5,4,3][level];
+  for(let digit=0;digit<4;digit++) {
+    const reach=digit===0?1.55:1.88;
+    const start=mesh.position.length/3, rows=steps*2;
+    for(let row=0;row<=rows;row++) {
+      const u=row/rows,t=u*reach;
+      const sample=t*steps, i=Math.floor(sample), f=sample-i;
+      const a=paths[digit],b=paths[digit+1];
+      const [a0,a1,aw]=fingerWeights(digit,t);
+      const [b0,b1,bw]=fingerWeights(digit+1,t);
+      for(let column=0;column<=columns;column++) {
+        const v=column/columns, depth=Math.sin(Math.PI*v);
+        // A scalloped free edge. Keep the corner positions on the digits.
+        const setback=.018*depth*u*u;
+        const x=mix(mix(a[i][0],a[i+1][0],f),mix(b[i][0],b[i+1][0],f),v);
+        const y=mix(mix(a[i][1],a[i+1][1],f),mix(b[i][1],b[i+1][1],f),v);
+        const z=mix(mix(a[i][2],a[i+1][2],f),mix(b[i][2],b[i+1][2],f),v);
+        const k=point(mesh,x,y+.004*depth,z-setback,webColor);
+        mesh.joints.splice(k*4,4,a0,a1,b0,b1);
+        mesh.weights.splice(k*4,4,(1-aw)*(1-v),aw*(1-v),(1-bw)*v,bw*v);
+        if(row && column) {
+          const p=k-columns-1;
+          mesh.index.push(p-1,p,k-1,p,k,k-1);
+        }
+      }
+    }
+  }
+  return geometry(mesh,true);
 }
