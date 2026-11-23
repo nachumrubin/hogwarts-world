@@ -6,6 +6,9 @@ on:
     paths:
       - 'creature-lab/**'
       - '.github/workflows/deploy-creature-lab.yml'
+      - 'tools/build-creature-lab.mjs'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 
 permissions:
@@ -26,6 +29,11 @@ jobs:
     steps:
       - name: Checkout creature-lab branch
         uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: node tools/build-creature-lab.mjs --pages
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
@@ -33,7 +41,7 @@ jobs:
       - name: Upload Creature Lab site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: creature-lab
+          path: dist/creature-lab-pages
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
