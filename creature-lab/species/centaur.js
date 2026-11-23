@@ -71,6 +71,5 @@ export class Centaur extends Specimen {
     this.trunk.rotation.z=walk*.018*Math.sin(t*5);
     this.head.rotation.y=.18*Math.sin(t*.72);
     this.arms.forEach((arm,i)=>arm.rotation.x=walk*.23*Math.sin(t*5+i*Math.PI));
-    if(action==='Turn')this.body.rotation.y+=dt*.42;
   }
 }

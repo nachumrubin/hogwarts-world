@@ -3,6 +3,7 @@
 // the back of the neck while the brisket rises into its front.
 import * as T from '../vendor/three.module.js';
 import {smoothSections} from './form.js';
+import {cervicalBoneIndex,cervicalRig} from './cervical.js';
 
 const barrel=[
   [.05,1.51,-1.11,1.24,-1.09,0],
@@ -106,10 +107,24 @@ export function equineBody(actor,parent,kind,coat,foreColor,pivot){
           y+=.037*bump(lateral,.064)*bump(z-.61,.27)*bump(y-1.06,.22);
         }
         // Narrow the underside of the rib basket and flatten the broad back.
-        positions.push(width*Math.sign(x)*Math.abs(x)**.88*(.94+.09*v),y,z);
+        let flank=width*Math.sign(x)*Math.abs(x)**.88*(.94+.09*v);
+        if(kind!=='hippogriff' && y<1.88){
+          // Scapular muscles sit on the thorax. Their broad dorsal
+          // attachment narrows toward the point of the shoulder.
+          const scapularZ=.61-.64*(y-1.43);
+          const blade=Math.exp(-(((y-1.54)/.27)**2+((z-scapularZ)/.165)**2));
+          const triceps=Math.exp(-(((y-1.26)/.19)**2+((z-.47)/.18)**2));
+          const taper=1-T.MathUtils.smoothstep(y,1.76,1.88);
+          flank+=(.053*blade+.037*triceps)*x**3*taper;
+        }
+        positions.push(flank,y,z);
         const transition=T.MathUtils.smoothstep(weight+(1-t)*.12,.11,.60);
         colors.push(...coatColor.clone().lerp(frontColor,transition).toArray());
-        bones.push(0,1,0,0);weights.push(1-weight,weight,0,0);
+        if(kind==='unicorn'){
+          bones.push(cervicalBoneIndex(i/steps),0,0,0);weights.push(1,0,0,0);
+        }else{
+          bones.push(0,1,0,0);weights.push(1-weight,weight,0,0);
+        }
         const nearSide=Math.min(j+.5,sides-j-.5,Math.abs(j+.5-sides/2));
         const shoulderOpening=kind==='centaur' && i>armBottom && i<=armTop && nearSide<armArc;
         if(i && !shoulderOpening){const k=i*sides+j,n=i*sides+(j+1)%sides;indices.push(k-sides,n-sides,k,n-sides,n,k)}
@@ -136,7 +151,16 @@ export function equineBody(actor,parent,kind,coat,foreColor,pivot){
     g.setIndex(indices);g.computeVertexNormals();return g;
   },T.SkinnedMesh);
   surface.material.vertexColors=true;
-  const base=new T.Bone(),neck=new T.Bone();
+  const base=new T.Bone();
+  if(kind==='unicorn'){
+    surface.add(base);
+    actor.cervical=cervicalRig(base,stations,pivot,parent.scale);
+    surface.updateWorldMatrix(true,true);
+    surface.bind(new T.Skeleton(actor.cervical.bones));
+    surface.frustumCulled=false;
+    return actor.cervical.neck;
+  }
+  const neck=new T.Bone();
   surface.add(base);base.add(neck);neck.position.set(...pivot);
   const bones=[base,neck];
   if(kind==='centaur'){

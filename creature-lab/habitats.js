@@ -360,6 +360,23 @@ function groundShadow(group,height,lake) {
   group.add(new THREE.Mesh(g,m));
 }
 
+// Equine foot and lip contacts sample the same triangles visible in the
+// viewport. The analytic field between terrain vertices can differ by cm.
+function triangleGroundHeight(mesh,outside){
+  const {width,height,widthSegments:cols,heightSegments:rows}=mesh.geometry.parameters;
+  const vertices=mesh.geometry.attributes.position;
+  return (x,z)=>{
+    const u=(x/width+.5)*cols,v=(z/height+.5)*rows;
+    if(u<0||v<0||u>cols||v>rows)return outside(x,z);
+    const col=Math.min(Math.floor(u),cols-1),row=Math.min(Math.floor(v),rows-1);
+    const i=row*(cols+1)+col,dx=u-col,dz=v-row;
+    // PlaneGeometry splits each cell between its +X and +Z corners.
+    const east=vertices.getY(i+1),south=vertices.getY(i+cols+1);
+    if(dx+dz<=1)return (1-dx-dz)*vertices.getY(i)+dx*east+dz*south;
+    return (dx+dz-1)*vertices.getY(i+cols+2)+(1-dz)*east+(1-dx)*south;
+  };
+}
+
 export function createHabitat(scene,kind) {
   const lake=kind==='squid'||kind==='merperson', group=new THREE.Group(), obstacles=[], clock={value:0};
   group.name=lake?'Great Lake habitat':'Forbidden Forest habitat';
@@ -380,7 +397,9 @@ export function createHabitat(scene,kind) {
   const fill=new THREE.DirectionalLight(lake?0xadd4d6:0xbcd2c9,.55);fill.position.set(2,1,8);
   group.add(hemi,key,rim,fill);
   const sky=backdrop(group,lake);
-  group.add(terrainMesh(terrainHeight,surfaceMaterial(lake?0x62736a:0x645743,'soil',lake,clock)));
+  const ground=terrainMesh(terrainHeight,surfaceMaterial(lake?0x62736a:0x645743,'soil',lake,clock));
+  group.add(ground);
+  const contactHeight=kind==='centaur'||kind==='unicorn'?triangleGroundHeight(ground,terrainHeight):terrainHeight;
   addRocks(group,terrainHeight,random,lake,clock,obstacles);
   plants(group,terrainHeight,random,lake,clock);
   if(!lake)addForest(group,terrainHeight,random,clock,obstacles);
@@ -412,7 +431,7 @@ export function createHabitat(scene,kind) {
   }
   setLighting(1,false);
   let disposed=false;
-  return {group,terrainHeight,obstacles,setLighting,update(dt,time){clock.value=time;motes.time.value=time;},dispose(){
+  return {group,terrainHeight:contactHeight,obstacles,setLighting,update(dt,time){clock.value=time;motes.time.value=time;},dispose(){
     if(disposed)return;disposed=true;
     if(scene.fog===fog){scene.fog=originalFog;scene.background=originalBackground;}
     scene.remove(group);

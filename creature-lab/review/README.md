@@ -1,5 +1,7 @@
 # Bestiary review gallery
 
+[Equine anatomy and grazing correction](equine-correction/README.md)
+
 [Stage 1B structural review and clips](stage-1b/README.md)
 
 [Stage 1 equine comparisons and movement clips](stage-1/README.md)

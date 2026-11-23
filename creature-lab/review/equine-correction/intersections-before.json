@@ -1,0 +1,8 @@
+{
+  "samplesPerAnimal": 481,
+  "lod": 0,
+  "species": {
+    "centaur": {},
+    "unicorn": {}
+  }
+}
