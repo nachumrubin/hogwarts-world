@@ -1,5 +1,7 @@
 # Bestiary review gallery
 
+[Merperson redesign and swim review](merperson-redesign/index.html)
+
 [Equine anatomy and grazing correction](equine-correction/README.md)
 
 [Stage 1B structural review and clips](stage-1b/README.md)

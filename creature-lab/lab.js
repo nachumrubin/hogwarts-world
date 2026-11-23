@@ -8,6 +8,7 @@ import {createHabitat} from './habitats.js';
 const V=THREE.Vector3;
 const species={squid:Squid,aragog:Aragog,...Object.fromEntries(Object.entries(catalog).map(([k,s])=>[k,s.model]))};
 const directions={'three-quarter':[.32,.19,1],habitat:[.38,.28,1],above:[.001,1,.001],left:[0,.05,1],right:[0,.05,-1],front:[1,.08,.001],rear:[-1,.08,.001],'close-up':[.24,.08,1]};
+const merpersonViews={'three-quarter':[.78,.18,1],'close-up':[.37,.075,1]};
 const spiderViews={front:[0,.19,1],rear:[0,.19,-1],left:[1,.2,0],right:[-1,.2,0],'three-quarter':[.56,.32,1],habitat:[.7,.4,1],'close-up':[.15,.12,1]};
 export class Lab{
  constructor(canvas,onFrame){
@@ -50,7 +51,11 @@ export class Lab{
     if(this.widePose(this.action))this.target.y+=this.kind==='owl'?.24:.40;
     if(angle==='close-up'){const size=this.bounds.getSize(new V());this.target.y+=size.y*.28;this.target.z+=size.z*.22;radius=this.fit()*.48}
   }
-  this.target.add(this.actor?.root.position||new V());const dir=(this.kind!=='squid'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
+  if(this.kind==='merperson'&&angle==='close-up'){
+    this.actor.head.getWorldPosition(this.target);this.target.y+=.20;this.target.z+=.06;radius=.98;
+  }else this.target.add(this.actor?.root.position||new V());
+  const dir=(this.kind==='merperson'&&merpersonViews[angle])||(this.kind!=='squid'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];
+  this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
  }
  fit(){if(this.bounds){const s=this.bounds.getSize(new V());if(this.widePose(this.action)){s.x=this.kind==='owl'?1.55:5.6;s.y+=this.kind==='owl'?.48:1.0}return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
  orbit(){this.camera.position.copy(this.target).add(new V().setFromSpherical(this.spherical));this.camera.lookAt(this.target);if(this.kind==='squid')this.camera.rotateZ(-.085)}

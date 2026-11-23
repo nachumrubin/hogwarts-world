@@ -1,0 +1,70 @@
+{
+  "viewport": [
+    640,
+    480
+  ],
+  "mode": "neutral",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "software": true,
+  "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+  "gpuMs": null,
+  "gpuTimingStatus": "Software renderer. Hardware timing unmeasured.",
+  "runs": [
+    {
+      "lod": 0,
+      "copies": 1,
+      "radius": 4.13,
+      "animationAndLabUpdateMs": {
+        "median": 0.4425,
+        "p95": 0.6742
+      },
+      "animationSamples": 2400,
+      "triangles": 18980,
+      "drawCalls": 41,
+      "geometryBytes": 382008,
+      "changedGeometry": 0
+    },
+    {
+      "lod": 1,
+      "copies": 1,
+      "radius": 8.26,
+      "animationAndLabUpdateMs": {
+        "median": 0.0992,
+        "p95": 0.1267
+      },
+      "animationSamples": 2400,
+      "triangles": 7604,
+      "drawCalls": 41,
+      "geometryBytes": 157400,
+      "changedGeometry": 0
+    },
+    {
+      "lod": 2,
+      "copies": 1,
+      "radius": 15.28,
+      "animationAndLabUpdateMs": {
+        "median": 0.03,
+        "p95": 0.035
+      },
+      "animationSamples": 2400,
+      "triangles": 2590,
+      "drawCalls": 41,
+      "geometryBytes": 59148,
+      "changedGeometry": 0
+    },
+    {
+      "lod": 1,
+      "copies": 2,
+      "radius": 8.26,
+      "animationAndLabUpdateMs": {
+        "median": 0.1908,
+        "p95": 0.2033
+      },
+      "animationSamples": 2400,
+      "triangles": 15208,
+      "drawCalls": 82,
+      "geometryBytes": 314800,
+      "changedGeometry": 0
+    }
+  ]
+}
