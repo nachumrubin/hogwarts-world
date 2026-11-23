@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stage 1B structural review · Creature Lab</title>
+<style>
+*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;background:#192120;color:#eeeae1;font:1rem/1.55 system-ui,sans-serif}
+main{max-width:78rem;margin:auto;padding:clamp(1rem,4vw,3.25rem)}a{color:#e4cba0;text-underline-offset:.2em}
+nav,.controls{display:flex;flex-wrap:wrap;align-items:baseline;gap:.75rem 1.6rem}
+h1,h2,h3{font-family:Georgia,serif;font-weight:normal;line-height:1.15}h1{font-size:clamp(2rem,5vw,3.25rem);margin:1.25rem 0 .6rem}
+h2{font-size:2rem;margin:1.7rem 0 .5rem}h3{font-size:1.45rem;margin:1.25rem 0 .6rem}p{max-width:75ch}
+.controls{margin:1.5rem 0;border-block:1px solid #58615b;padding:1rem 0}label{display:flex;align-items:baseline;gap:.6rem}
+select{font:inherit;background:#25332e;color:inherit;padding:.3rem .55rem;border:1px solid #738178;border-radius:.2rem}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.4rem,1.5vw,1rem)}
+figure{margin:0}figcaption{margin-bottom:.35rem}img,video{width:100%;height:auto;display:block;background:#e4e3dc}
+video{max-width:40rem}details{margin:1.6rem 0}summary{cursor:pointer;width:fit-content}table{border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:.45rem .7rem;border-bottom:1px solid #53625c}.scroll{overflow-x:auto}
+</style></head>
+<body><main>
+<nav aria-label="Review navigation"><a href="../">Bestiary gallery</a><a href="../stage-1/">Stage 1 archive</a><a href="../../">Live specimen lab</a></nav>
+<h1>Stage 1B structural review</h1>
+<p>Compare the reviewed Stage 1 rig with the revised rig at the same scale, angle and animation time. Select a plate to inspect it at full resolution.</p>
+<div class="controls">
+<label>Specimen <select id="specimen"><option value="centaur">Centaur</option><option value="unicorn">Unicorn</option><option value="hippogriff">Hippogriff</option></select></label>
+<label>View <select id="view"><option value="three-quarter-clay">Three-quarter clay</option><option value="side-clay">Side clay</option><option value="front-clay">Front clay</option><option value="detail-clay">Anatomy detail</option><option value="front-silhouette">Front silhouette</option><option value="side-silhouette">Side silhouette</option><option value="motion-clay">Action pose · clay</option><option value="motion-silhouette">Action pose · silhouette</option></select></label>
+</div>
+<section aria-labelledby="title"><h2 id="title"></h2><p id="focus"></p>
+<div class="pair"><figure><figcaption>Stage 1</figcaption><a><img width="640" height="480"></a></figure><figure><figcaption>Stage 1B</figcaption><a><img width="640" height="480"></a></figure></div>
+<h3 id="motion"></h3><video controls playsinline preload="metadata"></video></section>
+<h2>Performance</h2><p>Chromium 156 with ANGLE/SwiftShader. Single-specimen walking runs at 640 × 480. Each timing includes the rig update, draw and synchronous pixel readback. The table shows high detail after ten warm-up frames and thirty measured frames.</p>
+<div class="scroll"><table><thead><tr><th>Specimen</th><th>Revision</th><th>Draws</th><th>Triangles</th><th>Median (ms)</th><th>p95 (ms)</th></tr></thead><tbody>
+<tr><td>Centaur</td><td>Stage 1</td><td>47</td><td>35,764</td><td>69.80</td><td>82.10</td></tr>
+<tr><td>Centaur</td><td>Stage 1B</td><td>37</td><td>34,372</td><td>67.55</td><td>91.50</td></tr>
+<tr><td>Unicorn</td><td>Stage 1</td><td>36</td><td>22,676</td><td>59.80</td><td>73.80</td></tr>
+<tr><td>Unicorn</td><td>Stage 1B</td><td>28</td><td>21,188</td><td>60.15</td><td>78.40</td></tr>
+<tr><td>Hippogriff</td><td>Stage 1</td><td>59</td><td>28,568</td><td>78.85</td><td>92.50</td></tr>
+<tr><td>Hippogriff</td><td>Stage 1B</td><td>59</td><td>30,248</td><td>83.20</td><td>93.70</td></tr>
+</tbody></table></div>
+<p><a href="measurements.json">Measurements for all detail levels</a> · <a href="https://github.com/nachumrubin/hogwarts-world/blob/creature-lab/creature-lab/review/stage-1b/README.md">Review notes and checks</a></p>
+</main>
+<script>
+const specimens = {
+  centaur: {name:'Centaur', focus:'Follow the clavicle into the shoulder and upper arm. In side view, inspect the waist above the withers and the foreleg below the brisket.', motion:'Walking', clip:'centaur-walk'},
+  unicorn: {name:'Unicorn', focus:'Use the action pose to inspect the muzzle at grazing height, the line of the neck and the stagger of the forelegs. Watch the hoof soles as the chest shifts.', motion:'Grazing', clip:'unicorn-graze'},
+  hippogriff: {name:'Hippogriff', focus:'Compare the resting wing against the flank, then inspect the extended primaries in the action pose. Watch the wrist and feather overlap as the wing closes.', motion:'Wing fold and unfold', clip:'hippogriff-fold-unfold'}
+};
+const select=document.querySelector('#specimen'), view=document.querySelector('#view'), video=document.querySelector('video');
+function setPlates(){
+  const specimen=specimens[select.value];
+  document.querySelectorAll('figure').forEach((figure,index)=>{
+    const file=select.value+'-'+(index?'after':'before')+'-'+view.value+'.png';
+    const img=figure.querySelector('img');
+    figure.querySelector('a').href=file;
+    img.src=file;
+    img.alt=[specimen.name,figure.querySelector('figcaption').textContent,view.selectedOptions[0].text].join(', ');
+  });
+}
+function setSpecimen(){
+  const specimen=specimens[select.value];
+  document.querySelector('#title').textContent=specimen.name;
+  document.querySelector('#focus').textContent=specimen.focus;
+  document.querySelector('#motion').textContent=specimen.motion;
+  video.src=specimen.clip+'.mp4';
+  video.setAttribute('aria-label',specimen.name+' · '+specimen.motion);
+  setPlates();
+}
+if(Object.hasOwn(specimens,location.hash.slice(1)))select.value=location.hash.slice(1);
+select.addEventListener('change',()=>{
+  history.replaceState(null,'','#'+select.value);
+  setSpecimen();
+});
+view.addEventListener('change',setPlates);
+setSpecimen();
+</script></body></html>

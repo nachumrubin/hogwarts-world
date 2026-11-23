@@ -7,7 +7,7 @@ export class Centaur extends Specimen {
     const skin=0xac7457,hair=0x36251f,coat=0x855138;
     this.horse=equine(this,{kind:'centaur',pivot:[0,1.65,.65],foreColor:skin,coat,hair,hoof:0x38312d});
     const trunk=this.trunk=this.horse.neck;
-    const head=this.head=joint(trunk,0,.96,.03);
+    const head=this.head=joint(trunk,0,.905,.03);
     // Horizontal skull sections fix the jaw plane. Front-facing relief
     // follows the same surface through cheeks, sockets, lips and nose.
     this.mesh(head,skin,lod=>{
@@ -56,11 +56,12 @@ export class Centaur extends Specimen {
       this.oval(head,skin,s*.145,.143,.02,.027,.052,.029);
       this.oval(head,0x332722,s*.063,.174,.134,.031,.011,.012);
       this.oval(head,hair,s*.063,.203,.143,.036,.009,.011).rotation.z=s*.09;
-      const arm=joint(trunk,s*.301,.738,.025);arm.rotation.z=s*.13;
-      this.loft(arm,skin,[[-s*.021,.10,0,.041,.046],[0,.07,0,.08,.086],[s*.02,-.015,0,.103,.103],[s*.03,-.17,-.017,.078,.084],[s*.03,-.31,-.034,.055,.057],[s*.028,-.39,-.012,.069,.07],[s*.02,-.56,.033,.039,.042]]);
-      this.oval(arm,skin,s*.02,-.604,.04,.044,.068,.031);
-      for(let f=0;f<4;f++)this.oval(arm,skin,s*(f*.019-.009),-.666+Math.abs(f-1)*.006,.048,.012,.047,.015);
-      this.oval(arm,skin,-s*.024,-.604,.069,.018,.046,.02);this.arms.push(arm);
+      const arm=trunk.getObjectByName(s<0?'leftShoulder':'rightShoulder');
+      const hand=joint(arm,s*.082,-.681,.032);
+      this.oval(hand,skin,0,-.036,.004,.044,.064,.032);
+      for(let f=0;f<4;f++)this.oval(hand,skin,s*(f*.019-.025),-.092+Math.abs(f-1)*.006,.010,.012,.047,.015);
+      this.oval(hand,skin,-s*.033,-.046,.026,.018,.044,.019);
+      this.arms.push(arm);
     }
   }
   update(dt,t,action,context){

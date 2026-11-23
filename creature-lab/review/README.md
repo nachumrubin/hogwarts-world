@@ -1,5 +1,7 @@
 # Bestiary review gallery
 
+[Stage 1B structural review and clips](stage-1b/README.md)
+
 [Stage 1 equine comparisons and movement clips](stage-1/README.md)
 
 Each row shows one LOD 0 specimen after one simulated second in the indicated pose. All four orthographic views share one scale within a row. Framing varies between species so the owl and squid can both be inspected.

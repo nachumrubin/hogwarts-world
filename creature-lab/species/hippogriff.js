@@ -28,12 +28,19 @@ export class Hippogriff extends Specimen {
     }
     this.wings=[];this.forelegs=[];
     for(const s of [-1,1]){
-      this.wings.push(raptorWing(this,b,s,[s*.32,1.74,.38]));
-      const upper=joint(b,s*.27,1.46,.60);
-      this.loft(upper,slate,[[0,.13,0,.15,.18],[0,-.14,-.03,.14,.19],[0,-.36,-.09,.101,.14],[0,-.55,-.11,.065,.086]]);
-      const shank=joint(upper,0,-.50,-.11);
-      this.loft(shank,0xa79161,[[0,.035,0,.076,.077],[0,-.18,.028,.056,.059],[0,-.50,.08,.046,.05],[0,-.79,.122,.04,.049],[0,-.88,.15,.055,.07]]);
-      talon(this,shank,s,1.4).position.set(0,-.88,.15);
+      this.wings.push(raptorWing(this,b,s,[s*.427,1.76,.36]));
+      // Nest the shoulder beneath the ruff, sweep the upper limb back
+      // to the elbow, then return the tapered tarsus under the chest.
+      const upper=joint(b,s*.292,1.61,.56);
+      this.loft(upper,slate,[[-s*.10,.22,-.12,.06,.09],[-s*.055,.13,-.056,.155,.21],
+        [-s*.017,-.055,.006,.164,.195],[0,-.23,-.025,.139,.173],
+        [s*.018,-.42,-.106,.115,.147],[s*.017,-.58,-.135,.088,.102],
+        [s*.008,-.69,-.115,.067,.077],[0,-.75,-.094,.049,.063]]);
+      const shank=joint(upper,s*.008,-.715,-.105);
+      this.loft(shank,0xa79161,[[0,.054,-.012,.057,.065],[0,0,.004,.072,.078],
+        [0,-.115,.043,.065,.069],[0,-.28,.10,.052,.063],[0,-.48,.147,.042,.051],
+        [0,-.65,.17,.038,.045],[0,-.762,.196,.048,.062],[0,-.82,.206,.052,.066]]);
+      talon(this,shank,s,1.17).position.set(0,-.82,.206);
       this.forelegs.push({upper,shank});
     }
     this.open=0;this.flight=0;this.update(0,0,'Idle');
@@ -43,6 +50,8 @@ export class Hippogriff extends Specimen {
     const fly=action==='Fly',flap=fly||action==='Flap',walk=action==='Walk'?1:0;
     const blend=1-Math.exp(-dt*3.2);
     this.open+=((flap||action==='Unfold'?1:0)-this.open)*blend;
+    if(this.open<.001)this.open=0;
+    if(this.open>.999)this.open=1;
     this.flight+=((fly?1:0)-this.flight)*blend;
     this.horse.animate(t,walk,this.flight);this.body.position.y=this.flight*(.65+.09*Math.cos(t*4.4));
     this.wings.forEach(pose=>pose(this.open,flap?.67*Math.sin(t*4.4):.36));
