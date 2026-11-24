@@ -3,6 +3,7 @@ import * as T from '../vendor/three.module.js';
 import {unzlibSync} from '../vendor/fflate.js';
 import {bindLevels} from './centaur-bind.js';
 import {Specimen,joint} from './form.js';
+import {finishMaterial} from './centaur-finish.js';
 import {groomCentaur} from './centaur-groom.js';
 import {equineContacts} from './equine-gait.js';
 
@@ -99,10 +100,13 @@ export class Centaur extends Specimen {
     // The pigmented skin and unpigmented hoof walls have the same base clay.
     this.materials.delete(clay);this.materials.set('pigmented skin',skin.material);
     skin.material.vertexColors=true;
+    this.gaze=new T.Vector2();this.lids=[];this.brows=[];
+    this.finishReady=finishMaterial(skin.material,'hide',this.gaze);
     legs.forEach((leg,k)=>{
       leg.skin=skin;
       leg.hoofMesh=this.mesh(leg.bones[4],clay,i=>level(i).feet[k]);
     });
+    finishMaterial(legs[0].hoofMesh.material,'hoof',this.gaze);
     groomCentaur(this,base);
     this.update(0,0,'Idle');
   }
@@ -153,6 +157,7 @@ export class Centaur extends Specimen {
   skinLevel(level,legs){
     const {geometry,regions}=readSurface(level);
     const pos=geometry.attributes.position.clone(),norm=geometry.attributes.normal;
+    const coverage=new Float32Array(pos.count);
     const tint=new Float32Array(pos.count*3).fill(1);
     const ids=new Uint16Array(pos.count*4),weights=new Float32Array(pos.count*4);
     const footOf=new Int8Array(pos.count).fill(-1);
@@ -170,6 +175,8 @@ export class Centaur extends Specimen {
         const grain=.88+.12*Math.sin(1800*h+320*x)*Math.cos(1200*z);
         tint.set([1-.36*whisker*grain,1-.39*whisker*grain,1-.40*whisker*grain],3*i);
       }
+      const seam=1.44-.22*(z-.61)+.028*Math.cos(x*15);
+      coverage[i]=regions[i]===2?1:smooth(seam-.054,seam+.073,h)*smooth(.24,.51,z);
       const pairs=this.influences(x,h,z,regions[i],legs);
       pairs.forEach(([bone,w],k)=>{ids[4*i+k]=bone.userData.index;weights[4*i+k]=w;});
       if(h<=.080 && regions[i]===0)footOf[i]=2*Number(x>0)+Number(z>.12);
@@ -192,6 +199,7 @@ export class Centaur extends Specimen {
     }
     const body=new T.BufferGeometry();
     body.setAttribute('position',pos);body.setAttribute('normal',norm);body.setIndex(trunk);
+    body.setAttribute('skinCoverage',new T.BufferAttribute(coverage,1));
     body.setAttribute('color',new T.BufferAttribute(tint,3));
     body.setAttribute('skinIndex',new T.BufferAttribute(ids,4));body.setAttribute('skinWeight',new T.BufferAttribute(weights,4));
     return {body,feet:feet.map(part=>{
@@ -252,6 +260,11 @@ export class Centaur extends Specimen {
     this.chest.rotation.set(.34*lean+.012*breath-.22*pitch-.045*brace+.035*thrust,
       .044*hind*effort+.065*gait.turn,.011*fore*effort);
     this.ribs.scale.set(1+.013*breath,1,1+.019*breath);
+    const blinkTime=(t+.23*Math.sin(t*.72))%4.93;
+    const blink=smooth(1.72,1.798,blinkTime)*(1-smooth(1.808,1.958,blinkTime));
+    for(const mesh of this.lids)mesh.morphTargetInfluences[0]=blink;
+    this.gaze.set(.0013*gaze+.00075*Math.tanh(8*Math.sin(.71*t)),.00046*Math.sin(1.03*t));
+    for(const [i,brow] of this.brows.entries())brow.position.y=.00065*gaze*(i>=2?1:.45);
     const attention=.32+.68*idle;
     this.neck.rotation.set(.007*breath-.25*pitch-.37*lean,.11*gait.turn+.055*gaze*attention,-.25*roll);
     this.head.rotation.set(.014*breath-.019*gaze*attention,.16*gaze*attention+.16*gait.turn-.017*hind*effort,-.010*gaze*attention);

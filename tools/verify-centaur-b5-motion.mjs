@@ -130,7 +130,9 @@ for(const slope of [0,.045]){
     for(const {mesh} of actor.parts.filter(part=>part.mesh.parent===actor.head)){
       mesh.geometry.computeBoundingBox();
       const {min,max}=mesh.geometry.boundingBox;
-      assert.ok(min.z>-.18 && max.z<.18,'Head detail must stay on the head at every LOD');
+      if(mesh.name==='Scalp and shoulder-length locks'){
+        assert.ok(min.y<-.18 && min.y>-.34 && min.z>-.22 && max.z<.18,'Long hair must extend to the shoulders at every LOD');
+      }else assert.ok(min.z>-.18 && max.z<.18,'Facial details must stay on the head at every LOD');
     }
   }
   console.log({outsideStepMetres:outside,insideStepMetres:inside,finalSteps:gathers});
