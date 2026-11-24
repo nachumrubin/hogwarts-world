@@ -1,75 +1,201 @@
+// Production bind pose: B.5, with separated wrist grafts and continuous hoof walls.
 import * as T from '../vendor/three.module.js';
-import {Specimen,joint,smoothSections} from './form.js';
-import {equine} from './equine.js';
+import {unzlibSync} from '../vendor/fflate.js';
+import {bindLevels} from './centaur-bind.js';
+import {Specimen,joint} from './form.js';
+import {equineContacts} from './equine-gait.js';
+
+const clay=0xa8a197, tau=2*Math.PI;
+const vec=(x,y,z)=>new T.Vector3(x,y,z);
+const smooth=(lo,hi,v)=>T.MathUtils.smoothstep(v,lo,hi);
+const restLevels=[];
+
+function readSurface(level){
+  if(restLevels[level])return restLevels[level];
+  const bytes=unzlibSync(Uint8Array.from(atob(bindLevels[level]),c=>c.charCodeAt(0)));
+  const view=new DataView(bytes.buffer,bytes.byteOffset),count=view.getUint32(0,true),faces=view.getUint32(4,true);
+  let offset=8;
+  const xyz=new Float32Array(3*count),indices=new Uint32Array(3*faces);
+  for(let axis=0;axis<3;axis++){
+    let sum=0;
+    for(let i=0;i<count;i++,offset+=4){sum+=view.getInt32(offset,true);xyz[3*i+axis]=sum/1e6;}
+  }
+  let index=0;
+  for(let i=0;i<indices.length;i++,offset+=4){index+=view.getInt32(offset,true);indices[i]=index;}
+  const geometry=new T.BufferGeometry();
+  geometry.setAttribute('position',new T.BufferAttribute(xyz,3));
+  geometry.setIndex(new T.BufferAttribute(indices,1));geometry.computeVertexNormals();
+  const regions=bytes.slice(offset); // 1 = tail, 2 = detached arm below the axilla.
+  return restLevels[level]={geometry,regions};
+}
+
+const foreStations=[[1.15,.637],[.887,.474],[.499,.599],[.176,.563],[.079,.620]];
+const hindStations=[[1.306,-.505],[.867,-.343],[.513,-.586],[.178,-.555],[.078,-.508]];
+
 export class Centaur extends Specimen {
   constructor(){
     super();
-    const skin=0xac7457,hair=0x36251f,coat=0x855138;
-    this.horse=equine(this,{kind:'centaur',pivot:[0,1.65,.65],foreColor:skin,coat,hair,hoof:0x38312d});
-    const trunk=this.trunk=this.horse.neck;
-    const head=this.head=joint(trunk,0,.905,.03);
-    // Horizontal skull sections fix the jaw plane. Front-facing relief
-    // follows the same surface through cheeks, sockets, lips and nose.
-    this.mesh(head,skin,lod=>{
-      const sides=[64,40,24][lod],rows=smoothSections([
-        [-.032,.052,.075,.086],[.009,.089,.061,.113],[.042,.107,.043,.122],
-        [.085,.131,.032,.128],[.133,.144,.022,.136],[.18,.148,.017,.139],
-        [.22,.15,.012,.143],[.275,.14,.010,.135],[.321,.108,.006,.107],
-        [.349,.035,.004,.044]
-      ],[6,4,2][lod]);
-      const pos=[],idx=[];
-      const relief=(d,spread)=>Math.exp(-((d/spread)**2));
-      for(const [i,[y,w,center,depth]] of rows.entries()){
-        for(let j=0;j<sides;j++){
-          const angle=j*2*Math.PI/sides,x=w*Math.cos(angle),front=Math.sin(angle);
-          const sx=Math.abs(x);
-          let z=center+depth*front;
-          if(front>0){
-            const ridge=.040*relief(x,.023)*relief(y-.15,.071);
-            const tip=.052*relief(x,.033)*relief(y-.115,.021);
-            const cheek=.024*relief(sx-.091,.042)*relief(y-.132,.029);
-            const brow=.018*relief(sx-.064,.041)*relief(y-.201,.017);
-            const socket=.018*relief(sx-.064,.035)*relief(y-.174,.016);
-            const lips=relief(x,.049)*(.019*relief(y-.066,.008)+.022*relief(y-.049,.009));
-            z+=front*(ridge+tip+cheek+brow-socket+lips);
-          }
-          pos.push(x,y,z);
-          if(i){const k=i*sides+j,n=i*sides+(j+1)%sides;idx.push(k-sides,k,n-sides,n-sides,k,n)}
-        }
-      }
-      const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
-      const end=(rows.length-1)*sides;
-      for(let j=1;j<sides-1;j++)idx.push(0,j,j+1,end,end+j+1,end+j);
-      g.setIndex(idx);g.computeVertexNormals();return g;
+    const base=joint(this.body);
+    this.bones=[];this.bindPoints=[];this.bisectors=[];
+    const bone=(name,parent,point)=>{
+      const b=new T.Bone();b.name=name;b.userData.index=this.bones.length;
+      this.bones.push(b);this.bindPoints.push(point);
+      (parent||base).add(b);b.position.copy(point);
+      if(parent)b.position.sub(this.bindPoints[parent.userData.index]);
+      return b;
+    };
+    this.core=bone('barrel',null,vec(0,0,0));
+    this.tail=bone('dock',this.core,vec(0,1.34,-.69));
+    this.waist=bone('abdominal attachment',this.core,vec(0,1.39,.569));
+    this.chest=bone('thorax',this.waist,vec(0,1.64,.675));
+    this.ribs=bone('rib excursion',this.chest,vec(0,1.65,.678));
+    this.neck=bone('neck',this.chest,vec(0,1.935,.691));
+    this.head=bone('head',this.neck,vec(0,2.003,.712));
+    this.arms=[-1,1].map(s=>{
+      const arm=bone('shoulder '+s,this.chest,vec(s*.252,1.843,.674));
+      const elbow=bone('elbow '+s,arm,vec(s*.338,1.585,.660));
+      const wrist=bone('wrist '+s,elbow,vec(s*.344,1.343,.731));
+      const fingers=bone('knuckles '+s,wrist,vec(s*.343,1.255,.765));
+      const thumb=bone('thumb saddle '+s,wrist,vec(s*.323,1.299,.802));
+      return {arm,elbow,wrist,fingers,thumb};
     });
-    this.oval(head,hair,0,.267,-.014,.153,.102,.148);
-    this.oval(head,hair,0,.127,-.089,.145,.192,.085);
-    // Long swept locks fall behind the jaw and over the trapezius.
-    for(const side of [-1,1])for(let i=0;i<3;i++){
-      const x=side*(.07+.026*i),z=-.10+.032*i;
-      this.loft(head,hair,[[x,.26,z,.041,.06],[x*1.27,.13,z-.036,.052,.054],
-        [x*1.31,-.03,z-.055,.044,.045],[x*1.43,-.15,z-.08,.039,.034],
-        [x*1.56,-.24+.032*i,z-.067,.005,.008]]);
+    const legs=[];
+    for(const side of [-1,1])for(const fore of [false,true]){
+      const dz=side*(fore?-.037:.053),x=side*(fore?.215:.220);
+      const names=fore?['shoulder','elbow','carpus','fetlock','hoof']:['hip','stifle','hock','fetlock','hoof'];
+      const ref=(fore?foreStations:hindStations).map(([y,z])=>vec(x,y,z+dz*(1-smooth(.69,1.19,y))));
+      const bones=[],helpers=[];
+      ref.forEach((p,i)=>bones.push(bone(names[i]+' '+side,bones[i-1]||this.core,p)));
+      for(let i=1;i<4;i++){
+        const half=bone(names[i]+' volume '+side,bones[i-1],ref[i]);
+        helpers[i]=half;this.bisectors.push([half,bones[i]]);
+      }
+      const home=vec(x,0,(fore?.662:-.484)+dz);
+      const sole=joint(bones[4],...home.clone().sub(ref[4]).toArray());
+      const offsets=ref.slice(1).map((p,i)=>p.clone().sub(ref[i]));
+      const angles=offsets.map(p=>Math.atan2(p.z,-p.y));
+      legs.push({fore,side,bones,helpers,ref,sole,home,offsets,lengths:offsets.map(p=>p.length()),
+        joints:Object.fromEntries(names.map((n,i)=>[n,bones[i]])),pasternAngle:angles[3],
+        carpalFlex:angles[1]-angles[2],hockRatio:(angles[2]-angles[1])/(angles[0]-angles[1]),
+        anchor:vec(),target:vec(),liftOff:vec(),landing:vec(),yaw:0,startYaw:0,endYaw:0,
+        phase:((fore?.75:0)+(side>0?.5:0))%1,stance:true,initialized:false,swing:0});
     }
-    this.arms=[];
-    for(const s of [-1,1]){
-      this.oval(head,skin,s*.145,.143,.02,.027,.052,.029);
-      this.oval(head,0x332722,s*.063,.174,.134,.031,.011,.012);
-      this.oval(head,hair,s*.063,.203,.143,.036,.009,.011).rotation.z=s*.09;
-      const arm=trunk.getObjectByName(s<0?'leftShoulder':'rightShoulder');
-      const hand=joint(arm,s*.082,-.681,.032);
-      this.oval(hand,skin,0,-.036,.004,.044,.064,.032);
-      for(let f=0;f<4;f++)this.oval(hand,skin,s*(f*.019-.025),-.092+Math.abs(f-1)*.006,.010,.012,.047,.015);
-      this.oval(hand,skin,-s*.033,-.046,.026,.018,.044,.019);
-      this.arms.push(arm);
-    }
+    this.horse=equineContacts(this,base,this.tail,base,legs,{kind:'centaur',fitted:true});
+    const levels=[];
+    const level=i=>levels[i]??=this.skinLevel(i,legs);
+    const skin=this.mesh(base,clay,i=>level(i).body,T.SkinnedMesh);
+    this.root.updateMatrixWorld(true);
+    this.skeleton=new T.Skeleton(this.bones);skin.bind(this.skeleton);
+    skin.frustumCulled=false;
+    legs.forEach((leg,k)=>{
+      leg.skin=skin;
+      leg.hoofMesh=this.mesh(leg.bones[4],clay,i=>level(i).feet[k]);
+    });
+    this.update(0,0,'Idle');
   }
+
+  influences(x,h,z,region,legs){
+    const a=Math.abs(x),side=x>0?1:0;
+    const one=b=>[[b,1]];
+    const blend=(a,b,t)=>[[a,1-t],[b,t]];
+    if(region===1)return blend(this.core,this.tail,1-smooth(1.15,1.39,h));
+    if(region===2 || (h>=1.744 && z>.49 && a>.142 && h<1.981)){
+      const {arm,elbow,wrist,fingers,thumb}=this.arms[side];
+      if(h<1.314){
+        const opposition=smooth(.782,.817,z)*(1-smooth(.315,.345,a));
+        const tip=1-smooth(1.231,1.284,h),pollex=opposition*(1-smooth(1.282,1.32,h));
+        return [[wrist,(1-pollex)*(1-tip)],[fingers,(1-pollex)*tip],[thumb,pollex]];
+      }
+      if(h<1.50)return blend(wrist,elbow,smooth(1.314,1.372,h));
+      if(h<1.70)return blend(elbow,arm,smooth(1.528,1.641,h));
+      const attach=region===2?1:smooth(.147,.251,a)*(1-smooth(1.908,1.984,h));
+      return blend(this.chest,arm,attach);
+    }
+    if(h>1.35 && z>.26){
+      if(h>1.996)return blend(this.neck,this.head,smooth(1.996,2.047,h));
+      if(h>1.91)return blend(this.chest,this.neck,smooth(1.91,1.979,h));
+      if(h>1.55)return blend(this.waist,this.ribs,smooth(1.55,1.745,h));
+      const lumbar=smooth(1.35,1.53,h)*smooth(.26,.54,z);
+      return blend(this.core,this.waist,lumbar);
+    }
+    const fore=z>.12,leg=legs[2*side+Number(fore)];
+    const reach=fore?smooth(.205,.465,z):1-smooth(-.37,-.115,z);
+    const proximal=1-smooth(leg.ref[0].y-.045,leg.ref[0].y+.18,h);
+    const medial=1-smooth(.755,1.10,h)*(1-smooth(.055,.195,a));
+    const limb=proximal*reach*medial;
+    if(limb<=0)return one(this.core);
+    let pairs=one(leg.bones[0]);
+    for(let k=1;k<5;k++){
+      const rad=[0,.117,.065,.046,.020][k];
+      const t=1-smooth(leg.ref[k].y-rad,leg.ref[k].y+rad,h);
+      if(!t)break;
+      if(k===4)pairs=blend(leg.bones[3],leg.bones[4],1-smooth(.081,.105,h));
+      else pairs=t<.5?blend(leg.bones[k-1],leg.helpers[k],2*t):
+        blend(leg.helpers[k],leg.bones[k],2*t-1);
+    }
+    return [...pairs.map(([b,w])=>[b,w*limb]),[this.core,1-limb]];
+  }
+
+  skinLevel(level,legs){
+    const {geometry,regions}=readSurface(level);
+    const pos=geometry.attributes.position,norm=geometry.attributes.normal;
+    const ids=new Uint16Array(pos.count*4),weights=new Float32Array(pos.count*4);
+    const footOf=new Int8Array(pos.count).fill(-1);
+    for(let i=0;i<pos.count;i++){
+      const x=pos.getX(i),h=pos.getY(i),z=pos.getZ(i);
+      const pairs=this.influences(x,h,z,regions[i],legs);
+      pairs.forEach(([bone,w],k)=>{ids[4*i+k]=bone.userData.index;weights[4*i+k]=w;});
+      if(h<=.080 && regions[i]===0)footOf[i]=2*Number(x>0)+Number(z>.12);
+    }
+    const trunk=[],feet=legs.map(()=>({map:new Map(),xyz:[],normal:[],tri:[]}));
+    const tri=geometry.index.array;
+    for(let f=0;f<tri.length;f+=3){
+      const a=tri[f],b=tri[f+1],c=tri[f+2],k=footOf[a];
+      if(k<0||k!==footOf[b]||k!==footOf[c]){trunk.push(a,b,c);continue;}
+      const part=feet[k],pivot=legs[k].ref[4];
+      for(const i of [a,b,c]){
+        if(!part.map.has(i)){
+          part.map.set(i,part.xyz.length/3);
+          part.xyz.push(pos.getX(i)-pivot.x,pos.getY(i)-pivot.y,pos.getZ(i)-pivot.z);
+          part.normal.push(norm.getX(i),norm.getY(i),norm.getZ(i));
+        }
+        part.tri.push(part.map.get(i));
+      }
+    }
+    const body=new T.BufferGeometry();
+    body.setAttribute('position',pos);body.setAttribute('normal',norm);body.setIndex(trunk);
+    body.setAttribute('skinIndex',new T.BufferAttribute(ids,4));body.setAttribute('skinWeight',new T.BufferAttribute(weights,4));
+    return {body,feet:feet.map(part=>{
+      const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(part.xyz,3));
+      g.setAttribute('normal',new T.Float32BufferAttribute(part.normal,3));g.setIndex(part.tri);return g;
+    })};
+  }
+
   update(dt,t,action,context){
-    this.horse.advance(dt,action,context);
-    const walk=action==='Walk'||action==='Turn'?1:0;
-    this.horse.animate(t,walk);this.trunk.rotation.x=.011*Math.sin(2*t)+walk*.023*Math.cos(t*5);
-    this.trunk.rotation.z=walk*.018*Math.sin(t*5);
-    this.head.rotation.y=.18*Math.sin(t*.72);
-    this.arms.forEach((arm,i)=>arm.rotation.x=walk*.23*Math.sin(t*5+i*Math.PI));
+    // Small steps keep strike and lift-off events ordered during time scaling.
+    const steps=Math.max(1,Math.ceil(dt*60));
+    for(let i=0;i<steps;i++){
+      this.horse.advance(dt/steps,action,context);
+      this.horse.animate(t-dt+(i+1)*dt/steps);
+    }
+    for(const [half,child] of this.bisectors)half.quaternion.identity().slerp(child.quaternion,.5);
+    const gait=this.horse,phase=tau*gait.phase;
+    const effort=Math.min(1,gait.speed/.66+Math.abs(gait.turn)*.48);
+    const beat=Math.sin(phase),breath=Math.sin(1.68*t),idle=1-effort;
+    const glance=Math.sin(.71*t+.4)*Math.sin(.31*t);
+    this.waist.rotation.set(-.032*effort+.012*effort*Math.cos(2*phase),-.032*effort*beat,-.012*effort*beat);
+    this.chest.rotation.set(.009*breath,.054*effort*beat+.10*gait.turn,.012*effort*beat);
+    this.ribs.scale.set(1+.010*breath,1,1+.016*breath);
+    this.neck.rotation.set(.007*breath-.011*effort*Math.cos(2*phase),.14*gait.turn,0);
+    this.head.rotation.set(.014*Math.sin(.86*t),.12*glance+.16*gait.turn-.029*beat*effort,.011*glance);
+    this.arms.forEach(({arm,elbow,wrist,fingers,thumb},i)=>{
+      const s=i?1:-1,swing=s*effort*Math.sin(phase+.27);
+      const gesture=idle*Math.pow((1+Math.sin(.83*t+i*2.4))/2,4);
+      arm.rotation.set(.17*swing-.023*gesture,-s*.023*gesture,s*(.030+.023*effort));
+      elbow.rotation.set(-.065-.080*Math.max(0,-swing)-.105*gesture,0,0);
+      wrist.rotation.set(.017*breath+.030*swing,s*.065*gesture,-s*.057*gesture);
+      fingers.rotation.z=-s*(.045+.12*gesture);
+      thumb.rotation.y=s*(.018+.085*gesture);
+    });
   }
 }

@@ -92,7 +92,7 @@ function groundNormal(height,x,z){
   return vec(height(x-d,z)-height(x+d,z),2*d,height(x,z-d)-height(x,z+d)).normalize();
 }
 
-function poseLeg(leg,rig,terrain,weight){
+function poseLeg(leg,rig,terrain,weight,checkReach=false){
   const {fore,ref,offsets,lengths,bones}=leg;
   const swing=Math.sin(Math.PI*leg.swing);
   const sole=rig.worldToLocal(leg.target.clone());
@@ -104,17 +104,18 @@ function poseLeg(leg,rig,terrain,weight){
   const root=ref[0].clone();
   const down=vec(coronet.x-root.x,coronet.y-root.y,0).normalize();
   const direction=angle=>down.clone().multiplyScalar(Math.cos(angle)).addScaledVector(Z,Math.sin(angle));
-  const pasternAngle=(fore?.60:.64)+weight*.075-.10*swing;
+  const pasternAngle=(leg.pasternAngle ?? (fore?.60:.64))+weight*.075-.10*swing;
   const fetlock=coronet.clone().addScaledVector(direction(pasternAngle),-lengths[3]);
   const delta=fetlock.clone().sub(root),distance=delta.length();
   const axis=Math.atan2(delta.z,delta.dot(down));
   const [a,b,c]=lengths;
+  const flex=(leg.carpalFlex ?? .055)+1.16*swing*swing;
+  const distal=fore?Math.sqrt(b*b+c*c+2*b*c*Math.cos(flex)):b+c;
+  if(checkReach)return Math.max(0,distance-a-distal);
   let upperAngle,lowerAngle;
   if(fore){
     // In stance the radius and cannon form a nearly straight column.
     // Flexing the carpus in swing shortens their combined effective link.
-    const flex=.055+1.16*swing*swing;
-    const distal=Math.sqrt(b*b+c*c+2*b*c*Math.cos(flex));
     const opening=Math.acos(T.MathUtils.clamp((a*a+distance*distance-distal*distal)/(2*a*distance),-1,1));
     upperAngle=axis-opening;
     const remaining=delta.clone().addScaledVector(direction(upperAngle),-a);
@@ -122,7 +123,7 @@ function poseLeg(leg,rig,terrain,weight){
   }else{
     // The reciprocal apparatus couples stifle and hock flexion. Solve
     // the coupled chain's reach, keeping each rigid lever at bind length.
-    const ratio=.68;
+    const ratio=leg.hockRatio ?? .68;
     let low=0,high=2.85;
     for(let i=0;i<45;i++){
       const k=(low+high)*.5;
@@ -150,6 +151,13 @@ export function equineGait(actor,base,tail,config){
   const rig=joint(base);rig.scale.set(1/config.slender,1,1/config.length);
   const legs=[];
   for(const side of [-1,1])for(const fore of [false,true])legs.push(makeLeg(actor,rig,side,fore,config));
+  return equineContacts(actor,base,tail,rig,legs,config);
+}
+
+// The production centaur supplies its own bind skeleton to the same world-space
+// planting, swing prediction, terrain alignment and fixed-length IK as the lab rig.
+export function equineContacts(actor,base,tail,rig,legs,config){
+  const fitted=Boolean(config.fitted);
   let phase=0,speed=0,turn=0,desiredSpeed=0,desiredTurn=0,cadence=0,moving=false,terrain;
   const duty=.68,isUnicorn=config.kind==='unicorn';
   const home=(leg,ahead=0)=>{
@@ -158,14 +166,14 @@ export function equineGait(actor,base,tail,config){
     const heading=desiredTurn*ahead+(turn-desiredTurn)*transient;
     const yaw=actor.body.rotation.y+heading;
     const p=leg.home.clone();
-    if(!ahead||!moving)p.z+=isUnicorn?leg.side*(leg.fore?.13:-.052):leg.side*(leg.fore?.035:-.025);
+    if(!fitted&&(!ahead||!moving))p.z+=isUnicorn?leg.side*(leg.fore?.13:-.052):leg.side*(leg.fore?.035:-.025);
     p.applyAxisAngle(Y,yaw).add(actor.root.position);
     const midYaw=yaw-heading*.5;
     p.x+=travel*Math.sin(midYaw);p.z+=travel*Math.cos(midYaw);
     p.y=actor.origin.y+(terrain?.(p.x,p.z)||0);return p;
   };
   const lastOrigin=vec(Infinity,Infinity,Infinity);
-  return {legs,advance(dt,action,context){
+  return {legs,get phase(){return phase},get speed(){return speed},get turn(){return turn},advance(dt,action,context){
     terrain=context?.terrainHeight;
     if(!actor.origin.equals(lastOrigin)){
       lastOrigin.copy(actor.origin);legs.forEach(leg=>leg.initialized=false);
@@ -174,7 +182,7 @@ export function equineGait(actor,base,tail,config){
     const blend=1-Math.exp(-dt*6);
     desiredSpeed=walk?(isUnicorn?.72:.66):0;
     speed+=(desiredSpeed-speed)*blend;
-    desiredTurn=walk?.17:pivot?.42:0;
+    desiredTurn=walk?(fitted?0:.17):pivot?(fitted?.60:.42):0;
     turn+=(desiredTurn-turn)*blend;
     const yaw=actor.body.rotation.y+turn*dt*.5;
     actor.root.position.x+=speed*dt*Math.sin(yaw);actor.root.position.z+=speed*dt*Math.cos(yaw);
@@ -187,7 +195,7 @@ export function equineGait(actor,base,tail,config){
     tail.rotation.z=.12*Math.sin(1.8*t);
     const effort=Math.min(1,speed/.68+Math.abs(turn)*.30);
     base.position.set(.014*effort*Math.sin(phase*2*Math.PI),
-      -(isUnicorn?.028:.019)-.08*graze-.009*effort*Math.cos(phase*4*Math.PI),
+      -(isUnicorn?.028:fitted?.008:.019)-.08*graze-.009*effort*Math.cos(phase*4*Math.PI),
       .078*graze);
     if(terrain){
       // Match the local support plane under the whole trunk. Rotating
@@ -197,6 +205,10 @@ export function equineGait(actor,base,tail,config){
       base.quaternion.setFromUnitVectors(Y,normal);
       base.position.addScaledVector(Y,1.1).addScaledVector(normal,-1.1);
     }else base.quaternion.identity();
+    if(fitted){
+      base.rotateZ(.014*effort*Math.sin(phase*2*Math.PI));
+      base.rotateX(.008*effort*Math.sin(phase*4*Math.PI));
+    }
     for(const leg of legs){
       const cycle=(phase+leg.phase)%1;
       if(!leg.initialized){leg.anchor.copy(home(leg));leg.yaw=actor.body.rotation.y;leg.initialized=true}
@@ -209,7 +221,10 @@ export function equineGait(actor,base,tail,config){
         leg.stance=true;leg.anchor.copy(leg.landing);leg.yaw=leg.endYaw;
       }
       leg.swing=0;
-      if(leg.stance)leg.target.copy(leg.anchor);
+      if(leg.stance){
+        if(fitted)leg.anchor.y=actor.origin.y+(terrain?.(leg.anchor.x,leg.anchor.z)||0);
+        leg.target.copy(leg.anchor);
+      }
       else{
         const u=(cycle-leg.swingStart)/(1-leg.swingStart),ease=u*u*u*(10+u*(-15+6*u));
         leg.swing=u;leg.target.lerpVectors(leg.liftOff,leg.landing,ease);
@@ -227,6 +242,16 @@ export function equineGait(actor,base,tail,config){
         clearance=Math.min(clearance,actor.origin.y+terrain(x,z)-plane);
       }
       base.position.y+=clearance;
+    }
+    if(fitted){
+      // A transition may leave the previous stance foot farther behind the
+      // hip than the steady-state stride. Yield at the trunk until every IK
+      // target is reachable. The sole and rigid lever lengths stay fixed.
+      for(let pass=0;pass<3;pass++){
+        const excess=Math.max(...legs.map(leg=>poseLeg(leg,rig,terrain,leg.load,true)));
+        if(excess<.000001)break;
+        base.position.y-=1.28*excess;
+      }
     }
     for(const leg of legs){
       poseLeg(leg,rig,terrain,leg.load);
