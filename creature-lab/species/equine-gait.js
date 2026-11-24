@@ -98,7 +98,7 @@ function poseLeg(leg,rig,terrain,weight,checkReach=false){
   const sole=rig.worldToLocal(leg.target.clone());
   const worldFoot=new T.Quaternion().setFromAxisAngle(Y,leg.yaw);
   if(terrain)worldFoot.premultiply(new T.Quaternion().setFromUnitVectors(Y,groundNormal(terrain,leg.target.x,leg.target.z)));
-  worldFoot.multiply(new T.Quaternion().setFromAxisAngle(vec(1,0,0),-.17*swing*swing));
+  worldFoot.multiply(new T.Quaternion().setFromAxisAngle(vec(1,0,0),-(.17+(leg.fold??0)*.45)*swing*swing));
   const foot=rig.getWorldQuaternion(new T.Quaternion()).invert().multiply(worldFoot);
   const coronet=sole.sub(leg.sole.position.clone().applyQuaternion(foot));
   const root=leg.mobileOrigin ? bones[0].position.clone() : ref[0].clone();
@@ -109,7 +109,7 @@ function poseLeg(leg,rig,terrain,weight,checkReach=false){
   const delta=fetlock.clone().sub(root),distance=delta.length();
   const axis=Math.atan2(delta.z,delta.dot(down));
   const [a,b,c]=lengths;
-  const flex=(leg.carpalFlex ?? .055)+1.16*swing*swing;
+  const flex=(leg.carpalFlex ?? .055)+ (1.16+(leg.fold??0)*.58)*swing*swing;
   const distal=fore?Math.sqrt(b*b+c*c+2*b*c*Math.cos(flex)):b+c;
   if(checkReach)return Math.max(0,distance-a-distal);
   let upperAngle,lowerAngle;
@@ -159,8 +159,12 @@ export function equineGait(actor,base,tail,config){
 export function equineContacts(actor,base,tail,rig,legs,config){
   const fitted=Boolean(config.fitted);
   let phase=0,speed=0,turn=0,desiredSpeed=0,desiredTurn=0,cadence=0,moving=false,terrain;
-  const duty=.68,isUnicorn=config.kind==='unicorn';
-  const support={fore:0,hind:0,pitch:0,roll:0,brake:0};
+  // Unwrapped phase offsets in LH, LF, RH, RF order. Crossing zero means
+  // touchdown. Interpolate the offsets without resetting a planted foot.
+  const trotOffsets=[0,.5,.5,0],gallopOffsets=[0,.60,.87,.46];
+  let gaitLevel=0,run=0,gallop=0,duty=.68,lift=0,flightTime=0,launchHeight=0;
+  const isUnicorn=config.kind==='unicorn';
+  const support={fore:0,hind:0,pitch:0,roll:0,brake:0,drive:0,impact:0,acceleration:0,run:0,gallop:0};
   let stopping=false, speedRate=6, stepSeconds=0;
   const home=(leg,ahead=0)=>{
     const transient=(1-Math.exp(-speedRate*ahead))/speedRate;
@@ -183,14 +187,21 @@ export function equineContacts(actor,base,tail,rig,legs,config){
       lastOrigin.copy(actor.origin);legs.forEach(leg=>leg.initialized=false);
     }
     const walk=action==='Walk',pivot=action==='Turn';
+    const requested=fitted?(action==='Gallop'?2:action==='Trot'?1:0):0;
+    gaitLevel+=T.MathUtils.clamp(requested-gaitLevel,-.62*dt,.94*dt);
+    run=T.MathUtils.smoothstep(gaitLevel,0,1);gallop=T.MathUtils.smoothstep(gaitLevel,1,2);
+    support.run=run;support.gallop=gallop;
+    duty=.68-.295*run-.115*gallop;
     const blend=1-Math.exp(-dt*6);
-    stopping=fitted&&!walk&&!pivot;
+    stopping=fitted&&!walk&&!pivot&&!requested;
     speedRate=stopping?2.8:6;
     desiredSpeed=walk?(isUnicorn?.72:.66):(fitted&&pivot?.39:0);
+    if(requested||(!stopping&&gaitLevel>0))desiredSpeed=.66+1.28*run+1.58*gallop;
     const previousSpeed=speed;
     speed+=(desiredSpeed-speed)*(stopping?1-Math.exp(-dt*speedRate):blend);
     if(stopping && speed<.005)speed=0;
     if(fitted && dt>0){
+      support.acceleration+=((speed-previousSpeed)/dt-support.acceleration)*(1-Math.exp(-dt*6));
       const deceleration=Math.max(0,(previousSpeed-speed)/dt);
       support.brake+=(Math.min(1,deceleration)-support.brake)*(1-Math.exp(-dt*5));
     }
@@ -200,15 +211,15 @@ export function equineContacts(actor,base,tail,rig,legs,config){
     actor.root.position.x+=speed*dt*Math.sin(yaw);actor.root.position.z+=speed*dt*Math.cos(yaw);
     actor.body.rotation.y+=turn*dt;
     actor.root.position.y=actor.origin.y+(terrain?.(actor.root.position.x,actor.root.position.z)||0);
-    moving=walk||pivot||speed>.035||Math.abs(turn)>.035;
-    cadence=.73+.19*speed;
+    moving=walk||pivot||requested>0||speed>.035||Math.abs(turn)>.035;
+    cadence=.73+.19*(fitted?Math.min(.66,speed):speed)+.43*run+.24*gallop;
     stepSeconds=dt;
     if(moving||legs.some(leg=>!leg.stance))phase+=cadence*dt;
   },animate(t,walk,tuck=0,graze=0){
     if(!fitted)tail.rotation.z=.12*Math.sin(1.8*t);
     const effort=Math.min(1,speed/.68+Math.abs(turn)*.30);
-    base.position.set(.014*effort*Math.sin(phase*2*Math.PI),
-      -(isUnicorn?.028:fitted?.008:.019)-.08*graze-.009*effort*Math.cos(phase*4*Math.PI),
+    base.position.set((fitted?0:.014)*effort*Math.sin(phase*2*Math.PI),
+      -(isUnicorn?.028:fitted?.008:.019)-.08*graze-(fitted?0:.009)*effort*Math.cos(phase*4*Math.PI),
       .078*graze);
     if(terrain){
       // Match the local support plane under the whole trunk. Rotating
@@ -219,21 +230,37 @@ export function equineContacts(actor,base,tail,rig,legs,config){
       base.position.addScaledVector(Y,1.1).addScaledVector(normal,-1.1);
     }else base.quaternion.identity();
 
-    for(const leg of legs){
-      const cycle=(phase+leg.phase)%1;
-      if(!leg.initialized){leg.anchor.copy(home(leg));leg.yaw=actor.body.rotation.y;leg.initialized=true}
+    for(const [index,leg] of legs.entries()){
+      const offset=leg.phase+(trotOffsets[index]-leg.phase)*run+(gallopOffsets[index]-trotOffsets[index])*gallop;
+      const cycle=fitted?(phase+offset+2)%1:(phase+leg.phase)%1;
+      const strike=fitted?cycle<(leg.previousCycle??0)-.5:cycle<duty;
+      leg.previousCycle=cycle;
+      if(fitted)leg.fold=run*.48+gallop*.52;
+      if(!leg.initialized){leg.anchor.copy(home(leg));leg.yaw=actor.body.rotation.y;leg.initialized=true;leg.stance=true;leg.finalStep=false}
       // At a halt, gather one displaced hoof at a time after forward travel ends.
       const gather=stopping && speed<.035 && leg.anchor.distanceTo(home(leg))>.048;
       const finalStep=gather && legs.every(other=>other.stance);
-      if(leg.stance&&((moving&&cycle>=duty)||finalStep)){
+      const heading=actor.body.rotation.y;
+      const trailing=leg.home.z-((leg.anchor.x-actor.root.position.x)*Math.sin(heading)
+        +(leg.anchor.z-actor.root.position.z)*Math.cos(heading));
+      const release=run>0&&cycle>.12&&trailing>.38;
+      if(leg.stance&&((moving&&(cycle>=duty||release))||finalStep)){
         leg.swingStart=cycle;leg.finalStep=finalStep;leg.finalProgress=0;
         leg.stance=false;leg.liftOff.copy(leg.anchor);leg.startYaw=leg.yaw;
+        if(fitted)(leg.relativeLift??=vec()).copy(leg.anchor).sub(actor.root.position);
         const ahead=(1-cycle+duty*.5)/cadence;
         leg.landing.copy(home(leg,finalStep?0:ahead));leg.endYaw=actor.body.rotation.y+turn*(finalStep?0:ahead);
         leg.stepHeight=fitted?T.MathUtils.clamp(leg.liftOff.distanceTo(leg.landing)*.17,.018,.105):(leg.fore?.139:.122);
       }
+      if(!leg.stance&&!leg.finalStep&&run>0&&cycle>=leg.swingStart){
+        // During a gait change the projected strike moves with cadence and speed.
+        // Fade replanning out before touchdown, leaving a fixed world target.
+        const progress=(cycle-leg.swingStart)/(1-leg.swingStart);
+        const ahead=(1-cycle+duty*.5)/cadence;
+        leg.landing.lerp(home(leg,ahead),(1-T.MathUtils.smoothstep(progress,.3,.8))*(1-Math.exp(-stepSeconds*14)));
+      }
       if(!leg.stance&&leg.finalStep)leg.finalProgress+=stepSeconds/.33;
-      if(!leg.stance&&(leg.finalStep?leg.finalProgress>=1:cycle<duty)){
+      if(!leg.stance&&(leg.finalStep?leg.finalProgress>=1:strike)){
         leg.stance=true;leg.anchor.copy(leg.landing);leg.yaw=leg.endYaw;
       }
       leg.swing=0;
@@ -242,9 +269,23 @@ export function equineContacts(actor,base,tail,rig,legs,config){
         leg.target.copy(leg.anchor);
       }
       else{
-        const u=leg.finalStep?leg.finalProgress:(cycle-leg.swingStart)/(1-leg.swingStart),ease=u*u*u*(10+u*(-15+6*u));
+        const u=leg.finalStep?leg.finalProgress:T.MathUtils.clamp((cycle-leg.swingStart)/(1-leg.swingStart),0,1),ease=u*u*u*(10+u*(-15+6*u));
         leg.swing=u;leg.target.lerpVectors(leg.liftOff,leg.landing,ease);
-        leg.target.y+=leg.stepHeight*Math.sin(Math.PI*u)**2;
+        if(run>0&&!leg.finalStep){
+          // Interpolate a swing relative to the advancing hip. A changing
+          // beat interval must not leave the airborne foot behind the horse.
+          const sweep=leg.relativeLift.clone().add(actor.root.position)
+            .lerp(home(leg,duty*.5/cadence),ease);
+          const swingSeconds=(1-leg.swingStart)/cadence;
+          const tangent=-speed*swingSeconds*u*(1-u)*(1-2*u);
+          sweep.z+=Math.cos(actor.body.rotation.y)*tangent;
+          sweep.x+=Math.sin(actor.body.rotation.y)*tangent;
+          leg.target.x=T.MathUtils.lerp(leg.target.x,sweep.x,run);
+          leg.target.z=T.MathUtils.lerp(leg.target.z,sweep.z,run);
+          if(u>.70)leg.landing.lerp(home(leg,(1-cycle+duty*.5)/cadence),run);
+        }
+        const tuck=run*(leg.fore?.087:.075)+gallop*(leg.fore?.15:.14);
+        leg.target.y+=(leg.stepHeight+tuck)*Math.sin(Math.PI*u)**2;
         leg.yaw=T.MathUtils.lerp(leg.startYaw,leg.endYaw,ease);
       }
       leg.load=leg.stance?Math.sin(Math.PI*cycle/duty)**2:0;
@@ -262,17 +303,37 @@ export function equineContacts(actor,base,tail,rig,legs,config){
       const [lh,lf,rh,rf]=legs;
       support.fore=rf.load-lf.load;
       support.hind=rh.load-lh.load;
+      const foreLoad=lf.load+rf.load,hindLoad=lh.load+rh.load,total=foreLoad+hindLoad;
+      const response=1-Math.exp(-stepSeconds*15);
+      support.drive+=(hindLoad-support.drive)*response;
+      support.impact+=(foreLoad-support.impact)*response;
+      // Loaded limbs shorten in midstance and extend into takeoff. Between
+      // the last release and next predicted strike, follow a ballistic arc.
+      if(legs.some(l=>l.stance)){
+        flightTime=0;
+        const compressed=-.044*Math.min(1.65,total)+.010*(support.drive-support.impact);
+        lift+=(compressed-lift)*(1-Math.exp(-stepSeconds*21));
+      }else{
+        if(!flightTime)launchHeight=lift;
+        flightTime+=stepSeconds;
+        const remaining=Math.min(...legs.map(l=>(1-l.swing)*(1-l.swingStart)/cadence));
+        lift=launchHeight*remaining/(flightTime+remaining||1)+.5*9.81*flightTime*remaining;
+      }
+      base.position.y+=run*lift+effort*.010*(total-1.8)*(1-run);
       support.roll=effort*(.022*support.hind+.013*support.fore);
-      support.pitch=effort*.018*(lf.load+rf.load-lh.load-rh.load)+.018*support.brake;
+      support.pitch=effort*.018*(lf.load+rf.load-lh.load-rh.load)+.018*support.brake
+        +gallop*.093*(support.impact-support.drive);
+      base.position.z-=support.pitch*1.07;
+      base.position.z+=gallop*.027*(support.drive-support.impact);
       // Translate about the ribcage height when rolling, keeping the trunk
       // over its support polygon instead of swinging from a ground-level pivot.
       base.position.x+=1.0*support.roll+.009*effort*(support.fore+support.hind);
       base.rotateZ(support.roll);base.rotateX(support.pitch);
       for(const leg of legs){
         const root=leg.bones[0].position.copy(leg.ref[0]);
-        const localCycle=2*Math.PI*(phase+leg.phase);
+        const reach=rig.worldToLocal(leg.target.clone()).z-leg.ref[0].z;
         leg.mobileOrigin=true;
-        root.z+=effort*(leg.fore?.023:.014)*Math.cos(localCycle-.28);
+        root.z+=effort*T.MathUtils.clamp(reach,-.55,.55)*(leg.fore?.115:.073);
         root.y+=effort*(leg.fore?.012:.010)*(leg.load-.35);
       }
     }

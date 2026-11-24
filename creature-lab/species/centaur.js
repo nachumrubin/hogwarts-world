@@ -6,7 +6,7 @@ import {Specimen,joint} from './form.js';
 import {groomCentaur} from './centaur-groom.js';
 import {equineContacts} from './equine-gait.js';
 
-const clay=0xa8a197, tau=2*Math.PI;
+const clay=0xa8a197;
 const vec=(x,y,z)=>new T.Vector3(x,y,z);
 const smooth=(lo,hi,v)=>T.MathUtils.smoothstep(v,lo,hi);
 const restLevels=[];
@@ -202,7 +202,7 @@ export class Centaur extends Specimen {
     const gait=this.horse;
     const swish=(1-smooth(0,1.4,Math.abs(time%9.7-3.6)))*Math.sin((time-3.6)*2.6);
     let bend=.10*gait.support.hind*Math.min(1,gait.speed/.66)-.16*gait.turn+.12*swish;
-    let trail=.10*gait.speed-.065*gait.support.brake;
+    let trail=.10*gait.speed+.065*gait.support.acceleration+.055*gait.support.gallop*gait.support.drive-.065*gait.support.brake;
     for(let i=0;i<this.tailChain.length;i++){
       const node=this.tailChain[i],rate=this.tailRates[i],frequency=12-i*.9;
       for(const [axis,target] of [['z',bend],['x',trail]]){
@@ -223,24 +223,26 @@ export class Centaur extends Specimen {
       this.followTail(dt/steps,time);
     }
     for(const [half,child] of this.bisectors)half.quaternion.identity().slerp(child.quaternion,.5);
-    const gait=this.horse,phase=tau*gait.phase;
+    const gait=this.horse;
     const effort=Math.min(1,gait.speed/.66+Math.abs(gait.turn)*.48);
-    const {fore,hind,roll,pitch,brake}=gait.support;
+    const {fore,hind,roll,pitch,brake,run,gallop,drive,impact,acceleration}=gait.support;
+    const thrust=gallop*(drive-impact),brace=run*impact;
+    const lean=.075*run+.12*gallop+.025*T.MathUtils.clamp(acceleration,-2,2);
     const breath=Math.sin(1.36*t+.17*Math.sin(.53*t)),idle=1-effort;
     const window=(u,duration)=>smooth(0,.24*duration,u)*(1-smooth(.60*duration,duration,u));
     const gaze=window((t+.4)%11.3,4.4)-.55*window((t+5.2)%13.7,3.3);
-    this.pelvis.rotation.set(.009*effort*Math.cos(2*phase),-.029*effort*hind-.045*gait.turn,.024*effort*hind);
-    this.waist.rotation.set(-.024*effort-.62*pitch-.018*brake,-.035*fore*effort+.065*gait.turn,-.65*roll);
-    this.chest.rotation.set(.012*breath-.20*pitch,.044*hind*effort+.065*gait.turn,.011*fore*effort);
+    this.pelvis.rotation.set(.012*effort*(drive-impact)-.063*thrust,-.029*effort*hind-.045*gait.turn,.024*effort*hind);
+    this.waist.rotation.set(lean-.024*effort-.62*pitch-.018*brake,-.035*fore*effort+.065*gait.turn,-.65*roll);
+    this.chest.rotation.set(.012*breath-.20*pitch-.035*brace,.044*hind*effort+.065*gait.turn,.011*fore*effort);
     this.ribs.scale.set(1+.013*breath,1,1+.019*breath);
     const attention=.32+.68*idle;
-    this.neck.rotation.set(.007*breath-.25*pitch,.11*gait.turn+.055*gaze*attention,-.25*roll);
+    this.neck.rotation.set(.007*breath-.25*pitch-.37*lean,.11*gait.turn+.055*gaze*attention,-.25*roll);
     this.head.rotation.set(.014*breath-.019*gaze*attention,.16*gaze*attention+.16*gait.turn-.017*hind*effort,-.010*gaze*attention);
     this.arms.forEach(({arm,elbow,wrist,fingers,thumb},i)=>{
-      const s=i?1:-1, swing=s*effort*Math.sin(phase-.42);
+      const s=i?1:-1, swing=s*effort*(.69*hind-.31*fore);
       const gesture=(.26+.74*idle)*window((t+(i?1.1:7.2))%(i?10.9:13.2),3.25);
-      arm.rotation.set(.145*swing-.085*gesture,-s*(.038*gesture+.023*fore*effort),s*(.030+.032*gesture));
-      elbow.rotation.set(-.065-.075*Math.max(0,-swing)-.21*gesture,0,0);
+      arm.rotation.set(.145*swing-.085*gesture+.19*thrust-.105*brace,-s*(.038*gesture+.023*fore*effort),s*(.030+.032*gesture));
+      elbow.rotation.set(-.065-.31*run-.24*gallop-.11*brace-.075*Math.max(0,-swing)-.21*gesture,0,0);
       wrist.rotation.set(.015*breath+.025*swing,s*.13*gesture,-s*.082*gesture);
       fingers.rotation.z=-s*(.045+.19*gesture);
       thumb.rotation.y=s*(.018+.11*gesture);
