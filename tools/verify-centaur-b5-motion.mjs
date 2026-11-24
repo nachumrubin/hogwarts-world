@@ -88,3 +88,39 @@ for(const slope of [0,.045]){
   }
   actor.dispose();
 }
+
+// Circle and halt: measure actual world-space hoof trajectories from lift-off
+// to touchdown, including the shortened steps that gather the final stance.
+{
+  const actor=new Centaur(),legs=actor.horse.legs;
+  const liftOff=new Map(),steps={inside:[],outside:[]};
+  let gathers=0;
+  for(let frame=1;frame<=640;frame++){
+    const action=frame<100?'Walk':frame<440?'Turn':'Stop';
+    actor.update(dt,frame*dt,action,{terrainHeight:()=>0});
+    actor.root.updateMatrixWorld(true);
+    for(const leg of legs){
+      const point=leg.sole.getWorldPosition(vector());
+      if(!leg.stance && !liftOff.has(leg)){
+        liftOff.set(leg,{point,frame});
+        if(leg.finalStep)gathers++;
+      }
+      if(leg.stance && liftOff.has(leg)){
+        const strike=liftOff.get(leg);
+        if(strike.frame>200 && frame<440){
+          steps[leg.side>0?'inside':'outside'].push(point.distanceTo(strike.point));
+        }
+        liftOff.delete(leg);
+      }
+    }
+    if(legs.some(leg=>leg.finalStep&&!leg.stance)){
+      assert.equal(legs.filter(leg=>!leg.stance).length,1,'Gather with three supporting hooves');
+    }
+  }
+  const mean=values=>values.reduce((sum,value)=>sum+value,0)/values.length;
+  const outside=mean(steps.outside),inside=mean(steps.inside);
+  assert.ok(outside>inside+.1 && inside>.15,'Both sides step along distinct turn arcs');
+  assert.ok(gathers>0 && legs.every(leg=>leg.stance),'Finish positioning feet at the halt');
+  console.log({outsideStepMetres:outside,insideStepMetres:inside,finalSteps:gathers});
+  actor.dispose();
+}

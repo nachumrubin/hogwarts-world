@@ -101,7 +101,7 @@ function poseLeg(leg,rig,terrain,weight,checkReach=false){
   worldFoot.multiply(new T.Quaternion().setFromAxisAngle(vec(1,0,0),-.17*swing*swing));
   const foot=rig.getWorldQuaternion(new T.Quaternion()).invert().multiply(worldFoot);
   const coronet=sole.sub(leg.sole.position.clone().applyQuaternion(foot));
-  const root=ref[0].clone();
+  const root=leg.mobileOrigin ? bones[0].position.clone() : ref[0].clone();
   const down=vec(coronet.x-root.x,coronet.y-root.y,0).normalize();
   const direction=angle=>down.clone().multiplyScalar(Math.cos(angle)).addScaledVector(Z,Math.sin(angle));
   const pasternAngle=(leg.pasternAngle ?? (fore?.60:.64))+weight*.075-.10*swing;
@@ -160,10 +160,14 @@ export function equineContacts(actor,base,tail,rig,legs,config){
   const fitted=Boolean(config.fitted);
   let phase=0,speed=0,turn=0,desiredSpeed=0,desiredTurn=0,cadence=0,moving=false,terrain;
   const duty=.68,isUnicorn=config.kind==='unicorn';
+  const support={fore:0,hind:0,pitch:0,roll:0,brake:0};
+  let stopping=false, speedRate=6, stepSeconds=0;
   const home=(leg,ahead=0)=>{
-    const transient=(1-Math.exp(-6*ahead))/6;
+    const transient=(1-Math.exp(-speedRate*ahead))/speedRate;
     const travel=desiredSpeed*ahead+(speed-desiredSpeed)*transient;
-    const heading=desiredTurn*ahead+(turn-desiredTurn)*transient;
+    const heading=desiredTurn*ahead+(turn-desiredTurn)*(1-Math.exp(-6*ahead))/6;
+    // Project the foot's own lateral offset around the predicted heading.
+    // With forward travel through the turn this makes the outer arc longer.
     const yaw=actor.body.rotation.y+heading;
     const p=leg.home.clone();
     if(!fitted&&(!ahead||!moving))p.z+=isUnicorn?leg.side*(leg.fore?.13:-.052):leg.side*(leg.fore?.035:-.025);
@@ -173,15 +177,23 @@ export function equineContacts(actor,base,tail,rig,legs,config){
     p.y=actor.origin.y+(terrain?.(p.x,p.z)||0);return p;
   };
   const lastOrigin=vec(Infinity,Infinity,Infinity);
-  return {legs,get phase(){return phase},get speed(){return speed},get turn(){return turn},advance(dt,action,context){
+  return {legs,support,get phase(){return phase},get speed(){return speed},get turn(){return turn},advance(dt,action,context){
     terrain=context?.terrainHeight;
     if(!actor.origin.equals(lastOrigin)){
       lastOrigin.copy(actor.origin);legs.forEach(leg=>leg.initialized=false);
     }
     const walk=action==='Walk',pivot=action==='Turn';
     const blend=1-Math.exp(-dt*6);
-    desiredSpeed=walk?(isUnicorn?.72:.66):0;
-    speed+=(desiredSpeed-speed)*blend;
+    stopping=fitted&&!walk&&!pivot;
+    speedRate=stopping?2.8:6;
+    desiredSpeed=walk?(isUnicorn?.72:.66):(fitted&&pivot?.39:0);
+    const previousSpeed=speed;
+    speed+=(desiredSpeed-speed)*(stopping?1-Math.exp(-dt*speedRate):blend);
+    if(stopping && speed<.005)speed=0;
+    if(fitted && dt>0){
+      const deceleration=Math.max(0,(previousSpeed-speed)/dt);
+      support.brake+=(Math.min(1,deceleration)-support.brake)*(1-Math.exp(-dt*5));
+    }
     desiredTurn=walk?(fitted?0:.17):pivot?(fitted?.60:.42):0;
     turn+=(desiredTurn-turn)*blend;
     const yaw=actor.body.rotation.y+turn*dt*.5;
@@ -190,6 +202,7 @@ export function equineContacts(actor,base,tail,rig,legs,config){
     actor.root.position.y=actor.origin.y+(terrain?.(actor.root.position.x,actor.root.position.z)||0);
     moving=walk||pivot||speed>.035||Math.abs(turn)>.035;
     cadence=.73+.19*speed;
+    stepSeconds=dt;
     if(moving||legs.some(leg=>!leg.stance))phase+=cadence*dt;
   },animate(t,walk,tuck=0,graze=0){
     tail.rotation.z=.12*Math.sin(1.8*t);
@@ -205,19 +218,22 @@ export function equineContacts(actor,base,tail,rig,legs,config){
       base.quaternion.setFromUnitVectors(Y,normal);
       base.position.addScaledVector(Y,1.1).addScaledVector(normal,-1.1);
     }else base.quaternion.identity();
-    if(fitted){
-      base.rotateZ(.014*effort*Math.sin(phase*2*Math.PI));
-      base.rotateX(.008*effort*Math.sin(phase*4*Math.PI));
-    }
+
     for(const leg of legs){
       const cycle=(phase+leg.phase)%1;
       if(!leg.initialized){leg.anchor.copy(home(leg));leg.yaw=actor.body.rotation.y;leg.initialized=true}
-      if(leg.stance&&moving&&cycle>=duty){
-        leg.swingStart=cycle;leg.stance=false;leg.liftOff.copy(leg.anchor);leg.startYaw=leg.yaw;
+      // At a halt, gather one displaced hoof at a time after forward travel ends.
+      const gather=stopping && speed<.035 && leg.anchor.distanceTo(home(leg))>.048;
+      const finalStep=gather && legs.every(other=>other.stance);
+      if(leg.stance&&((moving&&cycle>=duty)||finalStep)){
+        leg.swingStart=cycle;leg.finalStep=finalStep;leg.finalProgress=0;
+        leg.stance=false;leg.liftOff.copy(leg.anchor);leg.startYaw=leg.yaw;
         const ahead=(1-cycle+duty*.5)/cadence;
-        leg.landing.copy(home(leg,ahead));leg.endYaw=actor.body.rotation.y+turn*ahead;
+        leg.landing.copy(home(leg,finalStep?0:ahead));leg.endYaw=actor.body.rotation.y+turn*(finalStep?0:ahead);
+        leg.stepHeight=fitted?T.MathUtils.clamp(leg.liftOff.distanceTo(leg.landing)*.17,.018,.105):(leg.fore?.139:.122);
       }
-      if(!leg.stance&&cycle<duty){
+      if(!leg.stance&&leg.finalStep)leg.finalProgress+=stepSeconds/.33;
+      if(!leg.stance&&(leg.finalStep?leg.finalProgress>=1:cycle<duty)){
         leg.stance=true;leg.anchor.copy(leg.landing);leg.yaw=leg.endYaw;
       }
       leg.swing=0;
@@ -226,12 +242,32 @@ export function equineContacts(actor,base,tail,rig,legs,config){
         leg.target.copy(leg.anchor);
       }
       else{
-        const u=(cycle-leg.swingStart)/(1-leg.swingStart),ease=u*u*u*(10+u*(-15+6*u));
+        const u=leg.finalStep?leg.finalProgress:(cycle-leg.swingStart)/(1-leg.swingStart),ease=u*u*u*(10+u*(-15+6*u));
         leg.swing=u;leg.target.lerpVectors(leg.liftOff,leg.landing,ease);
-        leg.target.y+=(leg.fore?.139:.122)*Math.sin(Math.PI*u)**2;
+        leg.target.y+=leg.stepHeight*Math.sin(Math.PI*u)**2;
         leg.yaw=T.MathUtils.lerp(leg.startYaw,leg.endYaw,ease);
       }
       leg.load=leg.stance?Math.sin(Math.PI*cycle/duty)**2:0;
+    }
+    if(fitted){
+      // Walking horses show a stride-frequency pelvic roll and separate withers
+      // and pelvic excursions. See the circular-walk measurements in PMID 37127806.
+      const [lh,lf,rh,rf]=legs;
+      support.fore=rf.load-lf.load;
+      support.hind=rh.load-lh.load;
+      support.roll=effort*(.022*support.hind+.013*support.fore);
+      support.pitch=effort*.018*(lf.load+rf.load-lh.load-rh.load)+.018*support.brake;
+      // Translate about the ribcage height when rolling, keeping the trunk
+      // over its support polygon instead of swinging from a ground-level pivot.
+      base.position.x+=1.0*support.roll+.009*effort*(support.fore+support.hind);
+      base.rotateZ(support.roll);base.rotateX(support.pitch);
+      for(const leg of legs){
+        const root=leg.bones[0].position.copy(leg.ref[0]);
+        const localCycle=2*Math.PI*(phase+leg.phase);
+        leg.mobileOrigin=true;
+        root.z+=effort*(leg.fore?.023:.014)*Math.cos(localCycle-.28);
+        root.y+=effort*(leg.fore?.012:.010)*(leg.load-.35);
+      }
     }
     if(terrain){
       const origin=actor.root.position,normal=Y.clone().applyQuaternion(base.quaternion).applyAxisAngle(Y,actor.body.rotation.y);

@@ -45,7 +45,8 @@ export class Centaur extends Specimen {
       return b;
     };
     this.core=bone('barrel',null,vec(0,0,0));
-    this.tail=bone('dock',this.core,vec(0,1.34,-.69));
+    this.pelvis=bone('equine pelvis',this.core,vec(0,1.18,-.48));
+    this.tail=bone('dock',this.pelvis,vec(0,1.34,-.69));
     this.waist=bone('abdominal attachment',this.core,vec(0,1.39,.569));
     this.chest=bone('thorax',this.waist,vec(0,1.64,.675));
     this.ribs=bone('rib excursion',this.chest,vec(0,1.65,.678));
@@ -98,7 +99,7 @@ export class Centaur extends Specimen {
     const a=Math.abs(x),side=x>0?1:0;
     const one=b=>[[b,1]];
     const blend=(a,b,t)=>[[a,1-t],[b,t]];
-    if(region===1)return blend(this.core,this.tail,1-smooth(1.15,1.39,h));
+    if(region===1)return blend(this.pelvis,this.tail,1-smooth(1.15,1.39,h));
     if(region===2 || (h>=1.744 && z>.49 && a>.142 && h<1.981)){
       const {arm,elbow,wrist,fingers,thumb}=this.arms[side];
       if(h<1.314){
@@ -123,7 +124,8 @@ export class Centaur extends Specimen {
     const proximal=1-smooth(leg.ref[0].y-.045,leg.ref[0].y+.18,h);
     const medial=1-smooth(.755,1.10,h)*(1-smooth(.055,.195,a));
     const limb=proximal*reach*medial;
-    if(limb<=0)return one(this.core);
+    const pelvis=(1-smooth(-.58,-.08,z))*smooth(.76,1.21,h);
+    if(limb<=0)return blend(this.core,this.pelvis,pelvis);
     let pairs=one(leg.bones[0]);
     for(let k=1;k<5;k++){
       const rad=[0,.117,.065,.046,.020][k];
@@ -133,7 +135,7 @@ export class Centaur extends Specimen {
       else pairs=t<.5?blend(leg.bones[k-1],leg.helpers[k],2*t):
         blend(leg.helpers[k],leg.bones[k],2*t-1);
     }
-    return [...pairs.map(([b,w])=>[b,w*limb]),[this.core,1-limb]];
+    return [...pairs.map(([b,w])=>[b,w*limb]),[this.core,(1-limb)*(1-pelvis)],[this.pelvis,(1-limb)*pelvis]];
   }
 
   skinLevel(level,legs){
@@ -181,21 +183,24 @@ export class Centaur extends Specimen {
     for(const [half,child] of this.bisectors)half.quaternion.identity().slerp(child.quaternion,.5);
     const gait=this.horse,phase=tau*gait.phase;
     const effort=Math.min(1,gait.speed/.66+Math.abs(gait.turn)*.48);
-    const beat=Math.sin(phase),breath=Math.sin(1.68*t),idle=1-effort;
-    const glance=Math.sin(.71*t+.4)*Math.sin(.31*t);
-    this.waist.rotation.set(-.032*effort+.012*effort*Math.cos(2*phase),-.032*effort*beat,-.012*effort*beat);
-    this.chest.rotation.set(.009*breath,.054*effort*beat+.10*gait.turn,.012*effort*beat);
-    this.ribs.scale.set(1+.010*breath,1,1+.016*breath);
-    this.neck.rotation.set(.007*breath-.011*effort*Math.cos(2*phase),.14*gait.turn,0);
-    this.head.rotation.set(.014*Math.sin(.86*t),.12*glance+.16*gait.turn-.029*beat*effort,.011*glance);
+    const {fore,hind,roll,pitch,brake}=gait.support;
+    const breath=Math.sin(1.36*t+.17*Math.sin(.53*t)),idle=1-effort;
+    const window=(u,duration)=>smooth(0,.24*duration,u)*(1-smooth(.60*duration,duration,u));
+    const gaze=window((t+.4)%11.3,4.4)-.55*window((t+5.2)%13.7,3.3);
+    this.pelvis.rotation.set(.009*effort*Math.cos(2*phase),-.029*effort*hind-.045*gait.turn,.024*effort*hind);
+    this.waist.rotation.set(-.024*effort-.62*pitch-.018*brake,-.035*fore*effort+.065*gait.turn,-.65*roll);
+    this.chest.rotation.set(.012*breath-.20*pitch,.044*hind*effort+.065*gait.turn,.011*fore*effort);
+    this.ribs.scale.set(1+.013*breath,1,1+.019*breath);
+    this.neck.rotation.set(.007*breath-.25*pitch,.11*gait.turn+.055*gaze*idle,-.25*roll);
+    this.head.rotation.set(.014*breath-.019*gaze*idle,.16*gaze*idle+.16*gait.turn-.017*hind*effort,-.010*gaze*idle);
     this.arms.forEach(({arm,elbow,wrist,fingers,thumb},i)=>{
-      const s=i?1:-1,swing=s*effort*Math.sin(phase+.27);
-      const gesture=idle*Math.pow((1+Math.sin(.83*t+i*2.4))/2,4);
-      arm.rotation.set(.17*swing-.023*gesture,-s*.023*gesture,s*(.030+.023*effort));
-      elbow.rotation.set(-.065-.080*Math.max(0,-swing)-.105*gesture,0,0);
-      wrist.rotation.set(.017*breath+.030*swing,s*.065*gesture,-s*.057*gesture);
-      fingers.rotation.z=-s*(.045+.12*gesture);
-      thumb.rotation.y=s*(.018+.085*gesture);
+      const s=i?1:-1, swing=s*effort*Math.sin(phase-.42);
+      const gesture=idle*window((t+(i?1.1:7.2))%(i?10.9:13.2),3.25);
+      arm.rotation.set(.145*swing-.085*gesture,-s*(.038*gesture+.023*fore*effort),s*(.030+.032*gesture));
+      elbow.rotation.set(-.065-.075*Math.max(0,-swing)-.21*gesture,0,0);
+      wrist.rotation.set(.015*breath+.025*swing,s*.13*gesture,-s*.082*gesture);
+      fingers.rotation.z=-s*(.045+.19*gesture);
+      thumb.rotation.y=s*(.018+.11*gesture);
     });
   }
 }
