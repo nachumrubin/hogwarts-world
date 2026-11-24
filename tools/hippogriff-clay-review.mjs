@@ -1,6 +1,7 @@
 // Bundle with esbuild as a browser ESM before serving (the world pipeline is TypeScript).
 // Browser entry for the C.1 plates. Submit the lab's generated triangles to
 // the world's native WebGPU prop renderer, retaining normals and handedness.
+import {addClayDetail} from './hippogriff-clay-detail.mjs';
 import {Hippogriff} from '../creature-lab/species/hippogriff.js';
 import {Vector3,Matrix3} from '../creature-lab/vendor/three.module.js';
 import {PropRenderer} from '../src/gpu/prop-renderer.ts';
@@ -23,7 +24,7 @@ function pack(node){
  const indices=Uint32Array.from(geo.index.array);
  if(node.matrixWorld.determinant()<0)for(let i=0;i<indices.length;i+=3)
    [indices[i+1],indices[i+2]]=[indices[i+2],indices[i+1]];
- return {name:'hippogriff',vertices,indices,vertexCount:p.count,radius,minY,maxY};
+ return {name:'hippogriff',detail:geo.attributes.clayDetail?.array,vertices,indices,vertexCount:p.count,radius,minY,maxY};
 }
 
 export async function renderClay(canvas,view,extended){
@@ -71,6 +72,7 @@ export async function renderClay(canvas,view,extended){
  const pass=encoder.beginRenderPass({colorAttachments:[{view:color.createView(),loadOp:'clear',storeOp:'store',clearValue:[0,0,0,1]}],
    depthStencilAttachment:{view:depth.createView(),depthClearValue:0,depthLoadOp:'clear',depthStoreOp:'store'}});
  renderer.record(pass);pass.end();
+ addClayDetail(device,encoder,meshes,frame,color,depth);
 
  // Contact shading from the same pose's depth buffer. Apply at a fixed
  // physical radius so creases stay consistent when framing the full span.

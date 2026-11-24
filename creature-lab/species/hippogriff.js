@@ -1,5 +1,7 @@
 import * as T from '../vendor/three.module.js';
 import {Specimen,joint,smoothSections,sweep} from './form.js';
+import {plantarSkin} from './hippogriff-foot.js';
+import {hindProfile} from './equine-gait.js';
 import {buildWing,featherTract} from './hippogriff-wings.js';
 
 const clay=0xb5b1a9;
@@ -105,6 +107,41 @@ function legSurface(profile,y,angle,offset=0){
  return [x+(w+offset)*Math.sin(angle),y,z+(d+offset)*Math.cos(angle)];
 }
 
+// Rounded bundles give the hanging switch volume. Narrow peripheral
+// strands follow the same dock, part in small groups, and taper separately.
+function tailHair(lod){
+ const pos=[],uv=[],idx=[],sides=[8,6,5][lod],steps=[18,13,9][lod];
+ const count=[87,61,39][lod];
+ for(let i=0;i<count;i++){
+   const a=i*2.39996323,radial=Math.sqrt((i+.5)/count);
+   const phase=Math.sin(i*11.37),length=1.39-.18*radial+.10*Math.cos(a*3)+.085*phase;
+   const bundle=i%4===0?.043:.019;
+   for(let j=0;j<=steps;j++){
+     const t=j/steps,fan=.034+.120*Math.sin(Math.PI*t**.82)**.68;
+     const angle=a+.26*t*Math.sin(a*3)+.11*Math.sin(t*4+a);
+     const x=radial*fan*Math.cos(angle)+.085*Math.sin(5*t)*t+.080*t*t+.017*t*Math.sin(6*t+a)+.021*t*t*Math.sin(2*a);
+     const y=1.81-length*t;
+     const z=-1.10-.42*(1-Math.exp(-t*5))-.15*t*t-.045*Math.sin(2*Math.PI*t)*t+radial*fan*Math.sin(angle)+.024*t*t*Math.cos(a*3);
+     const w=bundle*(.32+.72*Math.sin(Math.PI*t**.65)**.57)*(1-.80*t**3)*(1+.15*phase);
+     for(let k=0;k<=sides;k++){
+       const theta=2*Math.PI*k/sides;
+       pos.push(x+w*Math.cos(theta),y,z+w*.81*Math.sin(theta));
+       uv.push(k/sides,t,2);
+       if(j&&k){const n=pos.length/3-1,prev=n-(sides+1);
+         idx.push(prev-1,prev,n-1,prev,n,n-1);}
+     }
+   }
+ }
+ const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
+ g.setAttribute('clayDetail',new T.Float32BufferAttribute(uv,3));g.setIndex(idx);g.computeVertexNormals();
+ const n=g.attributes.normal,seam=new T.Vector3(),other=new T.Vector3();
+ for(let j=0;j<n.count;j+=sides+1){
+   seam.fromBufferAttribute(n,j).add(other.fromBufferAttribute(n,j+sides)).normalize();
+   n.setXYZ(j,seam.x,seam.y,seam.z);n.setXYZ(j+sides,seam.x,seam.y,seam.z);
+ }
+ return g;
+}
+
 export class Hippogriff extends Specimen {
  constructor(){
    super();
@@ -189,25 +226,41 @@ export class Hippogriff extends Specimen {
      this.hindLeg(s);
      this.foreLeg(s);
    }
-   // The tail follows the dock and falls as a tapered, slightly parted switch.
-   for(let i=0;i<9;i++){
-     const a=i*2.4, x=.066*Math.cos(a),z=.07*Math.sin(a);
-     this.loft(body,clay,[[x*.3,1.77,-1.09,.087,.085],[x,1.66,-1.28+z,.091,.1],
-       [x*1.3,1.37,-1.40+z,.077,.085],[x*1.45,1.0,-1.43+z,.065,.076],
-       [x*1.7,.73,-1.49+z,.047,.059],[x*2,.52+.09*Math.cos(a),-1.56+z,.006,.008]]);
-   }
+   this.mesh(body,clay,lod=>tailHair(lod));
    this.folded=buildWing(this,false);this.extended=buildWing(this,true);
    this.update(0,0,'Idle');
  }
  hindLeg(s){
    const leg=joint(this.body,s*.29,0,s*.058);
-   this.loft(leg,clay,[[0,1.89,-.94,.109,.174],[s*.012,1.65,-.92,.185,.304],
-    [s*.034,1.39,-.874,.195,.287],[s*.035,1.14,-.744,.152,.204],[s*.04,1.014,-.694,.117,.139],
-    [s*.03,.841,-.856,.104,.128],[s*.025,.68,-1.008,.075,.092],[s*.026,.637,-1.062,.069,.087],[s*.029,.589,-1.074,.077,.093],[s*.024,.542,-1.041,.059,.066],
-    [s*.024,.496,-1.015,.048,.057],[s*.025,.29,-1.004,.039,.047],[s*.025,.245,-1.001,.047,.057],
-    [s*.021,.199,-.991,.063,.071],[s*.019,.147,-.956,.050,.061],[s*.019,.112,-.934,.055,.071]]);
-   this.loft(leg,clay,[[s*.02,.145,-.952,.047,.060],[s*.02,.125,-.936,.060,.078],[s*.02,.107,-.928,.064,.085],
-    [s*.02,.047,-.903,.079,.107],[s*.02,.013,-.898,.081,.113]], [0,-1,0]);
+   // Use the centaur's rest profile from hip through the coronet,
+   // fitted under the existing croup and the staggered C.3 stance.
+   const rows=hindProfile.map(([y,z,w,d,offset])=>{
+     const thigh=Math.max(0,Math.min(1,(y-.93)/.58));
+     return [s*(.03+offset),y,z-.222,w*(1.08+.15*thigh),d*(1.07+.22*thigh)];
+   });
+   this.mesh(leg,clay,lod=>{
+     const geom=sweep(rows,[36,24,14][lod],new T.Vector3(0,-1,0));
+     const attr=geom.attributes.position;
+     // Paired gaskin bellies, a lean Achilles line behind the hock,
+     // and long digital flexors descending the back of the cannon.
+     for(let i=0;i<attr.count;i++){
+       const y=attr.getY(i),z=attr.getZ(i);
+       let k=1;
+       while(k<rows.length-1 && rows[k][1]>y)k++;
+       const a=rows[k-1],b=rows[k],t=Math.max(0,Math.min(1,(y-a[1])/(b[1]-a[1])));
+       const station=a.map((v,j)=>v+(b[j]-v)*t);
+       const side=(attr.getX(i)-station[0])/station[3],back=(station[2]-z)/station[4];
+       const lump=(v,w)=>Math.exp(-(v*v)/(w*w));
+       const volume=.037*lump(y-1.35,.29)*lump(back+.38,.52)
+         +.020*lump(y-.89,.16)*lump(back-.4,.46)+.009*lump(y-.41,.16)*lump(back-.58,.24);
+       attr.setX(i,attr.getX(i)+side*volume);
+     }
+     geom.computeVertexNormals();return geom;
+   });
+   this.loft(leg,clay,[[s*.03,.117,-.920,.054,.067],[s*.03,.097,-.912,.064,.076],
+     [s*.03,.076,-.904,.068,.082],[s*.03,.023,-.883,.083,.109],
+     [s*.03,.013,-.880,.082,.110]],[0,-1,0]);
+
  }
  foreLeg(s){
    const leg=joint(this.body,s*.278,0,s*.065);
@@ -219,8 +272,8 @@ export class Hippogriff extends Specimen {
    this.loft(leg,clay,profile,[0,-1,0]);
    const sections=smoothSections(profile,5),plates=[],upper=[];
    for(let band=0;band<12;band++){
-     const y=.186+.054*band,phase=Math.sin(band*2.41);
-     plates.push((u,v,h)=>legSurface(sections,y+v*.031+.011*u*u,u*1.01+.09*phase,h));
+     const t=band/11,y=.166+.64*t**1.12,phase=Math.sin(band*2.41);
+     plates.push((u,v,h)=>legSurface(sections,y+v*(.026+.010*t)+.011*u*u+.003*u*phase,u*(.88+.14*t)+.13*phase,h));
    }
    // Small staggered reticulate scales occupy the sides and back.
    for(let row=0;row<21;row++){
@@ -246,37 +299,9 @@ export class Hippogriff extends Specimen {
    }
    featherTract(this,leg,upper);
    const foot=joint(leg,s*.07,0,.70);
-   this.loft(foot,clay,[[0,.142,-.039,.062,.067],[0,.114,-.01,.089,.089],
-     [0,.087,.047,.110,.075],[0,.081,.097,.089,.047],[0,.074,.143,.046,.029]]);
-   for(const [x,z,girth] of [[-.247,.30,1.10],[.014,.409,1],[.246,.269,.91],[-.083,-.263,1.20]]){
-     const toe=joint(foot);toe.rotation.y=Math.atan2(s*x,z);
-     const d=Math.hypot(x,z);
-     // One continuous section chain runs from the interdigital pad over
-     // successive phalanges, through the ungual sheath, to the recurved point.
-     const digit=[[0,.089,.010,.060,.051],[0,.083,d*.25,.052,.047],
-       [0,.069,d*.36,.041,.035],[0,.082,d*.47,.050,.048],
-       [0,.062,d*.60,.035,.032],[0,.083,d*.72,.044,.045],
-       [0,.100,d*.80,.039,.039],[0,.109,d*.87,.036,.037],
-       [0,.098,d*.96,.029,.031],[0,.074,d*1.04,.021,.026],
-       [0,.042,d*1.091,.013,.018],[0,.010,d*1.092,.002,.004]]
-       .map(([x,y,z,w,h])=>[x,y,z,w*girth,h*girth]);
-     this.mesh(toe,clay,lod=>sweep(digit,[26,18,12][lod]));
-     const rows=smoothSections(digit,5),shields=[];
-     for(let j=0;j<9;j++){
-       const station=4+j*2.95;
-       shields.push((u,v,h)=>{
-         const f=station+v*1.65,i=Math.floor(f),t=f-i;
-         const [x,y,z,w,r]=rows[i].map((p,k)=>p+(rows[i+1][k]-p)*t);
-         const prev=rows[Math.max(0,i-1)],next=rows[i+1];
-         const dy=next[1]-prev[1],dz=next[2]-prev[2],len=Math.hypot(dy,dz);
-         const rise=Math.cos(u*1.14)*(r+h+.002);
-         return [x+Math.sin(u*1.14)*(w+h),y+rise*dz/len,z-rise*dy/len];
-       });
-     }
-     // Local +Z runs along the toe. Reversing its transverse coordinate
-     // keeps these dorsal shields outward-facing.
-     scalePlates(this,toe,shields.map(surface=>(u,v,h)=>surface(-u,v,h)));
-   }
+   foot.scale.x=s;
+   this.mesh(foot,clay,plantarSkin);
+
  }
  update(dt,t,action){
    const pose=action==='Unfold'?this.extended:this.folded;
