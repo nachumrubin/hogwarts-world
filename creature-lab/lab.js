@@ -40,6 +40,12 @@ export class Lab{
  setAction(action){
   const reframe=this.widePose(action)!==this.widePose(this.action);
   this.action=action;
+  if(this.kind==='hippogriff'&&reframe){
+    this.actor.update(0,this.clock,action);
+    this.extra?.update(0,this.clock,action);
+    this.bounds.setFromObject(this.actor.root);
+    this.applyDebug();this.calculateMemory();
+  }
   if(reframe&&!this.free)this.setAngle(this.angle);
  }
  setAngle(angle){
@@ -48,7 +54,7 @@ export class Lab{
   else if(angle==='habitat')radius*=1.44;
   if(this.bounds){
     this.bounds.getCenter(this.target);
-    if(this.widePose(this.action))this.target.y+=this.kind==='owl'?.24:.40;
+    if(this.kind==='owl'&&this.widePose(this.action))this.target.y+=.24;
     if(angle==='close-up'){const size=this.bounds.getSize(new V());this.target.y+=size.y*.28;this.target.z+=size.z*.22;radius=this.fit()*.48}
   }
   if(this.kind==='merperson'&&angle==='close-up'){
@@ -57,7 +63,7 @@ export class Lab{
   const dir=(this.kind==='merperson'&&merpersonViews[angle])||(this.kind!=='squid'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];
   this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
  }
- fit(){if(this.bounds){const s=this.bounds.getSize(new V());if(this.widePose(this.action)){s.x=this.kind==='owl'?1.55:5.6;s.y+=this.kind==='owl'?.48:1.0}return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
+ fit(){if(this.bounds){const s=this.bounds.getSize(new V());if(this.kind==='owl'&&this.widePose(this.action)){s.x=1.55;s.y+=.48}return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
  orbit(){this.camera.position.copy(this.target).add(new V().setFromSpherical(this.spherical));this.camera.lookAt(this.target);if(this.kind==='squid')this.camera.rotateZ(-.085)}
  bindCamera(){
   const c=this.canvas;c.addEventListener('pointerdown',e=>{c.focus({preventScroll:true});c.setPointerCapture(e.pointerId);this.drag=[e.clientX,e.clientY]});c.addEventListener('pointerup',()=>this.drag=null);c.addEventListener('pointercancel',()=>this.drag=null);
@@ -67,7 +73,7 @@ export class Lab{
   window.addEventListener('keydown',e=>{if(document.activeElement===c)this.keys.add(e.code)});window.addEventListener('keyup',e=>this.keys.delete(e.code));window.addEventListener('blur',()=>this.keys.clear())
  }
  setDistance(d){this.setAngle('three-quarter');this.spherical.radius*=({near:1,medium:2,far:3.7})[d]||1;this.orbit()}
- setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new species[this.kind]();this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root);this.applyDebug()}this.calculateMemory()}
+ setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new species[this.kind]();if(this.kind==='hippogriff')this.extra.update(0,this.clock,this.action);this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root);this.applyDebug()}this.calculateMemory()}
  setLOD(l){this.auto=l==='auto';if(this.auto)return;let v=Number(l);if(this.level===v)return;this.actor.setLOD(v);this.extra?.setLOD(v);this.level=v;this.applyDebug();this.calculateMemory()}
  restoreMaterials(actor){actor.root.traverse(o=>{if(this.original.has(o))o.material=this.original.get(o)})}
  applyDebug(){for(const a of [this.actor,this.extra])a?.root.traverse(o=>{if(!o.isMesh)return;if(!this.original.has(o))this.original.set(o,o.material);const m=this.original.get(o);o.material=this.normals?this.normalMat:(this.inspectionMaterials[this.mode]||m);for(const mat of [].concat(o.material))mat.wireframe=this.wire})}
