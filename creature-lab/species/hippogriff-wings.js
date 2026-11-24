@@ -8,53 +8,49 @@ const vec=p=>new T.Vector3(...p);
 // rolled margins give both faces a readable profile even in plain clay.
 export function featherTract(actor,parent,feathers){
  return actor.mesh(parent,clay,lod=>{
-   const pos=[],normals=[],idx=[],steps=[20,11,6][lod];
+   const pos=[],idx=[],normals=[],steps=[18,11,6][lod];
+   // Closely spaced samples at the midrib resolve a narrow rounded rachis.
+   // Upper and lower faces meet only at their thin rolled margins.
+   const cross=[-1,-.73,-.35,-.075,0,.075,.34,.68,1],stride=cross.length*2;
    for(const [index,[start,end,width,normal,curve]] of feathers.entries()){
-     const a=vec(start),delta=vec(end).sub(a),side=delta.clone().cross(vec(typeof normal==='function'?normal(0):normal)).normalize();
-     const up=side.clone().cross(delta).normalize(),offset=pos.length/3;
-     const long=delta.length()>.54,phase=Math.sin(index*19.371);
+     const a=vec(start),delta=vec(end).sub(a),flight=delta.length()>.55;
+     const outward=t=>vec(typeof normal==='function'?normal(t):normal);
+     const side=delta.clone().cross(outward(0)).normalize(),up=side.clone().cross(delta).normalize();
+     const phase=Math.sin(index*17.3),offset=pos.length/3;
+     const path=t=>curve?vec(curve(t)):a.clone().addScaledVector(delta,t)
+       .addScaledVector(up,width*.39*Math.sin(Math.PI*t))
+       .addScaledVector(side,width*(.29+.14*phase)*t*Math.sin(Math.PI*t));
      for(let j=0;j<=steps;j++){
-       const t=j/steps,wave=Math.sin(Math.PI*t);
-       // The broad proximal web carries the load. The outer third narrows
-       // into an emarginated finger on the long primaries.
-       const proximal=.012+.988*Math.sin(Math.min(1,t*3.2)*Math.PI/2);
-       const taper=Math.pow(Math.max(.0002,1-t**(long?3:2)),long?.53:.70);
-       const w=width*proximal*taper*(.94+.30*t)*(1+.06*phase);
-       const center=curve?vec(curve(t)):a.clone().addScaledVector(delta,t)
-         .addScaledVector(up,.23*width*wave).addScaledVector(side,(.25+.13*phase)*width*t*wave);
-       let transverse=side, surfaceNormal=up;
-       if(curve){
-         const tangent=vec(curve(Math.min(1,t+.01))).sub(vec(curve(Math.max(0,t-.01)))).normalize();
-         const outward=typeof normal==='function'?vec(normal(t)):vec(normal);
-         transverse=tangent.clone().cross(outward).normalize();
-         surfaceNormal=transverse.clone().cross(tangent);
+       const t=j/steps,center=path(t);
+       const tangent=path(Math.min(1,t+.008)).sub(path(Math.max(0,t-.008))).normalize();
+       const lateral=tangent.clone().cross(outward(t)).normalize();
+       const dorsal=lateral.clone().cross(tangent).normalize();
+       const envelope=.006+Math.sin(Math.PI*t**.83)**(flight?.61:.72);
+       const w=width*envelope*(.91+.16*t), twist=.19*t+.09*phase;
+       for(const bottom of [false,true]){
+         for(let c=0;c<cross.length;c++){
+           const k=cross[bottom?cross.length-1-c:c];
+           const x=k*(k>0?(flight?.66:.86):1);
+           const shaft=.102*(1-.75*t)*Math.exp(-((k/.066)**2));
+           const camber=.245*(1-k*k)+twist*k;
+           const h=camber+(bottom?-.046:shaft);
+           pos.push(...center.clone().addScaledVector(lateral,x*w).addScaledVector(dorsal,h*w).toArray());
+           // A rounded shaft shoulder, smoothly cambered vanes, and a
+           // separate underside keep packed normals stable on thin edges.
+           const slope=-.49*k+twist+(bottom?0:-2*k*shaft/.00436);
+           normals.push(...dorsal.clone().addScaledVector(lateral,-slope/(x===k?1:(flight?.66:.86)))
+             .normalize().multiplyScalar(bottom?-1:1).toArray());
+         }
        }
-       const slit=long&&j===steps-3&&index%3===0?.82:1;
-       for(const [k,h] of [[-1,-.018],[-.48,.022],[0,.064],[.35,.017],[.72,-.027],[.72,-.043],[0,-.051],[-1,-.034]]){
-         const web=k<0?k*slit:k;
-         const underside=h<-.030;
-         const tilt=web*(long?.20:.11)-t*(long?.16:.055);
-         normals.push(...surfaceNormal.clone().addScaledVector(transverse,tilt)
-           .normalize().multiplyScalar(underside?-1:1).toArray());
-         pos.push(...center.clone().addScaledVector(transverse,web*w)
-           .addScaledVector(surfaceNormal,(h+web*t*(long?.16:.055))*w).toArray());
-       }
-       if(j)for(let k=0;k<8;k++){
-         const p=offset+(j-1)*8+k,q=offset+(j-1)*8+(k+1)%8;
-         idx.push(p,q,p+8,q,q+8,p+8);
+       if(j)for(let c=0;c<stride;c++){
+         const p=offset+(j-1)*stride+c,q=offset+(j-1)*stride+(c+1)%stride;
+         idx.push(p,q,p+stride,q,q+stride,p+stride);
        }
      }
    }
-   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
-   g.setIndex(idx);g.computeVertexNormals();
-   // Keep the fold and shaft visible in raking light. At the very thin
-   // margin the local skin normal stabilizes the bevel on both faces.
-   const output=g.attributes.normal,geometric=new T.Vector3(),guide=new T.Vector3();
-   for(let i=0;i<output.count;i++){
-     geometric.fromBufferAttribute(output,i);
-     guide.fromArray(normals,3*i).lerp(geometric,.58).normalize();
-     output.setXYZ(i,guide.x,guide.y,guide.z);
-   }
+   const g=new T.BufferGeometry();
+   g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
+   g.setAttribute('normal',new T.Float32BufferAttribute(normals,3));g.setIndex(idx);
    return g;
  });
 }
@@ -125,62 +121,91 @@ function spread(actor,side){
 // At rest the humerus lies caudally and the wrist returns toward the
 // shoulder. The closed flight fan lies along the ribs beneath the mantle.
 function folded(actor,side){
+ // A continuous ellipsoidal folded arm fills the envelope inside the
+ // marginal coverts, including the inside face visible on the far wing.
  const rows=[
-   [.306,1.85,.59,.048,.081],[.388,1.85,.44,.100,.192],
-   [.441,1.82,.17,.100,.247],[.432,1.78,-.12,.084,.222],
-   [.422,1.76,-.43,.069,.165],[.397,1.75,-.74,.059,.108],
-   [.341,1.72,-.98,.033,.065],[.272,1.70,-1.145,.009,.016]
+   [.263,1.83,.68,.045,.070],[.325,1.86,.54,.119,.150],
+   [.374,1.84,.35,.139,.209],[.398,1.835,.13,.146,.229],
+   [.400,1.82,-.13,.142,.211],[.394,1.80,-.42,.141,.195],
+   [.409,1.79,-.73,.135,.177],[.401,1.76,-.95,.111,.147],
+   [.342,1.70,-1.16,.080,.104],[.279,1.61,-1.37,.028,.048]
  ];
- // The scapular mantle fills the saddle between the withers and the
- // folded humerus, especially visible when looking straight at the chest.
- actor.loft(side,clay,[[.17,1.91,.32,.16,.12],[.285,1.93,.31,.23,.145],
-   [.348,1.91,.30,.21,.14],[.395,1.86,.27,.15,.12]], [1,0,0]);
  actor.loft(side,clay,rows,[0,0,-1]);
- const samples=smoothSections(rows,5);
  const feathers=[];
- function rootAt(t,angle){
-   const f=t*(samples.length-1),a=samples[Math.floor(f)],b=samples[Math.ceil(f)];
-   const [x,y,z,w,h]=a.map((v,i)=>v+(b[i]-v)*(f%1));
-   return [x+w*Math.cos(angle),y+h*Math.sin(angle),z];
+ // A common mantle surface carries all tracts down and back over the
+ // ribs. v runs from the dorsal seam to the ventral wing margin.
+ function mantle(z,v){
+   const a=.23+1.94*Math.max(-.08,Math.min(1.05,v));
+   const dome=Math.sin(a);
+   const shoulder=Math.exp(-(((z-.13)/.68)**2));
+   const rump=Math.exp(-(((z+.86)/.40)**2));
+   const tuck=1/(1+Math.exp((z+1.18)*9));
+   const leadingFold=1/(1+Math.exp((.34-z)*12));
+   return [.318+.188*dome+.034*shoulder+.043*rump-.19*tuck-.086*leadingFold,
+     1.77+.224*Math.cos(a)+.086*shoulder-.14*tuck-.058*leadingFold-(.078+.16*shoulder)*v,z];
  }
- // Folded remiges bend outward across the convex gluteus, then turn
- // inward again past the dock. A straight chord would cut through the hip.
- function restingVane(root,tip,width,layer){
-   const curve=u=>{
-     const p=root.map((v,k)=>v+(tip[k]-v)*u);
-     const flank=.465+.070*Math.exp(-(((p[2]+.81)/.40)**2))
-       -.19/(1+Math.exp((p[2]+1.22)*9));
-     const emerge=u*u/(u*u+.019*(1-u)*(1-u));
-     p[0]+=(flank+layer-p[0])*emerge;
-     p[1]+=.045*Math.sin(u*Math.PI);
-     return p;
-   };
-   feathers.push([root,tip,width,[1,.14,0],curve]);
- }
- for(let i=0;i<10;i++){
-   const t=i/9,root=rootAt(.31+.29*t,-1+.65*t);
-   restingVane(root,[.34-.15*t,1.48+.04*t,-1.09-.43*t],.102,.008+.027*(1-t));
- }
- for(let i=0;i<13;i++){
-   const t=i/12,root=rootAt(.13+.58*t,-.02);
-   restingVane(root,[.484-.19*t*t,1.43+.06*t,-.41-.92*t],.104,.015+.025*(1-t));
- }
- // The scapulars stream down from the withers onto the coverts. Each
- // root stays inside the skin and the free end gradually clears the flank.
- for(const [angle,length,count,w] of [[-.5,.47,14,.098],[.12,.39,15,.091],
-     [.63,.32,17,.084],[1.12,.27,18,.073],[1.63,.22,19,.068],[2.05,.19,17,.059]]){
+ // Ten nested primaries finish the long rear point, while the broader
+ // secondaries furnish the lower margin just ahead of the haunch.
+ for(const [primary,count] of [[true,10],[false,13]]){
    for(let i=0;i<count;i++){
-     const t=(i+.4)/count, start=.022+t*.84, phase=Math.sin(i*2.81+angle);
+     const t=i/(count-1),z0=primary?-.13-.45*t:.47-.91*t;
+     const z1=primary?-1.13-.46*t:-.15-1.11*t;
+     const v0=primary?.36+.13*t:.27+.20*t,v1=primary?.90-.24*t:.98-.09*t;
      const curve=u=>{
-       const p=rootAt(Math.min(.995,start+u*.19),angle+.11*phase-u*(.52+.14*phase));
-       p[0]+=(.018+.046*Math.exp(-(((p[2]+.62)/.46)**2)))*u;p[2]-=.80*length*u*u*(.74+.25*t);p[1]-=.041*u;
+       const p=mantle(z0+(z1-z0)*u,v0+(v1-v0)*u);
+       p[0]+=(primary?.001:.014)+.017*(1-t)+(.031+.042*Math.exp(-(((p[2]+.83)/.43)**2)))*u;
        return p;
      };
-     const outward=u=>{
-       const a=angle+.11*phase-u*(.52+.14*phase);
-       return [Math.cos(a),.47*Math.sin(a),-.08];
+     feathers.push([curve(0),curve(1),primary?.100:.115,[1,.09,0],curve]);
+   }
+ }
+ // The greater coverts lie over the remiges, with progressively shorter
+ // feathers turning forward and over the convex shoulder towards the neck.
+ for(const [count,v,drop,reach,w,lift] of [[11,.34,.56,.58,.119,.044],
+   [13,.18,.49,.44,.105,.049],[15,.05,.42,.31,.093,.046],[17,-.08,.31,.23,.078,.040]]){
+   for(let i=0;i<count;i++){
+     const t=(i+.4)/count,phase=Math.sin(2.36*i+v*4);
+     const z0=.555-1.39*t+.024*phase;
+     const curve=u=>{
+       const z=z0-u*reach*(.73+.39*t+.06*phase);
+       const p=mantle(z,v+u*(drop+.085*phase));
+       p[0]+=.021*Math.exp(-(((z+.78)/.41)**2))*u;
+       p[0]+=lift*(.32+.68*u)+.025*u*u;
+       p[1]+=.013*Math.sin(Math.PI*u);
+       return p;
      };
-     feathers.push([curve(0),curve(1),w,outward,curve]);
+     feathers.push([curve(0),curve(1),w*(1+.085*phase),[1,.46-v,.04],curve]);
+   }
+ }
+ for(let band=0;band<3;band++){
+   const count=15-band;
+   for(let i=0;i<count;i++){
+     const t=(i+.45*(band%2))/count,z=.48-1.28*t,phase=Math.sin(i*2.4+band);
+     const curve=u=>{
+       const p=mantle(z-u*(.17+.16*t),-.08+.14*band+u*.34);
+       p[0]-=(.11-.026*band)*(1-u)**2;
+       p[0]+=.039*u;p[1]+=.018*Math.sin(Math.PI*u);
+       return p;
+     };
+     feathers.push([curve(0),curve(1),.064+.014*band+.006*phase,[.55,.83,0],curve]);
+   }
+ }
+ // Scapular contour feathers bridge the pectoral skin and folded wrist
+ // over the forward end of the arm, where the longer wing rows originate.
+ const shoulderRows=smoothSections(rows,5);
+ function shoulderSurface(i,a,lift){
+   const n=Math.floor(i),t=i-n;
+   const [x,y,z,w,h]=shoulderRows[n].map((v,k)=>v+(shoulderRows[n+1][k]-v)*t);
+   return [x+(w+lift)*Math.cos(a),y+(h+lift)*Math.sin(a),z];
+ }
+ for(let row=0;row<6;row++){
+   for(let j=0;j<12;j++){
+     const start=1.8+1.95*row,angle=-1.06+.27*(j+.48*(row%2));
+     const phase=Math.sin(j*3.18+row*2.06);
+     const curve=u=>shoulderSurface(start+(7.6+1.5*phase)*u,
+       angle-u*(.25+.11*phase),.003+.028*u);
+     const outward=u=>[Math.cos(angle-.25*u),Math.sin(angle-.25*u),.35*(1-u)];
+     feathers.push([curve(0),curve(1),.046+.005*row,outward,curve]);
    }
  }
  featherTract(actor,side,feathers);
