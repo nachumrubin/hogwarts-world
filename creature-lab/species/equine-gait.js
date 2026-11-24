@@ -164,7 +164,7 @@ export function equineContacts(actor,base,tail,rig,legs,config){
   const trotOffsets=[0,.5,.5,0],gallopOffsets=[0,.60,.87,.46];
   let gaitLevel=0,run=0,gallop=0,duty=.68,lift=0,flightTime=0,launchHeight=0;
   const isUnicorn=config.kind==='unicorn';
-  const support={fore:0,hind:0,pitch:0,roll:0,brake:0,drive:0,impact:0,acceleration:0,run:0,gallop:0};
+  const support={fore:0,hind:0,pitch:0,roll:0,brake:0,drive:0,push:0,gather:0,impact:0,acceleration:0,run:0,gallop:0};
   let stopping=false, speedRate=6, stepSeconds=0;
   const home=(leg,ahead=0)=>{
     const transient=(1-Math.exp(-speedRate*ahead))/speedRate;
@@ -174,6 +174,7 @@ export function equineContacts(actor,base,tail,rig,legs,config){
     // With forward travel through the turn this makes the outer arc longer.
     const yaw=actor.body.rotation.y+heading;
     const p=leg.home.clone();
+    if(ahead>0)p.z+=gallop*(leg.fore?.063:.041);
     if(!fitted&&(!ahead||!moving))p.z+=isUnicorn?leg.side*(leg.fore?.13:-.052):leg.side*(leg.fore?.035:-.025);
     p.applyAxisAngle(Y,yaw).add(actor.root.position);
     const midYaw=yaw-heading*.5;
@@ -277,7 +278,11 @@ export function equineContacts(actor,base,tail,rig,legs,config){
           const sweep=leg.relativeLift.clone().add(actor.root.position)
             .lerp(home(leg,duty*.5/cadence),ease);
           const swingSeconds=(1-leg.swingStart)/cadence;
-          const tangent=-speed*swingSeconds*u*(1-u)*(1-2*u);
+          // The trailing hind stays extended through release, then folds under
+          // the flank. The forearm folds earlier and opens towards its strike.
+          const strideWindow=Math.sin(Math.PI*u)**2;
+          const sweepBias=leg.fore?.24*(2*u-1):.15*Math.sin(2*Math.PI*(u-.34));
+          const tangent=-speed*swingSeconds*u*(1-u)*(1-2*u)+gallop*strideWindow*sweepBias;
           sweep.z+=Math.cos(actor.body.rotation.y)*tangent;
           sweep.x+=Math.sin(actor.body.rotation.y)*tangent;
           leg.target.x=T.MathUtils.lerp(leg.target.x,sweep.x,run);
@@ -285,7 +290,8 @@ export function equineContacts(actor,base,tail,rig,legs,config){
           if(u>.70)leg.landing.lerp(home(leg,(1-cycle+duty*.5)/cadence),run);
         }
         const tuck=run*(leg.fore?.087:.075)+gallop*(leg.fore?.15:.14);
-        leg.target.y+=(leg.stepHeight+tuck)*Math.sin(Math.PI*u)**2;
+        const liftPhase=u+gallop*(leg.fore?.13:-.115)*Math.sin(Math.PI*u);
+        leg.target.y+=(leg.stepHeight+tuck)*Math.sin(Math.PI*liftPhase)**2;
         leg.yaw=T.MathUtils.lerp(leg.startYaw,leg.endYaw,ease);
       }
       leg.load=leg.stance?Math.sin(Math.PI*cycle/duty)**2:0;
@@ -307,6 +313,16 @@ export function equineContacts(actor,base,tail,rig,legs,config){
       const response=1-Math.exp(-stepSeconds*15);
       support.drive+=(hindLoad-support.drive)*response;
       support.impact+=(foreLoad-support.impact)*response;
+      // Measure the sagittal span of the moving feet in the travel frame.
+      // Its shortening flexes the loin before the hinds accept weight.
+      const forward=vec(Math.sin(actor.body.rotation.y),0,Math.cos(actor.body.rotation.y));
+      const span=(lf.target.dot(forward)+rf.target.dot(forward)-lh.target.dot(forward)-rh.target.dot(forward))*.5;
+      const restSpan=(lf.home.z+rf.home.z-lh.home.z-rh.home.z)*.5;
+      support.gather+=(T.MathUtils.clamp((restSpan-span)/.46,-1,1)-support.gather)*response;
+      const hipZ=actor.root.position.dot(forward);
+      const push=[lh,rh].reduce((sum,leg)=>sum+leg.load*
+        T.MathUtils.smoothstep(hipZ+leg.home.z-leg.target.dot(forward),-.10,.22),0);
+      support.push+=(push-support.push)*response;
       // Loaded limbs shorten in midstance and extend into takeoff. Between
       // the last release and next predicted strike, follow a ballistic arc.
       if(legs.some(l=>l.stance)){
@@ -322,9 +338,9 @@ export function equineContacts(actor,base,tail,rig,legs,config){
       base.position.y+=run*lift+effort*.010*(total-1.8)*(1-run);
       support.roll=effort*(.022*support.hind+.013*support.fore);
       support.pitch=effort*.018*(lf.load+rf.load-lh.load-rh.load)+.018*support.brake
-        +gallop*.093*(support.impact-support.drive);
+        +gallop*(.115*support.impact-.077*support.drive-.085*support.push);
       base.position.z-=support.pitch*1.07;
-      base.position.z+=gallop*.027*(support.drive-support.impact);
+      base.position.z+=gallop*(.033*support.push-.021*support.impact);
       // Translate about the ribcage height when rolling, keeping the trunk
       // over its support polygon instead of swinging from a ground-level pivot.
       base.position.x+=1.0*support.roll+.009*effort*(support.fore+support.hind);
@@ -335,6 +351,8 @@ export function equineContacts(actor,base,tail,rig,legs,config){
         leg.mobileOrigin=true;
         root.z+=effort*T.MathUtils.clamp(reach,-.55,.55)*(leg.fore?.115:.073);
         root.y+=effort*(leg.fore?.012:.010)*(leg.load-.35);
+        root.z+=gallop*T.MathUtils.clamp(reach,-.52,.52)*(leg.fore?.092:.047);
+        root.y+=gallop*(leg.fore?.020*leg.load:-.018*support.gather+.019*support.push);
       }
     }
     if(terrain){

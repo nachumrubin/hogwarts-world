@@ -53,6 +53,8 @@ export class Centaur extends Specimen {
       this.tailChain.push(bone('tail at '+h,this.tailChain.at(-1),vec(0,h,z)));
     }
     this.tailRates=this.tailChain.map(()=>vec(0,0,0));
+    this.tailAngles=this.tailChain.map(()=>vec(0,0,0));
+    this.armRecoil=0;
     this.waist=bone('abdominal attachment',this.core,vec(0,1.39,.569));
     this.chest=bone('thorax',this.waist,vec(0,1.64,.675));
     this.ribs=bone('rib excursion',this.chest,vec(0,1.65,.678));
@@ -201,15 +203,22 @@ export class Centaur extends Specimen {
   followTail(dt,time){
     const gait=this.horse;
     const swish=(1-smooth(0,1.4,Math.abs(time%9.7-3.6)))*Math.sin((time-3.6)*2.6);
-    let bend=.10*gait.support.hind*Math.min(1,gait.speed/.66)-.16*gait.turn+.12*swish;
-    let trail=.10*gait.speed+.065*gait.support.acceleration+.055*gait.support.gallop*gait.support.drive-.065*gait.support.brake;
+    const {pitch,roll,gallop,acceleration,brake,push,impact}=gait.support;
+    // Integrate tangent angles in the travel frame. Subtracting the actual
+    // parent angle lets the tip keep its heading while the dock reverses.
+    let parentX=pitch+this.pelvis.rotation.x,parentZ=roll+this.pelvis.rotation.z;
+    const stream=.095*gait.speed+.052*acceleration-.060*brake;
+    let targetX=parentX+stream+.095*gallop*(push-impact);
+    let targetZ=parentZ+.12*swish+.085*gait.support.hind-.16*gait.turn;
     for(let i=0;i<this.tailChain.length;i++){
-      const node=this.tailChain[i],rate=this.tailRates[i],frequency=12-i*.9;
-      for(const [axis,target] of [['z',bend],['x',trail]]){
-        rate[axis]+=(frequency**2*(target-node.rotation[axis])-1.7*frequency*rate[axis])*dt;
-        node.rotation[axis]+=rate[axis]*dt;
-      }
-      bend=.72*node.rotation.z;trail=.68*node.rotation.x;
+      const node=this.tailChain[i],angle=this.tailAngles[i],rate=this.tailRates[i];
+      const frequency=19-1.45*i,damping=i===0?1.72:1.30;
+      rate.x+=dt*(frequency**2*(targetX-angle.x)-damping*frequency*rate.x);
+      rate.z+=dt*(frequency**2*(targetZ-angle.z)-damping*frequency*rate.z);
+      angle.x+=dt*rate.x;angle.z+=dt*rate.z;
+      node.rotation.set(angle.x-parentX,0,angle.z-parentZ);
+      parentX=angle.x;parentZ=angle.z;
+      targetX=.89*angle.x+.49*stream;targetZ=.90*angle.z-.025*gait.turn;
     }
   }
 
@@ -220,6 +229,12 @@ export class Centaur extends Specimen {
       this.horse.advance(dt/steps,action,context);
       const time=t-dt+(i+1)*dt/steps;
       this.horse.animate(time);
+      const support=this.horse.support;
+      const stretch=support.gallop*(.12*support.gather-.065*support.push);
+      const weight=Math.min(1,this.horse.speed/.66+Math.abs(this.horse.turn)*.48);
+      this.pelvis.rotation.set(.012*weight*(support.drive-support.impact)+stretch,
+        -.029*weight*support.hind-.045*this.horse.turn,.024*weight*support.hind);
+      this.armRecoil+=(support.impact-support.push-this.armRecoil)*(1-Math.exp(-dt/steps*8));
       this.followTail(dt/steps,time);
     }
     for(const [half,child] of this.bisectors)half.quaternion.identity().slerp(child.quaternion,.5);
@@ -227,13 +242,15 @@ export class Centaur extends Specimen {
     const effort=Math.min(1,gait.speed/.66+Math.abs(gait.turn)*.48);
     const {fore,hind,roll,pitch,brake,run,gallop,drive,impact,acceleration}=gait.support;
     const thrust=gallop*(drive-impact),brace=run*impact;
-    const lean=.075*run+.12*gallop+.025*T.MathUtils.clamp(acceleration,-2,2);
+    const speedFraction=T.MathUtils.clamp(gait.speed/3.52,0,1);
+    const lean=.28*speedFraction**1.4+.038*T.MathUtils.clamp(acceleration,-2,2);
     const breath=Math.sin(1.36*t+.17*Math.sin(.53*t)),idle=1-effort;
     const window=(u,duration)=>smooth(0,.24*duration,u)*(1-smooth(.60*duration,duration,u));
     const gaze=window((t+.4)%11.3,4.4)-.55*window((t+5.2)%13.7,3.3);
-    this.pelvis.rotation.set(.012*effort*(drive-impact)-.063*thrust,-.029*effort*hind-.045*gait.turn,.024*effort*hind);
-    this.waist.rotation.set(lean-.024*effort-.62*pitch-.018*brake,-.035*fore*effort+.065*gait.turn,-.65*roll);
-    this.chest.rotation.set(.012*breath-.20*pitch-.035*brace,.044*hind*effort+.065*gait.turn,.011*fore*effort);
+    this.waist.rotation.set(.66*lean-.024*effort-.55*pitch-.018*brake,
+      -.035*fore*effort+.065*gait.turn,-.65*roll);
+    this.chest.rotation.set(.34*lean+.012*breath-.22*pitch-.045*brace+.035*thrust,
+      .044*hind*effort+.065*gait.turn,.011*fore*effort);
     this.ribs.scale.set(1+.013*breath,1,1+.019*breath);
     const attention=.32+.68*idle;
     this.neck.rotation.set(.007*breath-.25*pitch-.37*lean,.11*gait.turn+.055*gaze*attention,-.25*roll);
@@ -241,9 +258,11 @@ export class Centaur extends Specimen {
     this.arms.forEach(({arm,elbow,wrist,fingers,thumb},i)=>{
       const s=i?1:-1, swing=s*effort*(.69*hind-.31*fore);
       const gesture=(.26+.74*idle)*window((t+(i?1.1:7.2))%(i?10.9:13.2),3.25);
-      arm.rotation.set(.145*swing-.085*gesture+.19*thrust-.105*brace,-s*(.038*gesture+.023*fore*effort),s*(.030+.032*gesture));
-      elbow.rotation.set(-.065-.31*run-.24*gallop-.11*brace-.075*Math.max(0,-swing)-.21*gesture,0,0);
-      wrist.rotation.set(.015*breath+.025*swing,s*.13*gesture,-s*.082*gesture);
+      const recoil=this.armRecoil*run,catchLoad=this.horse.legs[i*2+1].load;
+      const absorb=run*(.055*catchLoad+.05*acceleration);
+      arm.rotation.set(.145*swing-.085*gesture+.22*thrust-.10*recoil-absorb,-s*(.038*gesture+.023*fore*effort),s*(.030+.032*gesture));
+      elbow.rotation.set(-.065-.23*run-.16*gallop-.17*brace-.085*recoil-absorb-.075*Math.max(0,-swing)-.21*gesture,0,0);
+      wrist.rotation.set(.015*breath+.025*swing+.090*recoil+.043*thrust,s*.13*gesture,-s*.082*gesture);
       fingers.rotation.z=-s*(.045+.19*gesture);
       thumb.rotation.y=s*(.018+.11*gesture);
     });
