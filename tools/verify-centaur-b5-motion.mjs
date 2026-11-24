@@ -9,7 +9,9 @@ const posePoint=(mesh,index)=>mesh.localToWorld(mesh.getVertexPosition(index,vec
 
 function surfaceVolume(actor){
   let volume=0;
-  for(const {mesh} of actor.parts){
+  // Signed volume is defined for the anatomical shell and its four hoof walls.
+  // Eye pigment and the overlapping hair surfaces are open decorative patches.
+  for(const mesh of [actor.horse.legs[0].skin,...actor.horse.legs.map(l=>l.hoofMesh)]){
     const attr=mesh.geometry.attributes.position,indices=mesh.geometry.index.array;
     const vertices=Array.from({length:attr.count},(_,i)=>posePoint(mesh,i));
     const cross=vector();
@@ -94,11 +96,12 @@ for(const slope of [0,.045]){
 {
   const actor=new Centaur(),legs=actor.horse.legs;
   const liftOff=new Map(),steps={inside:[],outside:[]};
-  let gathers=0;
+  let gathers=0,tailLag=0;
   for(let frame=1;frame<=640;frame++){
     const action=frame<100?'Walk':frame<440?'Turn':'Stop';
     actor.update(dt,frame*dt,action,{terrainHeight:()=>0});
     actor.root.updateMatrixWorld(true);
+    tailLag=Math.max(tailLag,Math.abs(actor.tailChain[0].rotation.z-actor.tailChain[2].rotation.z));
     for(const leg of legs){
       const point=leg.sole.getWorldPosition(vector());
       if(!leg.stance && !liftOff.has(leg)){
@@ -121,6 +124,15 @@ for(const slope of [0,.045]){
   const outside=mean(steps.outside),inside=mean(steps.inside);
   assert.ok(outside>inside+.1 && inside>.15,'Both sides step along distinct turn arcs');
   assert.ok(gathers>0 && legs.every(leg=>leg.stance),'Finish positioning feet at the halt');
+  assert.ok(tailLag>.02 && tailLag<.3,'Distal tail must follow the dock with restrained lag');
+  for(const level of [2,1,0]){
+    actor.setLOD(level);
+    for(const {mesh} of actor.parts.filter(part=>part.mesh.parent===actor.head)){
+      mesh.geometry.computeBoundingBox();
+      const {min,max}=mesh.geometry.boundingBox;
+      assert.ok(min.z>-.18 && max.z<.18,'Head detail must stay on the head at every LOD');
+    }
+  }
   console.log({outsideStepMetres:outside,insideStepMetres:inside,finalSteps:gathers});
   actor.dispose();
 }

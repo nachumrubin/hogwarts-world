@@ -104,7 +104,7 @@ function poseLeg(leg,rig,terrain,weight,checkReach=false){
   const root=leg.mobileOrigin ? bones[0].position.clone() : ref[0].clone();
   const down=vec(coronet.x-root.x,coronet.y-root.y,0).normalize();
   const direction=angle=>down.clone().multiplyScalar(Math.cos(angle)).addScaledVector(Z,Math.sin(angle));
-  const pasternAngle=(leg.pasternAngle ?? (fore?.60:.64))+weight*.075-.10*swing;
+  const pasternAngle=(leg.pasternAngle ?? (fore?.60:.64))+weight*(leg.pasternYield??.075)-.10*swing;
   const fetlock=coronet.clone().addScaledVector(direction(pasternAngle),-lengths[3]);
   const delta=fetlock.clone().sub(root),distance=delta.length();
   const axis=Math.atan2(delta.z,delta.dot(down));
@@ -205,7 +205,7 @@ export function equineContacts(actor,base,tail,rig,legs,config){
     stepSeconds=dt;
     if(moving||legs.some(leg=>!leg.stance))phase+=cadence*dt;
   },animate(t,walk,tuck=0,graze=0){
-    tail.rotation.z=.12*Math.sin(1.8*t);
+    if(!fitted)tail.rotation.z=.12*Math.sin(1.8*t);
     const effort=Math.min(1,speed/.68+Math.abs(turn)*.30);
     base.position.set(.014*effort*Math.sin(phase*2*Math.PI),
       -(isUnicorn?.028:fitted?.008:.019)-.08*graze-.009*effort*Math.cos(phase*4*Math.PI),
@@ -248,6 +248,13 @@ export function equineContacts(actor,base,tail,rig,legs,config){
         leg.yaw=T.MathUtils.lerp(leg.startYaw,leg.endYaw,ease);
       }
       leg.load=leg.stance?Math.sin(Math.PI*cycle/duty)**2:0;
+      if(fitted){
+        // Accept weight quickly, support the barrel through midstance, then
+        // unload the pastern progressively as the other limbs take the load.
+        const stanceTime=cycle/duty;
+        const carried=T.MathUtils.smoothstep(stanceTime,0,.26)*(1-T.MathUtils.smoothstep(stanceTime,.59,1));
+        leg.load=leg.stance?carried:0;
+      }
     }
     if(fitted){
       // Walking horses show a stride-frequency pelvic roll and separate withers

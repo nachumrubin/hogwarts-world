@@ -3,6 +3,7 @@ import * as T from '../vendor/three.module.js';
 import {unzlibSync} from '../vendor/fflate.js';
 import {bindLevels} from './centaur-bind.js';
 import {Specimen,joint} from './form.js';
+import {groomCentaur} from './centaur-groom.js';
 import {equineContacts} from './equine-gait.js';
 
 const clay=0xa8a197, tau=2*Math.PI;
@@ -47,6 +48,11 @@ export class Centaur extends Specimen {
     this.core=bone('barrel',null,vec(0,0,0));
     this.pelvis=bone('equine pelvis',this.core,vec(0,1.18,-.48));
     this.tail=bone('dock',this.pelvis,vec(0,1.34,-.69));
+    this.tailChain=[this.tail];
+    for(const [h,z] of [[1.11,-.892],[.82,-.91],[.53,-.96],[.30,-1.035]]){
+      this.tailChain.push(bone('tail at '+h,this.tailChain.at(-1),vec(0,h,z)));
+    }
+    this.tailRates=this.tailChain.map(()=>vec(0,0,0));
     this.waist=bone('abdominal attachment',this.core,vec(0,1.39,.569));
     this.chest=bone('thorax',this.waist,vec(0,1.64,.675));
     this.ribs=bone('rib excursion',this.chest,vec(0,1.65,.678));
@@ -76,7 +82,7 @@ export class Centaur extends Specimen {
       const offsets=ref.slice(1).map((p,i)=>p.clone().sub(ref[i]));
       const angles=offsets.map(p=>Math.atan2(p.z,-p.y));
       legs.push({fore,side,bones,helpers,ref,sole,home,offsets,lengths:offsets.map(p=>p.length()),
-        joints:Object.fromEntries(names.map((n,i)=>[n,bones[i]])),pasternAngle:angles[3],
+        joints:Object.fromEntries(names.map((n,i)=>[n,bones[i]])),pasternAngle:angles[3],pasternYield:.098,
         carpalFlex:angles[1]-angles[2],hockRatio:(angles[2]-angles[1])/(angles[0]-angles[1]),
         anchor:vec(),target:vec(),liftOff:vec(),landing:vec(),yaw:0,startYaw:0,endYaw:0,
         phase:((fore?.75:0)+(side>0?.5:0))%1,stance:true,initialized:false,swing:0});
@@ -88,10 +94,14 @@ export class Centaur extends Specimen {
     this.root.updateMatrixWorld(true);
     this.skeleton=new T.Skeleton(this.bones);skin.bind(this.skeleton);
     skin.frustumCulled=false;
+    // The pigmented skin and unpigmented hoof walls have the same base clay.
+    this.materials.delete(clay);this.materials.set('pigmented skin',skin.material);
+    skin.material.vertexColors=true;
     legs.forEach((leg,k)=>{
       leg.skin=skin;
       leg.hoofMesh=this.mesh(leg.bones[4],clay,i=>level(i).feet[k]);
     });
+    groomCentaur(this,base);
     this.update(0,0,'Idle');
   }
 
@@ -140,11 +150,24 @@ export class Centaur extends Specimen {
 
   skinLevel(level,legs){
     const {geometry,regions}=readSurface(level);
-    const pos=geometry.attributes.position,norm=geometry.attributes.normal;
+    const pos=geometry.attributes.position.clone(),norm=geometry.attributes.normal;
+    const tint=new Float32Array(pos.count*3).fill(1);
     const ids=new Uint16Array(pos.count*4),weights=new Float32Array(pos.count*4);
     const footOf=new Int8Array(pos.count).fill(-1);
     for(let i=0;i<pos.count;i++){
       const x=pos.getX(i),h=pos.getY(i),z=pos.getZ(i);
+      if(h>1.993&&h<2.14&&z>.717){
+        const a=Math.abs(x);
+        // Seat the optical surface in the existing socket under the lid margin.
+        const seat=(1-smooth(.014,.022,Math.abs(a-.033)))*(1-smooth(.006,.013,Math.abs(h-2.119)));
+        pos.setZ(i,z-.008*seat*smooth(.78,.81,z));
+        const jaw=(1-smooth(2.037+.56*a,2.049+.56*a,h))*smooth(1.993,2.015,h);
+        const lip=1-smooth(.002,.007,Math.abs(h-2.046));
+        const muzzle=(1-smooth(.018,.033,a))*Math.exp(-((h-2.056)**2)/.000022);
+        const whisker=Math.min(1,(jaw*(1-lip*(1-smooth(.020,.038,a)))+muzzle)*smooth(.718,.770,z));
+        const grain=.88+.12*Math.sin(1800*h+320*x)*Math.cos(1200*z);
+        tint.set([1-.36*whisker*grain,1-.39*whisker*grain,1-.40*whisker*grain],3*i);
+      }
       const pairs=this.influences(x,h,z,regions[i],legs);
       pairs.forEach(([bone,w],k)=>{ids[4*i+k]=bone.userData.index;weights[4*i+k]=w;});
       if(h<=.080 && regions[i]===0)footOf[i]=2*Number(x>0)+Number(z>.12);
@@ -153,6 +176,7 @@ export class Centaur extends Specimen {
     const tri=geometry.index.array;
     for(let f=0;f<tri.length;f+=3){
       const a=tri[f],b=tri[f+1],c=tri[f+2],k=footOf[a];
+      if(regions[a]===1)continue; // The groom replaces the old one-piece tail.
       if(k<0||k!==footOf[b]||k!==footOf[c]){trunk.push(a,b,c);continue;}
       const part=feet[k],pivot=legs[k].ref[4];
       for(const i of [a,b,c]){
@@ -166,6 +190,7 @@ export class Centaur extends Specimen {
     }
     const body=new T.BufferGeometry();
     body.setAttribute('position',pos);body.setAttribute('normal',norm);body.setIndex(trunk);
+    body.setAttribute('color',new T.BufferAttribute(tint,3));
     body.setAttribute('skinIndex',new T.BufferAttribute(ids,4));body.setAttribute('skinWeight',new T.BufferAttribute(weights,4));
     return {body,feet:feet.map(part=>{
       const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(part.xyz,3));
@@ -173,12 +198,29 @@ export class Centaur extends Specimen {
     })};
   }
 
+  followTail(dt,time){
+    const gait=this.horse;
+    const swish=(1-smooth(0,1.4,Math.abs(time%9.7-3.6)))*Math.sin((time-3.6)*2.6);
+    let bend=.10*gait.support.hind*Math.min(1,gait.speed/.66)-.16*gait.turn+.12*swish;
+    let trail=.10*gait.speed-.065*gait.support.brake;
+    for(let i=0;i<this.tailChain.length;i++){
+      const node=this.tailChain[i],rate=this.tailRates[i],frequency=12-i*.9;
+      for(const [axis,target] of [['z',bend],['x',trail]]){
+        rate[axis]+=(frequency**2*(target-node.rotation[axis])-1.7*frequency*rate[axis])*dt;
+        node.rotation[axis]+=rate[axis]*dt;
+      }
+      bend=.72*node.rotation.z;trail=.68*node.rotation.x;
+    }
+  }
+
   update(dt,t,action,context){
     // Small steps keep strike and lift-off events ordered during time scaling.
     const steps=Math.max(1,Math.ceil(dt*60));
     for(let i=0;i<steps;i++){
       this.horse.advance(dt/steps,action,context);
-      this.horse.animate(t-dt+(i+1)*dt/steps);
+      const time=t-dt+(i+1)*dt/steps;
+      this.horse.animate(time);
+      this.followTail(dt/steps,time);
     }
     for(const [half,child] of this.bisectors)half.quaternion.identity().slerp(child.quaternion,.5);
     const gait=this.horse,phase=tau*gait.phase;
@@ -191,11 +233,12 @@ export class Centaur extends Specimen {
     this.waist.rotation.set(-.024*effort-.62*pitch-.018*brake,-.035*fore*effort+.065*gait.turn,-.65*roll);
     this.chest.rotation.set(.012*breath-.20*pitch,.044*hind*effort+.065*gait.turn,.011*fore*effort);
     this.ribs.scale.set(1+.013*breath,1,1+.019*breath);
-    this.neck.rotation.set(.007*breath-.25*pitch,.11*gait.turn+.055*gaze*idle,-.25*roll);
-    this.head.rotation.set(.014*breath-.019*gaze*idle,.16*gaze*idle+.16*gait.turn-.017*hind*effort,-.010*gaze*idle);
+    const attention=.32+.68*idle;
+    this.neck.rotation.set(.007*breath-.25*pitch,.11*gait.turn+.055*gaze*attention,-.25*roll);
+    this.head.rotation.set(.014*breath-.019*gaze*attention,.16*gaze*attention+.16*gait.turn-.017*hind*effort,-.010*gaze*attention);
     this.arms.forEach(({arm,elbow,wrist,fingers,thumb},i)=>{
       const s=i?1:-1, swing=s*effort*Math.sin(phase-.42);
-      const gesture=idle*window((t+(i?1.1:7.2))%(i?10.9:13.2),3.25);
+      const gesture=(.26+.74*idle)*window((t+(i?1.1:7.2))%(i?10.9:13.2),3.25);
       arm.rotation.set(.145*swing-.085*gesture,-s*(.038*gesture+.023*fore*effort),s*(.030+.032*gesture));
       elbow.rotation.set(-.065-.075*Math.max(0,-swing)-.21*gesture,0,0);
       wrist.rotation.set(.015*breath+.025*swing,s*.13*gesture,-s*.082*gesture);
