@@ -1,7 +1,17 @@
 import {studyParts} from './geometry.js';
 
+function atlasBase(){
+ return typeof HIPP_PAGES_ATLASES!=='undefined'
+  ?new URL('review/hippogriff-e3/',document.baseURI)
+  :import.meta.url;
+}
 async function upload(device,name){
- const blob=await (await fetch(new URL('./assets/'+name+'.png',import.meta.url))).blob();
+ const url=typeof HIPP_BUNDLED_ATLASES!=='undefined'
+  ?HIPP_BUNDLED_ATLASES[name]
+  :new URL('./assets/'+name+'.png',atlasBase());
+ const response=await fetch(url);
+ if(!response.ok)throw Error('Hippogriff atlas failed to load: '+name);
+ const blob=await response.blob();
  const image=await createImageBitmap(blob,{colorSpaceConversion:'none'});
  const ctx=document.createElement('canvas').getContext('2d',{willReadFrequently:true});
  const levels=1+Math.log2(image.width);
@@ -77,6 +87,15 @@ const eye=`
  let rim=smoothstep(.045,.075,length(vec2f(p.y-2.635,(p.z-1.386)*.65)));
  return lit(v,n,mix(vec3f(.13,.105,.088),vec3f(.42,.395,.352),rim*(1.-step(1.50,p.z))),.60,1.);`;
 
+const lighting=` const keyLight=vec3f(-.52,.69,.50);
+ fn lit(v:Out,n:vec3f,pigment:vec3f,rough:f32,alpha:f32)->vec4f{
+  let V=normalize(f.eye.xyz-v.world);let H=normalize(V+keyLight);
+  let lighting=vec3f(.42,.44,.47)+.17*(.5+.5*n.y)+.46*max(dot(n,keyLight),0.);
+  let shine=(1.-rough)*.16*pow(max(dot(H,n),0.),30.);
+  return vec4f(lighting*pigment+shine,alpha);
+ }
+`;
+
 export class SurfaceStudy{
  constructor(region){
   this.region=region;this.control=true;
@@ -85,13 +104,7 @@ export class SurfaceStudy{
   this.shader=`
  @group(0) @binding(4) var atlas:texture_2d<f32>;
  ${region==='face'?'@group(0) @binding(5) var iris:texture_2d<f32>;':''}
- const keyLight=vec3f(-.52,.69,.50);
- fn lit(v:Out,n:vec3f,pigment:vec3f,rough:f32,alpha:f32)->vec4f{
-  let V=normalize(f.eye.xyz-v.world);let H=normalize(V+keyLight);
-  let lighting=vec3f(.42,.44,.47)+.17*(.5+.5*n.y)+.46*max(dot(n,keyLight),0.);
-  let shine=(1.-rough)*.16*pow(max(dot(H,n),0.),30.);
-  return vec4f(lighting*pigment+shine,alpha);
- }
+ ${lighting}
  @fragment fn studyFS(v:Out)->@location(0) vec4f{
  let n=faceForward(normalize(v.n),v.world-f.eye.xyz,normalize(v.n));
  ${imageCode}
@@ -180,4 +193,36 @@ export class SurfaceStudy{
   }
   this.timing={gpu,draw:this.drawTime,readback:this.mapTime-this.copyStart,present:presentTime};
  }
+}
+
+export const approvedRegions=['face','chest','coat','tail'];
+const approvedAtlases=[...approvedRegions,'iris'];
+const entries={face:eye,chest:feather,coat,tail};
+
+export class ApprovedSurface{
+ constructor(){
+  this.layout=approvedAtlases.map((_,i)=>({binding:4+i,visibility:GPUShaderStage.FRAGMENT,texture:{}}));
+  this.shader=approvedAtlases.map((name,i)=>`@group(0) @binding(${4+i}) var ${name}Atlas:texture_2d<f32>;`).join('\n')+lighting+
+   approvedRegions.map(name=>{
+    const code=name==='face'?entries.face.replace('if(v.detail.z==13.){','{')
+     .replace('coverage*=smoothstep(.96,1.13,length(eyePlane));',`
+      let depth=(abs(v.rest.x)-.192)*.81342+(v.rest.z-1.386)*.58168;
+      let flare=max(0.,depth-.035);
+      let uv=eyePlane*vec2f(.078/(.057+.9*flare),.057/(.049+.5*flare));
+      coverage*=mix(1.,smoothstep(.94,1.12,length(uv)),smoothstep(-.045,-.020,depth));
+     `):entries[name];
+    return `
+     @fragment fn ${name}FS(v:Out)->@location(0) vec4f{
+      let n=faceForward(normalize(v.n),v.world-f.eye.xyz,normalize(v.n));
+      ${code.replace(/\batlas\b/g,name+'Atlas').replace(/\biris\b/g,'irisAtlas')}
+     }`;
+   }).join('\n');
+ }
+ async init(device,pipeline){
+  this.bindings=await Promise.all(approvedAtlases.map(async (name,i)=>({binding:4+i,resource:(await upload(device,name)).view})));
+  this.pipelines=approvedRegions.map(name=>pipeline(true,name!=='coat',name+'FS'));
+ }
+ parts(actor){return studyParts(actor,'all');}
+ mapped(){}
+ presented(){}
 }

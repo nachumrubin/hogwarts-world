@@ -8,9 +8,17 @@ const pageStyle='<link rel="stylesheet" href="style.css">';
 const pageScript='<script type="module" src="app.js"></script>';
 const html=await readFile(new URL('index.html',dir),'utf8');
 const css=await readFile(new URL('style.css',dir),'utf8');
-const {outputFiles}=await build({
+const atlases=Object.fromEntries(await Promise.all(['face','chest','coat','tail','iris'].map(async name=>{
+ const image=await readFile(new URL('review/hippogriff-e3/assets/'+name+'.png',dir));
+ return [name,'data:image/png;base64,'+image.toString('base64')];
+})));
+const options={
   entryPoints:[new URL('app.js',dir).pathname],
-  bundle:true,format:'iife',target:'es2022',minify:true,write:false
+  bundle:true,target:'es2022',minify:true,write:false
+};
+const {outputFiles}=await build({
+  ...options,format:'iife',define:{HIPP_BUNDLED_ATLASES:JSON.stringify(atlases)},
+  logOverride:{'empty-import-meta':'silent'}
 });
 const script=outputFiles[0].text;
 if(!html.includes(pageStyle)||!html.includes(pageScript)) {
@@ -23,7 +31,8 @@ const standalone=html
 if (process.argv.includes('--pages')) {
   const out=new URL('../dist/creature-lab-pages/',import.meta.url);
   const hash=content=>createHash('sha256').update(content).digest('hex').slice(0,16);
-  const jsName='app-'+hash(script)+'.js';
+  const {outputFiles:[{text:pagesScript}]}=await build({...options,format:'esm',define:{HIPP_PAGES_ATLASES:'true'}});
+  const jsName='app-'+hash(pagesScript)+'.js';
   const cssName='style-'+hash(css)+'.css';
   const page=html
     .replace(pageStyle,'<link rel="stylesheet" href="'+cssName+'">')
@@ -33,7 +42,7 @@ if (process.argv.includes('--pages')) {
   await Promise.all([
     writeFile(new URL('index.html',out),page),
     writeFile(new URL('standalone.html',out),standalone),
-    writeFile(new URL(jsName,out),script),
+    writeFile(new URL(jsName,out),pagesScript),
     writeFile(new URL(cssName,out),css)
   ]);
 } else {

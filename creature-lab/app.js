@@ -16,7 +16,7 @@ for(const [id,s] of Object.entries(catalog)){
  $('.spec-data').before(card);
 }
 $('.count').textContent=String(Object.keys(spec).length).padStart(2,'0');
-const defaults=kind=>({action:Object.keys(spec[kind].actions)[0],speed:1,light:80,night:false,lod:'0',mode:'habitat',wire:false,normals:false,running:true});
+const defaults=kind=>({action:Object.keys(spec[kind].actions)[0],speed:1,light:80,night:false,lod:'0',mode:kind==='hippogriff'?'silver':'habitat',wire:false,normals:false,running:true});
 let prefs=Object.fromEntries(Object.keys(spec).map(key=>[key,defaults(key)])),lab,kind='squid',tab='workspace',captures=[],recording=null,toastTimer,surveying=false;
 function toast(t){$('#toast').textContent=t;$('#toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').style.display='none',3300)}
 function metric(m,ms){$('#fps').textContent=(1000/ms).toFixed(ms>150?1:0);$('#frame').textContent=ms.toFixed(1);$('#tri').textContent=m.triangles>=1000?(m.triangles/1000).toFixed(1)+'k':m.triangles;$('#calls').textContent=m.drawCalls;const t=Math.floor(lab.clock);$('#time').textContent=String(t/60|0).padStart(2,'0')+':'+String(t%60).padStart(2,'0');$('.timeline span').style.width=(lab.clock%60)/60*100+'%'}

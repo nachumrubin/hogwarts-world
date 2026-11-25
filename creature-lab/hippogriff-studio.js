@@ -4,6 +4,7 @@ import * as T from './vendor/three.module.js';
 import {surfaceAttribute} from './hippogriff-surface.js';
 import {studioTile} from './hippogriff-pigment.js';
 import {finishShader} from './hippogriff-finish.js';
+import {ApprovedSurface,approvedRegions} from './review/hippogriff-e3/study.js';
 const shader=`
 override plumage:bool=false;
 override finished:bool=false;
@@ -54,10 +55,10 @@ ${finishShader}
 }`;
 function vertices(actor,parts=actor.parts){
  const items=parts.slice().sort((a,b)=>rank(a.mesh)-rank(b.mesh));
- function rank(mesh){return mesh.userData.study?4:mesh.name==='folded'?2:mesh.name==='wing'?3:mesh.geometry.userData.vanes?1:0;}
+ function rank(mesh){if(mesh.userData.study)return mesh.userData.study===true?4:4+approvedRegions.indexOf(mesh.userData.study);return mesh.name==='folded'?2:mesh.name==='wing'?3:mesh.geometry.userData.vanes?1:0;}
  const count=items.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0);
  const packed=new Float32Array(count*22),ints=new Uint32Array(packed.buffer);
- const indices=new Uint32Array(items.reduce((n,p)=>n+p.mesh.geometry.index.count,0)),runs=[0,0,0,0,0];
+ const indices=new Uint32Array(items.reduce((n,p)=>n+p.mesh.geometry.index.count,0)),runs=new Array(4+approvedRegions.length).fill(0);
  let v=0,k=0;
  for(const {mesh} of items){
    const g=mesh.geometry,{position,normal,skinIndex,skinWeight}=g.attributes;
@@ -80,6 +81,7 @@ function vertices(actor,parts=actor.parts){
 }
 export class MotionStudio {
  constructor(parent,study=null){
+   this.surface=study??new ApprovedSurface();
    this.study=study;
    this.canvas=document.createElement('canvas');this.canvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none';
    parent.insertAdjacentElement('afterend',this.canvas);this.cpuCanvas=this.canvas.getContext('2d');
@@ -93,7 +95,7 @@ export class MotionStudio {
    d.addEventListener('uncapturederror',e=>{this.error=e.error;console.error(e.error);});
    this.frame=d.createBuffer({size:176,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
    this.palette=d.createBuffer({size:128*64,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
-   const module=d.createShaderModule({code:shader+(this.study?.shader??'')});
+   const module=d.createShaderModule({code:shader+this.surface.shader});
    const messages=await module.getCompilationInfo();if(messages.messages.some(m=>m.type==='error'))throw Error(messages.messages.map(m=>m.message).join('\n'));
    const depthStencil={format:'depth24plus',depthCompare:'less',depthWriteEnabled:true};
    const attr=['float32x3','float32x3','uint32','float32','float32x3','float32x3','float32x3','float32','float32x4'];
@@ -101,26 +103,27 @@ export class MotionStudio {
     {binding:0,visibility:GPUShaderStage.VERTEX|GPUShaderStage.FRAGMENT,buffer:{}},
     {binding:1,visibility:GPUShaderStage.VERTEX,buffer:{type:'read-only-storage'}},
     {binding:2,visibility:GPUShaderStage.FRAGMENT,texture:{}},
-    {binding:3,visibility:GPUShaderStage.FRAGMENT,sampler:{}},...(this.study?.layout??[])
+    {binding:3,visibility:GPUShaderStage.FRAGMENT,sampler:{}},...(this.surface.layout)
    ]});
    const modelLayout=d.createPipelineLayout({bindGroupLayouts:[layout]});
    const vertex={module,entryPoint:'vs',buffers:[{arrayStride:88,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68,72][i]}))}]};
    const pipeline=(finished,plumage,entryPoint='fs')=>d.createRenderPipeline({layout:modelLayout,vertex,
      fragment:{module,entryPoint,constants:entryPoint==='fs'?{finished,plumage}:{},targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'none'},multisample:{count:4,alphaToCoverageEnabled:plumage},depthStencil});
    this.clay=pipeline(false,false);this.skin=pipeline(true,false);this.feathers=pipeline(true,true);
-   if(this.study)await this.study.init(d,pipeline,modelLayout,vertex);
+   await this.surface.init(d,pipeline,modelLayout,vertex);
    this.floor=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'floorVS'},fragment:{module,entryPoint:'floorFS',targets:[{format:'rgba8unorm'}]},multisample:{count:4},depthStencil});
-   this.bind=d.createBindGroup({layout,entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}},{binding:2,resource:studioTile(d)},{binding:3,resource:d.createSampler({addressModeU:"repeat",addressModeV:"repeat",minFilter:"linear",magFilter:"linear",mipmapFilter:"linear"})},...(this.study?.bindings??[])]});
+   this.bind=d.createBindGroup({layout,entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}},{binding:2,resource:studioTile(d)},{binding:3,resource:d.createSampler({addressModeU:"repeat",addressModeV:"repeat",minFilter:"linear",magFilter:"linear",mipmapFilter:"linear"})},...(this.surface.bindings)]});
    this.floorBind=d.createBindGroup({layout:this.floor.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.frame}}]});
    this.initialized=true;
  }
  async draw(actor,camera,width,height){
    await this.ready;if(this.error)throw this.error;
    const d=this.device;
-   if(this.actor!==actor||this.lod!==actor.level){
-     this.vb?.destroy();this.ib?.destroy();const {packed,indices,runs}=vertices(actor,this.study?.parts(actor));this.runs=runs;
+   const approved=!this.study&&this.finish;
+   if(this.actor!==actor||this.lod!==actor.level||this.approved!==approved){
+     this.vb?.destroy();this.ib?.destroy();const {packed,indices,runs}=vertices(actor,(this.study??(approved?this.surface:null))?.parts(actor));this.runs=runs;
      const upload=(data,usage)=>{const b=d.createBuffer({size:data.byteLength,usage:usage|GPUBufferUsage.COPY_DST});d.queue.writeBuffer(b,0,data);return b;};
-     this.vb=upload(packed,GPUBufferUsage.VERTEX);this.ib=upload(indices,GPUBufferUsage.INDEX);this.actor=actor;this.lod=actor.level;
+     this.vb=upload(packed,GPUBufferUsage.VERTEX);this.ib=upload(indices,GPUBufferUsage.INDEX);this.actor=actor;this.lod=actor.level;this.approved=approved;
    }
    if(width!==this.width||height!==this.height){
      this.samples?.destroy();this.color?.destroy();this.depth?.destroy();this.buffer?.destroy();
@@ -147,9 +150,16 @@ export class MotionStudio {
    if(this.finish)pass.setPipeline(this.feathers);
    if(wing.visible){pass.drawIndexed(tract,1,skin);pass.drawIndexed(open,1,skin+tract+closed);}
    else pass.drawIndexed(tract+closed,1,skin);
-   const studyCount=this.runs[4];
-   if(studyCount){pass.setPipeline(this.study.pipeline);pass.drawIndexed(studyCount,1,skin+tract+closed+open);}
-   this.triangles=(skin+tract+(wing.visible?open:closed)+studyCount)/3;pass.end();
+   let offset=skin+tract+closed+open,added=0,draws=wing.visible?4:3;
+   for(let i=4;i<this.runs.length;i++){
+    const count=this.runs[i];
+    if(count){
+     pass.setPipeline(this.study?.pipeline??this.surface.pipelines[i-4]);
+     pass.drawIndexed(count,1,offset);draws++;added+=count;
+    }
+    offset+=count;
+   }
+   this.drawCalls=draws;this.triangles=(skin+tract+(wing.visible?open:closed)+added)/3;pass.end();
    const copy=this.study?.profile?await this.study.finishPass(d,encoder):encoder;
    copy.copyTextureToBuffer({texture:this.color},{buffer:this.buffer,bytesPerRow:this.stride},[width,height]);
    d.queue.submit([copy.finish()]);await this.buffer.mapAsync(GPUMapMode.READ);
