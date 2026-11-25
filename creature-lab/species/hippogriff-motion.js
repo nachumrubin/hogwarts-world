@@ -157,14 +157,17 @@ export class Hippogriff extends Anatomy{
    this.root.updateMatrixWorld(true);
    let compression=0;
    for(const c of this.contacts){
-     if(!c.leg.fore)continue;
-     const r=c.leg.points,base=point(spine,r[0]),{foot}=this.footGoal(c);
+     const banking=this.state==='Bank';
+     if(!c.leg.fore||(banking&&this.height>.6))continue;
+     const r=c.leg.points,base=point(spine,r[0]);
+     const foot=banking?this.root.worldToLocal(c.target.clone()):this.footGoal(c).foot;
+     if(banking)foot.y+=r.at(-1).y;
      const swing=c.stance?0:Math.sin(Math.PI*c.swing),bend=.13+.95*swing+this.tuck;
      const a=r[0].distanceTo(r[1]),b=r[1].distanceTo(r[2]),d=r[2].distanceTo(r[3]);
      const reach=a+Math.sqrt(b*b+d*d+2*b*d*Math.cos(bend))-.008;
      const dx=base.x-foot.x,dz=base.z-foot.z;
      const limit=Math.sqrt(Math.max(.01,reach*reach-dx*dx-dz*dz));
-     compression=Math.max(compression,base.y-foot.y-limit);
+     compression=Math.max(compression,(base.y-foot.y-limit)*(banking?1-smooth((this.height-.04)/.56):1));
    }
    spine.elements[13]-=compression;
    this.write('spine',spine);
