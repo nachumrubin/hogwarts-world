@@ -236,7 +236,10 @@ export class Hippogriff extends Specimen {
    // fitted under the existing croup and the staggered C.3 stance.
    const rows=hindProfile.map(([y,z,w,d,offset])=>{
      const thigh=Math.max(0,Math.min(1,(y-.93)/.58));
-     return [s*(.03+offset),y,z-.222,w*(1.08+.15*thigh),d*(1.07+.22*thigh)];
+     // Add volume through the thigh and taper it into the hip and stifle.
+     const fullness=y<=1.055||y>=1.84?0:Math.sin(Math.PI*(y-1.055)/.785)**2;
+     return [s*(.03+offset),y,z-.222,
+       w*(1.08+.15*thigh)*(1+.18*fullness),d*(1.07+.22*thigh)*(1+.30*fullness)];
    });
    this.mesh(leg,clay,lod=>{
      const geom=sweep(rows,[36,24,14][lod],new T.Vector3(0,-1,0));
