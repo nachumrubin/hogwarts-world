@@ -27,6 +27,7 @@ async function main() {
   if (q.get('ui') === '0') document.body.classList.add('bare');
   if (q.get('live') === '0') lab.setLive(false);
   lab.setLight(q.get('light') || 'day');
+  if (q.get('foliage') === '0') lab.setFoliage(false);
   if (q.get('lod')) lab.setLod(+q.get('lod')!);
   const m = q.get('mode') as Mode | null; lab.setMode(m && MODES.includes(m) ? m : 'lit');
   if (q.get('compare')) await lab.compare(q.get('compare')!);

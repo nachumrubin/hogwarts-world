@@ -31,6 +31,14 @@
    "note": "silver birch paper bark (recoloured white, dark lenticels)",
    "albedo": "birch.albedo.webp?19991cff55",
    "normal": "birch.normal.webp?bd047d5780"
+  },
+  {
+   "id": "ground",
+   "source": "https://polyhaven.com/a/forest_leaves_02",
+   "tile": 2.5,
+   "note": "woodland review environment: summer forest floor (moss, leaf litter)",
+   "albedo": "ground.albedo.webp?f8d980c885",
+   "normal": "ground.normal.webp?478bac4d69"
   }
  ],
  "size": 1024,

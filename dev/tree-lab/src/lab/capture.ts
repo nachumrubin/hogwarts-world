@@ -3,8 +3,8 @@
 // standardized shot offscreen; this module only defines the protocol and composes/exports.
 import type { Mode } from '../render/viewer.ts';
 
-export type ShotView = 'front' | 'side' | 'three' | 'rear' | 'top' | 'trunk' | 'junction' | 'broken';
-export interface ShotSpec { view: ShotView; mode: Mode; label: string; file: string; light?: string; lod?: number }
+export type ShotView = 'front' | 'side' | 'three' | 'rear' | 'top' | 'trunk' | 'junction' | 'broken' | 'crown' | 'macro' | 'interior' | 'up' | 'elevated' | 'aerial' | 'backlit';
+export interface ShotSpec { view: ShotView; mode: Mode; label: string; file: string; light?: string; lod?: number; foliage?: boolean; woodland?: boolean }
 
 /** The standard structural review set (same for every specimen). */
 export const REVIEW_SET: ShotSpec[] = [
@@ -31,6 +31,24 @@ export const MATERIAL_SET: ShotSpec[] = [
   { view: 'broken', mode: 'lit', light: 'overcast', label: 'Broken limb / exposed wood · overcast', file: 'broken-overcast' },
   { view: 'three', mode: 'lit', light: 'day', lod: 1, label: 'LOD 1 · materials · daylight', file: 'lod1-day' },
   { view: 'three', mode: 'lit', light: 'day', lod: 2, label: 'LOD 2 · materials · daylight', file: 'lod2-day' },
+];
+/** The foliage review set: foliated and leafless at the same camera, three lights (backlit: the low sun behind the
+ *  tree), woodland floor, leaf macro, branch-to-foliage junction, crown interior, ground-level upward, elevated and
+ *  aerial views, and LOD 0/1/2 at one camera. */
+export const FOLIAGE_SET: ShotSpec[] = [
+  { view: 'front', mode: 'lit', light: 'day', label: 'Full tree · summer foliage · daylight', file: 'full-day' },
+  { view: 'front', mode: 'lit', light: 'day', foliage: false, label: 'Full tree · leafless (same camera and light)', file: 'full-bare' },
+  { view: 'three', mode: 'lit', light: 'overcast', woodland: true, label: 'Full tree · woodland floor · overcast', file: 'full-woodland-overcast' },
+  { view: 'backlit', mode: 'lit', light: 'low', woodland: true, label: 'Full tree · backlit (low sun behind the tree)', file: 'full-backlit' },
+  { view: 'macro', mode: 'lit', light: 'day', label: 'Leaf / needle macro · daylight', file: 'macro' },
+  { view: 'crown', mode: 'lit', light: 'day', label: 'Branch-to-foliage junction · daylight', file: 'junction-foliage' },
+  { view: 'interior', mode: 'lit', light: 'day', label: 'Crown interior · daylight', file: 'interior' },
+  { view: 'up', mode: 'lit', light: 'day', woodland: true, label: 'Ground level, looking up · daylight', file: 'up' },
+  { view: 'elevated', mode: 'lit', light: 'day', woodland: true, label: 'Elevated view · woodland floor', file: 'elevated' },
+  { view: 'aerial', mode: 'lit', light: 'day', woodland: true, label: 'Aerial view · woodland floor', file: 'aerial' },
+  { view: 'three', mode: 'lit', light: 'day', lod: 0, label: 'LOD 0 · leaf and needle sprites', file: 'lod0' },
+  { view: 'three', mode: 'lit', light: 'day', lod: 1, label: 'LOD 1 · shoot cards (same camera)', file: 'lod1' },
+  { view: 'three', mode: 'lit', light: 'day', lod: 2, label: 'LOD 2 · clump cards (same camera)', file: 'lod2' },
 ];
 /** Standard capture protocol. Full-tree views use a common scale (a 36 m × 27 m frame at the tree) so specimens
  *  can be compared sheet to sheet; close-ups are framed on the feature. */

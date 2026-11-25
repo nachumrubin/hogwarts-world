@@ -1,0 +1,83 @@
+[
+  {
+    "label": "Woodland stand · ground-level walk (1.7 m) · LOD by distance 3/9/0",
+    "view": "ground-level walk (1.7 m)",
+    "lodMix": [
+      3,
+      9,
+      0
+    ],
+    "foliageInstances": 748633,
+    "foliageTriangles": 4552824,
+    "barkTriangles": 1215542,
+    "drawCalls": 30,
+    "overdraw": {
+      "coverage": 0.2318175925925926,
+      "foliageCoverage": 0.14470462962962963,
+      "meanFoliage": 2.4642662895681497,
+      "p95Foliage": 6,
+      "maxFoliage": 37,
+      "meanAll": 3.3402180034589777
+    },
+    "frame": {
+      "wallMs": 66383.95000000019,
+      "gpuMs": null
+    },
+    "foliageBytesResident": 86438080,
+    "geometryBytesResident": 86057252
+  },
+  {
+    "label": "Woodland stand · elevated overview · LOD by distance 0/5/7",
+    "view": "elevated overview",
+    "lodMix": [
+      0,
+      5,
+      7
+    ],
+    "foliageInstances": 217999,
+    "foliageTriangles": 871996,
+    "barkTriangles": 316290,
+    "drawCalls": 27,
+    "overdraw": {
+      "coverage": 0.15156481481481482,
+      "foliageCoverage": 0.12210833333333333,
+      "meanFoliage": 2.7963860263730598,
+      "p95Foliage": 7,
+      "maxFoliage": 19,
+      "meanAll": 3.3079662777200807
+    },
+    "frame": {
+      "wallMs": 38545.300000000745,
+      "gpuMs": null
+    },
+    "foliageBytesResident": 89491200,
+    "geometryBytesResident": 90696156
+  },
+  {
+    "label": "Woodland stand · aerial · LOD by distance 0/0/12",
+    "view": "aerial",
+    "lodMix": [
+      0,
+      0,
+      12
+    ],
+    "foliageInstances": 17856,
+    "foliageTriangles": 71424,
+    "barkTriangles": 41690,
+    "drawCalls": 27,
+    "overdraw": {
+      "coverage": 0.145625,
+      "foliageCoverage": 0.13115555555555555,
+      "meanFoliage": 1.8825821755337173,
+      "p95Foliage": 4,
+      "maxFoliage": 12,
+      "meanAll": 2.3467302495628677
+    },
+    "frame": {
+      "wallMs": 18960.849999999627,
+      "gpuMs": null
+    },
+    "foliageBytesResident": 89640896,
+    "geometryBytesResident": 90696156
+  }
+]

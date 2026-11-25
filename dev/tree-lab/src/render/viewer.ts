@@ -10,7 +10,15 @@ export type Mode = 'lit' | 'clay' | 'silhouette' | 'wire' | 'normals' | 'hierarc
 export const MODES: Mode[] = ['lit', 'clay', 'silhouette', 'wire', 'normals', 'hierarchy'];
 
 /** Material kinds of a draw. */
-export const KIND = { tree: 0, ground: 1, figure: 2, pole: 3 } as const;
+export const KIND = { tree: 0, ground: 1, figure: 2, pole: 3, leaf: 4, card: 5, twig: 6, needle: 7, poly: 8 } as const;
+import { FI, type FoliageLod } from '../framework/foliage.ts';
+/** Foliage of one specimen at one LOD on the GPU: one instance buffer per set, drawn with a shared template. */
+export interface GpuFoliage { sets: { kind: 'leaf' | 'needle' | 'card' | 'twig' | 'poly'; layer: number; grid: [number, number]; buf: GPUBuffer; count: number; tmpl: string }[]; bytes: number; instances: number; triangles: number }
+/** How the foliage is represented: alpha-tested leaf sprites near / shoot cards / clump cards by LOD (hybrid, the
+ *  lab's choice); shoot cards at every distance; or opaque leaf polygons cut from the sprites' outlines. */
+export type FoliageRep = 'hybrid' | 'cards' | 'geometry';
+/** Foliage texture layers (tools/foliage_textures.py writes textures/foliage.json in this order). */
+export const FOLIAGE_LAYERS = ['oak', 'birch', 'pine', 'card-oak', 'card-birch', 'card-pine'];
 
 export interface LightPreset {
   id: string; label: string;
@@ -30,17 +38,17 @@ export const LIGHTS: LightPreset[] = [
 export interface GpuMesh { vbuf: GPUBuffer; ibuf: GPUBuffer; lbuf: GPUBuffer | null; idx: Uint32Array | null; indexCount: number; lineCount: number; triangles: number; vertices: number; bytes: number }
 /** Bark material of a tree draw (species family). */
 export const MAT = { oak: 0, pine: 1, birch: 2 } as const;
-export interface Draw { mesh: GpuMesh; offset: [number, number, number]; kind: number; castShadow?: boolean; mat?: number }
+export interface Draw { mesh: GpuMesh; offset: [number, number, number]; kind: number; castShadow?: boolean; mat?: number; foliage?: GpuFoliage | null; yaw?: number }
 
 /** Bark texture layers (tools/textures.py writes textures/manifest.json in this order). Tile = real-world size of
  *  one texture repeat, metres. */
-export const BARK_LAYERS = [{ id: 'oak', tile: 1.0 }, { id: 'pinelow', tile: 1.5 }, { id: 'pineup', tile: 0.7 }, { id: 'birch', tile: 1.1 }];
+export const BARK_LAYERS = [{ id: 'oak', tile: 1.0 }, { id: 'pinelow', tile: 1.5 }, { id: 'pineup', tile: 0.7 }, { id: 'birch', tile: 1.1 }, { id: 'ground', tile: 2.5 }];
 export interface TexStats { layers: number; size: number; bytes: number; download: number; ms: number }
 
 const SHADER = /* wgsl */ `
 struct U {
   vp: mat4x4f, sm: mat4x4f,
-  cam: vec4f,     // xyz eye
+  cam: vec4f,     // xyz eye, w per-draw yaw (rad, about the draw's origin)
   sun: vec4f,     // xyz dir to sun, intensity
   mode: vec4f,    // mode id, bark material (0 oak, 1 pine, 2 birch), textures ready, exposure
   off: vec4f,     // per-draw offset xyz, kind (0 tree, 1 ground, 2 figure, 3 scale pole)
@@ -56,7 +64,7 @@ struct U {
 @group(0) @binding(4) var barkNrm: texture_2d_array<f32>;   // rg normal (x across, y along the branch), b roughness, a occlusion
 @group(0) @binding(5) var barkSmp: sampler;
 
-const TILE = array<f32, 4>(${BARK_LAYERS.map((l) => l.tile.toFixed(3)).join(', ')});
+const TILE = array<f32, 5>(${BARK_LAYERS.map((l) => l.tile.toFixed(3)).join(', ')});
 const PI = 3.14159265;
 
 // vertex layout: pos3 normal3 (order, flags, radius, relief) axis3 origin3 (see mesher.ts VFLOATS)
@@ -69,16 +77,17 @@ struct VOut {
   @location(5) ax: vec3f, @location(6) org: vec3f,
 };
 
+fn rotY(v: vec3f, a: f32) -> vec3f { let c = cos(a); let s = sin(a); return vec3f(c * v.x + s * v.z, v.y, -s * v.x + c * v.z); }
 @vertex fn vs(i: VIn) -> VOut {
   var o: VOut;
-  let wp = i.p + u.off.xyz;
-  o.cp = u.vp * vec4f(wp, 1.0); o.wp = wp; o.n = i.n; o.a = i.a; o.lp = i.p;
+  let wp = rotY(i.p, u.cam.w) + u.off.xyz;
+  o.cp = u.vp * vec4f(wp, 1.0); o.wp = wp; o.n = rotY(i.n, u.cam.w); o.a = i.a; o.lp = i.p;
   let f = u32(i.a.y + 0.5);
   o.rw = vec3f(i.a.z, i.a.w, select(0.0, 1.0, (f & 3u) != 0u));
   o.ax = i.ax; o.org = i.org;
   return o;
 }
-@vertex fn vsShadow(i: VIn) -> @builtin(position) vec4f { return u.sm * vec4f(i.p + u.off.xyz, 1.0); }
+@vertex fn vsShadow(i: VIn) -> @builtin(position) vec4f { return u.sm * vec4f(rotY(i.p, u.cam.w) + u.off.xyz, 1.0); }
 
 fn aces(x: vec3f) -> vec3f { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3f(0.0), vec3f(1.0)); }
 fn srgb(c: vec3f) -> vec3f { return select(1.055 * pow(c, vec3f(1.0 / 2.4)) - 0.055, c * 12.92, c <= vec3f(0.0031308)); }
@@ -299,12 +308,13 @@ fn ggx(N: vec3f, V: vec3f, L: vec3f, rough: f32) -> f32 {
   let P = vec3f(1.0 - A.x * A.x / yy, -A.x, -A.x * A.z / yy);
   let Q = vec3f(-A.x * A.z / yy, -A.z, 1.0 - A.z * A.z / yy);
   let d = i.lp - i.org;
-  let sq = select(-1.0, 1.0, dot(n, Q) >= 0.0); let sp = select(1.0, -1.0, dot(n, P) >= 0.0);
+  let nl = rotY(n, -u.cam.w);   // tree-local normal: the bark mapping lives in the tree's own frame
+  let sq = select(-1.0, 1.0, dot(nl, Q) >= 0.0); let sp = select(1.0, -1.0, dot(nl, P) >= 0.0);
   let c1 = vec2f(dot(d, P) * sq + select(0.37, 0.0, sq > 0.0), dot(d, A));
   let c2 = vec2f(dot(d, Q) * sp + select(0.61, 0.0, sp > 0.0), dot(d, A));
   let c3 = vec2f(dot(d, P), dot(d, Q));
   let dx = dpdx(d); let dy = dpdy(d);
-  var wv = pow(abs(vec3f(dot(n, Q), dot(n, P), dot(n, A))), vec3f(4.0));
+  var wv = pow(abs(vec3f(dot(nl, Q), dot(nl, P), dot(nl, A))), vec3f(4.0));
   wv = wv / max(wv.x + wv.y + wv.z, 1e-4);
   let x = Ctx(c1, c2, c3,
     vec2f(dot(dx, P) * sq, dot(dx, A)), vec2f(dot(dy, P) * sq, dot(dy, A)),
@@ -320,15 +330,29 @@ fn ggx(N: vec3f, V: vec3f, L: vec3f, rough: f32) -> f32 {
     // ---- materials: physically based (Lambert + GGX, F0 0.04), sky and ground bounce, sun shadow map
     var sf = Surf(vec3f(0.3), n, 0.9, 1.0);
     if (kind == 0u) {
-      if (u.mode.z > 0.5) { sf = treeSurface(i, n, x, u32(u.mode.y + 0.5)); }
+      if (u.mode.z > 0.5) { sf = treeSurface(i, nl, x, u32(u.mode.y + 0.5)); sf.n = rotY(sf.n, u.cam.w); }
       else { sf.alb = vec3f(0.13, 0.11, 0.09); }
     } else if (kind == 1u) {
-      // ground: dull soil and leaf litter (no foliage this phase); the 5 m survey grid stays as a faint scale reference
-      let g = fbm(vec3f(i.wp.xz * 0.7, 1.0)) * 0.6 + fbm(vec3f(i.wp.xz * 6.0, 2.0)) * 0.4;
-      sf.alb = mix(vec3f(0.055, 0.045, 0.03), vec3f(0.11, 0.1, 0.06), g);
       let gg = abs(fract(i.wp.xz / 5.0 + 0.5) - 0.5) * 5.0; let w = fwidth(i.wp.xz) * 1.2;
       let line = 1.0 - min(smoothstep(vec2f(0.0), w + 0.02, gg).x, smoothstep(vec2f(0.0), w + 0.02, gg).y);
-      sf.alb = mix(sf.alb, sf.alb * 0.6, line * 0.5);
+      let gc = vec2f(i.wp.x, -i.wp.z); let gdx = dpdx(gc); let gdy = dpdy(gc);
+      if (u.env.y > 0.5 && u.mode.z > 0.5) {
+        // woodland: photoscanned forest floor (moss, leaf litter), two scales blended by a slow noise against tiling
+        // (no along-axis bands here: two scales, the second turned 37°, height-blended by a slow noise)
+        let t = TILE[4]; let c37 = 0.799; let s37 = 0.602;
+        let r2 = vec2f(c37 * gc.x - s37 * gc.y, s37 * gc.x + c37 * gc.y) / 1.73 + vec2f(0.37, 0.71);
+        var g1 = fetchL(4, gc / t, gdx / t, gdy / t, vec3f(1.0, 0.0, 0.0), vec3f(0.0, 0.0, -1.0));
+        let g2 = fetchL(4, r2 / t, vec2f(c37 * gdx.x - s37 * gdx.y, s37 * gdx.x + c37 * gdx.y) / (1.73 * t), vec2f(c37 * gdy.x - s37 * gdy.y, s37 * gdy.x + c37 * gdy.y) / (1.73 * t), vec3f(c37, 0.0, -s37), vec3f(-s37, 0.0, -c37));
+        g1 = hblend(g1, g2, smoothstep(0.3, 0.7, fbm(vec3f(i.wp.xz * 0.06, 4.0))));
+        let gl = dot(g1.alb, vec3f(0.3, 0.59, 0.11));
+        sf.alb = mix(vec3f(gl), g1.alb, 0.65) * vec3f(0.62, 0.7, 0.5) * (0.8 + 0.4 * fbm(vec3f(i.wp.xz * 0.25, 9.0)));
+        sf.n = normalize(n + g1.pn * 1.2); sf.rough = g1.rough; sf.ao = g1.ao;
+      } else {
+        // plot: dull soil tone; the 5 m survey grid stays as a faint scale reference
+        let g = fbm(vec3f(i.wp.xz * 0.7, 1.0)) * 0.6 + fbm(vec3f(i.wp.xz * 6.0, 2.0)) * 0.4;
+        sf.alb = mix(vec3f(0.055, 0.045, 0.03), vec3f(0.11, 0.1, 0.06), g);
+        sf.alb = mix(sf.alb, sf.alb * 0.6, line * 0.5);
+      }
     } else if (kind == 2u) { sf.alb = vec3f(0.30, 0.12, 0.06); sf.rough = 0.7; }
     else {
       let b = floor(i.wp.y);
@@ -394,6 +418,127 @@ fn ggx(N: vec3f, V: vec3f, L: vec3f, rough: f32) -> f32 {
   return vec4f(hierCol(i.a.x, i.a.y) * 0.9, 1.0);
 }
 
+
+// ================================================================ foliage (instanced; see framework/foliage.ts)
+// off.w: 4 leaf (bent blade), 5 card, 6 twig, 7 needle fascicle; env.y texture layer, env.zw sprite grid; mode.y bark
+// material family (twig colour). Template: x across [−0.5, 0.5], y along [0, 1]; twigs: x = angle, y along.
+@group(0) @binding(6) var folAlb: texture_2d_array<f32>;   // rgb front albedo, a opacity
+@group(0) @binding(7) var folNrm: texture_2d_array<f32>;   // rg normal, b roughness, a translucency
+struct FIn { @location(0) t: vec2f, @location(1) ip: vec3f, @location(2) iq: vec4f, @location(3) isz: vec4f, @location(4) ix: vec4f };
+struct FOut {
+  @builtin(position) cp: vec4f, @location(0) wp: vec3f, @location(1) uv: vec2f,
+  @location(2) n: vec3f, @location(3) tx: vec3f, @location(4) ty: vec3f, @location(5) e: vec3f,   // exposure, variation, along
+};
+fn qrot(q: vec4f, v: vec3f) -> vec3f { let t = 2.0 * cross(q.xyz, v); return v + q.w * t + cross(q.xyz, t); }
+fn folLocal(i: FIn) -> array<vec3f, 3> {   // position, normal, (unused)
+  let k = u32(u.off.w + 0.5);
+  if (k == 6u) {
+    let a = i.t.x * 6.2831853; let r = i.isz.x * mix(1.0, i.ix.w, i.t.y);
+    return array<vec3f, 3>(vec3f(cos(a) * r, i.t.y * i.isz.y, sin(a) * r), vec3f(cos(a), 0.0, sin(a)), vec3f(0.0));
+  }
+  let X = i.t.x * i.isz.x; let Y = i.t.y * i.isz.y;
+  // midrib fold (edges raised) and curl along the blade (tip bends back)
+  let z = i.isz.z * abs(i.t.x) * 2.0 * i.isz.x - i.isz.w * i.t.y * i.t.y * i.isz.y;
+  let dzdx = i.isz.z * sign(i.t.x) * 2.0; let dzdy = -2.0 * i.isz.w * i.t.y;
+  return array<vec3f, 3>(vec3f(X, Y, z), normalize(vec3f(-dzdx, -dzdy, 1.0)), vec3f(0.0));
+}
+@vertex fn vsFol(i: FIn) -> FOut {
+  var o: FOut;
+  let L = folLocal(i);
+  let wp = rotY(i.ip + qrot(i.iq, L[0]), u.cam.w) + u.off.xyz;
+  o.cp = u.vp * vec4f(wp, 1.0); o.wp = wp;
+  let c = i.ix.x; let gx = max(u.env.z, 1.0); let gy = max(u.env.w, 1.0);
+  let col = c - gx * floor(c / gx); let row = floor(c / gx);
+  o.uv = vec2f((col + i.t.x + 0.5) / gx, (row + 1.0 - i.t.y * 0.999) / gy);
+  o.n = rotY(qrot(i.iq, L[1]), u.cam.w); o.tx = rotY(qrot(i.iq, vec3f(1.0, 0.0, 0.0)), u.cam.w); o.ty = rotY(qrot(i.iq, vec3f(0.0, 1.0, 0.0)), u.cam.w);
+  o.e = vec3f(i.ix.y, i.ix.z, i.t.y);
+  return o;
+}
+@vertex fn vsFolShadow(i: FIn) -> FOut {
+  var o: FOut;
+  let L = folLocal(i);
+  let wp = rotY(i.ip + qrot(i.iq, L[0]), u.cam.w) + u.off.xyz;
+  o.cp = u.sm * vec4f(wp, 1.0); o.wp = wp;
+  let c = i.ix.x; let gx = max(u.env.z, 1.0); let gy = max(u.env.w, 1.0);
+  o.uv = vec2f((c - gx * floor(c / gx) + i.t.x + 0.5) / gx, (floor(c / gx) + 1.0 - i.t.y * 0.999) / gy);
+  o.n = vec3f(0.0); o.tx = vec3f(0.0); o.ty = vec3f(0.0); o.e = vec3f(0.0);
+  return o;
+}
+@fragment fn fsFolShadow(i: FOut) {
+  if (u32(u.off.w + 0.5) == 6u || u32(u.off.w + 0.5) == 8u) { return; }
+  let a = textureSampleLevel(folAlb, barkSmp, i.uv, i32(u.env.y + 0.5), 1.0).a;
+  if (a * select(1.0, 2.5, u32(u.off.w + 0.5) == 7u) < 0.5) { discard; }
+}
+fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
+  // alpha-to-coverage with mip-aware sharpening: the opacity edge stays one pixel wide at every distance, and
+  // coverage is boosted with the mip level so thin leaves and needles do not dissolve far away
+  let d = max(length(dpdx(uv)), length(dpdy(uv))) * 1024.0;
+  let lvl = max(log2(max(d, 1e-4)), 0.0);
+  let aa = a * (1.0 + boost * lvl);
+  return clamp((aa - 0.5) / max(fwidth(aa), 1e-4) + 0.5, 0.0, 1.0);
+}
+@fragment fn fsFol(i: FOut, @builtin(front_facing) ff: bool) -> @location(0) vec4f {
+  let k = u32(u.off.w + 0.5); let layer = i32(u.env.y + 0.5); let mode = u32(u.mode.x + 0.5);
+  let A = textureSample(folAlb, barkSmp, i.uv, layer);
+  let Nt = textureSample(folNrm, barkSmp, i.uv, layer);
+  // needles are 2–3 texels wide: their coverage needs a much stronger boost with distance than broad leaves
+  let alpha = select(folAlpha(A.a, i.uv, select(0.22, 1.5, k == 7u)), 1.0, k == 6u || k == 8u);
+  if (mode == 2u) { return vec4f(0.0, 0.0, 0.0, alpha); }
+  var Ng = normalize(i.n); if (!ff) { Ng = -Ng; }
+  if (mode == 4u) { return vec4f(Ng * 0.5 + 0.5, alpha); }
+  let L = normalize(u.sun.xyz); let V = normalize(u.cam.xyz - i.wp);
+  let sunC = u.sunc.xyz * u.sun.w;
+  let sh = mix(1.0, shadow(i.wp, Ng), u.hor.w);
+  let exposure = i.e.x; let vari = i.e.y;
+  if (mode != 0u) {
+    // structural modes: foliage in a neutral clay green-grey, so leafless/foliated clay views stay comparable
+    let alb = select(vec3f(0.30, 0.33, 0.28), vec3f(0.36), k == 6u);
+    let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * Ng.y) * u.zen.w;
+    let c = alb * (sunC * max(dot(Ng, L), 0.0) * sh + sky * mix(0.45, 1.0, exposure));
+    return vec4f(srgb(aces(c * 0.55)), alpha);
+  }
+  if (k == 6u) {
+    // twiglets: smooth young bark, species colour
+    var tw = vec3f(0.13, 0.11, 0.085);
+    if (u32(u.mode.y + 0.5) == 2u) { tw = vec3f(0.09, 0.045, 0.03); }
+    let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * Ng.y) * (0.6 + 0.4 * Ng.y) * u.zen.w;
+    let c = tw * (sunC * max(dot(Ng, L), 0.0) * sh + sky * mix(0.6, 1.0, exposure));
+    return vec4f(srgb(aces(c * u.mode.w)), 1.0);
+  }
+  // ---- leaves, needles, cards
+  let tn = Nt.xy * 2.0 - 1.0;
+  var T = normalize(i.tx); var B = normalize(i.ty);
+  var N = normalize(Ng + (T * tn.x + B * tn.y) * select(1.0, -1.0, !ff) * 0.8);
+  // pigmentation: per-shoot variation (yellower ↔ bluer, lighter ↔ darker); undersides paler, greyer
+  var alb = A.rgb * (1.0 + 0.18 * vari) * mix(vec3f(1.0), vec3f(1.12, 1.05, 0.8), clamp(vari, 0.0, 1.0) * 0.5);
+  if (!ff && k != 5u) { let g = dot(alb, vec3f(0.3, 0.59, 0.11)); alb = mix(alb, vec3f(g) * vec3f(0.95, 1.05, 0.95), 0.35) * 1.45; }
+  let rough = clamp(Nt.z * select(1.0, 1.25, !ff), 0.3, 1.0);
+  let ndl = max(dot(N, L), 0.0);
+  // transmission: sun through the blade when it lights the far face (thin, so most of the light passes the veins)
+  let back = max(-dot(Ng, L), 0.0);
+  // transmitted light is tested for shadow on the leaf's sunlit side (offset towards the sun), not the visible side:
+  // tested on the visible (dark) side every backlit leaf shadowed itself and the crown edge never glowed
+  let shT = mix(1.0, shadow(i.wp, -Ng), u.hor.w);
+  let transCol = alb * vec3f(1.6, 1.8, 0.6) * Nt.w;
+  let ao = mix(select(0.4, 0.55, k == 5u), 1.0, exposure) * mix(0.85, 1.0, i.e.z);
+  let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * N.y) * (0.65 + 0.35 * N.y) * u.zen.w;
+  let bounce = vec3f(0.10, 0.10, 0.06) * (0.5 - 0.5 * N.y) * u.zen.w;
+  var c = alb * (sunC * ndl * sh + (sky + bounce) * ao) + sunC * shT * transCol * back * (0.5 + 0.8 * pow(max(dot(V, -L), 0.0), 3.0));
+  c += sunC * sh * ggx(N, V, L, rough) * PI * 0.35;
+  if (u.env.x < 0.5) { let dd = length(u.cam.xyz - i.wp); c = mix(c, u.hor.xyz * 0.9, 1.0 - exp(-dd * 0.002)); }
+  return vec4f(srgb(aces(c * u.mode.w)), alpha);
+}
+
+// ---- overdraw counting (additive, no depth test): r = bark/other fragments, g = foliage fragments passing the alpha test
+@fragment fn fsCount(i: VOut) -> @location(0) vec4f { return vec4f(1.0, 0.0, 0.0, 0.0); }
+@fragment fn fsFolCount(i: FOut) -> @location(0) vec4f {
+  let k = u32(u.off.w + 0.5);
+  if (k != 6u && k != 8u) {
+    let a = textureSampleLevel(folAlb, barkSmp, i.uv, i32(u.env.y + 0.5), 0.0).a;
+    if (a < 0.5) { discard; }
+  }
+  return vec4f(0.0, 1.0, 0.0, 0.0);
+}
 struct SkyOut { @builtin(position) p: vec4f, @location(0) uv: vec2f };
 @vertex fn vsSky(@builtin(vertex_index) k: u32) -> SkyOut { var o: SkyOut; let p = vec2f(f32(i32(k & 1u) * 4 - 1), f32(i32(k >> 1u) * 4 - 1)); o.p = vec4f(p, 1.0, 1.0); o.uv = p; return o; }
 @fragment fn fsSky(i: SkyOut) -> @location(0) vec4f {
@@ -444,7 +589,9 @@ export class Viewer {
       { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'comparison' } },
       { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
       { binding: 4, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
-      { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } }] });
+      { binding: 5, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
+      { binding: 6, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
+      { binding: 7, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } }] });
     this.bgl = bgl;
     const layout = d.createPipelineLayout({ bindGroupLayouts: [bgl] });
     const vb: GPUVertexBufferLayout[] = [{ arrayStride: VFLOATS * 4, attributes: [
@@ -455,7 +602,13 @@ export class Viewer {
     this.wire = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vs', buffers: vb }, fragment: { module: m, entryPoint: 'fsWire', targets: [{ format: this.format }] }, primitive: { topology: 'line-list' }, depthStencil: { ...ds, depthCompare: 'less-equal' }, multisample: { count: 4 } });
     this.sky = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsSky' }, fragment: { module: m, entryPoint: 'fsSky', targets: [{ format: this.format }] }, depthStencil: { format: 'depth32float', depthWriteEnabled: false, depthCompare: 'less-equal' }, multisample: { count: 4 } });
     this.shadowPipe = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsShadow', buffers: vb }, primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'less', depthBias: 2, depthBiasSlopeScale: 2 } });
-    this.ubuf = d.createBuffer({ size: 256 * 128, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    // foliage: a template mesh (slot 0: template coordinates) instanced per leaf / card / twig (slot 1)
+    const fvb: GPUVertexBufferLayout[] = [{ arrayStride: 8, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] },
+      { arrayStride: FI * 4, stepMode: 'instance', attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }, { shaderLocation: 2, offset: 12, format: 'float32x4' }, { shaderLocation: 3, offset: 28, format: 'float32x4' }, { shaderLocation: 4, offset: 44, format: 'float32x4' }] }];
+    this.folPipe = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsFol', buffers: fvb }, fragment: { module: m, entryPoint: 'fsFol', targets: [{ format: this.format }] }, primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: ds, multisample: { count: 4, alphaToCoverageEnabled: true } });
+    this.folShadow = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsFolShadow', buffers: fvb }, fragment: { module: m, entryPoint: 'fsFolShadow', targets: [] }, primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'less', depthBias: 2, depthBiasSlopeScale: 2 } });
+    this.templates = this.makeTemplates();
+    this.ubuf = d.createBuffer({ size: 256 * 1024, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.shadowSize = shadowSize;
     this.shadowTex = d.createTexture({ size: [shadowSize, shadowSize], format: 'depth32float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
     const dummy = d.createTexture({ size: [1, 1], format: 'depth32float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT });
@@ -464,6 +617,7 @@ export class Viewer {
     this.dummyDepth = dummy;
     const one = (f: GPUTextureFormat) => d.createTexture({ size: [1, 1, 1], format: f, usage: GPUTextureUsage.TEXTURE_BINDING, dimension: '2d' });
     this.barkAlb = one('rgba8unorm-srgb'); this.barkNrm = one('rgba8unorm');
+    this.folAlb = one('rgba8unorm-srgb'); this.folNrm = one('rgba8unorm');
     this.rebind();
     if (this.hasTs) {
       this.qs = d.createQuerySet({ type: 'timestamp', count: 2 });
@@ -473,13 +627,93 @@ export class Viewer {
   }
 
   private bgl!: GPUBindGroupLayout; private cmp!: GPUSampler; private barkSampler!: GPUSampler; private dummyDepth!: GPUTexture;
-  private barkAlb!: GPUTexture; private barkNrm!: GPUTexture;
+  private barkAlb!: GPUTexture; private barkNrm!: GPUTexture; private folAlb!: GPUTexture; private folNrm!: GPUTexture;
+  private folPipe!: GPURenderPipeline; private folShadow!: GPURenderPipeline;
+  private templates!: Record<string, { buf: GPUBuffer; count: number; tris: number }>;
+  /** Foliage textures: loaded once (loadFoliage). */
+  folTex: TexStats | null = null;
+  foliageBytes = 0;
+  /** natural woodland review environment (forest-floor ground, no survey grid); false: the neutral plot */
+  woodland = false;
+  /** Template meshes in template coordinates (x across, y along): a blade bent along its midrib (3 × 3), a flat
+   *  fascicle (2 × 2), a card with a slight fold (3 × 2), a 4-sided tapered twig. Non-indexed triangle lists. */
+  private makeTemplates() {
+    const grid = (nx: number, ny: number): number[] => {
+      const v: number[] = [], P = (i: number, j: number) => [-0.5 + i / (nx - 1), j / (ny - 1)];
+      for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) { const a = P(i, j), b = P(i + 1, j), c = P(i + 1, j + 1), dd = P(i, j + 1); v.push(...a, ...b, ...c, ...a, ...c, ...dd); }
+      return v;
+    };
+    const twig: number[] = [];
+    for (let k = 0; k < 4; k++) { const a = k / 4, b = (k + 1) / 4; twig.push(a, 0, b, 0, b, 1, a, 0, b, 1, a, 1); }
+    const mk = (v: number[]) => { const b = this.device.createBuffer({ size: v.length * 4, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST }); this.device.queue.writeBuffer(b, 0, new Float32Array(v)); return { buf: b, count: v.length / 2, tris: v.length / 6 }; };
+    return { leaf: mk(grid(3, 3)), needle: mk(grid(2, 2)), card: mk(grid(3, 2)), twig: mk(twig) } as Record<string, { buf: GPUBuffer; count: number; tris: number }>;
+  }
+  private outlines: number[][][] = [];
+  /** Upload foliage in a representation: 'geometry' splits the leaf / fascicle set by sprite and draws each sprite's
+   *  own triangulated outline (opaque); 'cards' is the LOD1 data (the caller passes it); hybrid draws as given. */
+  uploadFoliageAs(f: FoliageLod, rep: FoliageRep): GpuFoliage {
+    if (rep !== 'geometry') return this.uploadFoliage(f);
+    const sets: FoliageLod['sets'] = [];
+    for (const s of f.sets) {
+      if (s.kind !== 'leaf' && s.kind !== 'needle') { sets.push(s); continue; }
+      for (let cell = 0; cell < 8; cell++) {
+        const pick: number[] = [];
+        for (let k = 0; k < s.count; k++) if (s.data[k * FI + 11] === cell) pick.push(k);
+        const d = new Float32Array(pick.length * FI); pick.forEach((k, j) => d.set(s.data.subarray(k * FI, k * FI + FI), j * FI));
+        sets.push({ kind: 'poly' as never, layer: s.layer, grid: s.grid, data: d, count: pick.length, cell } as never);
+      }
+    }
+    return this.uploadFoliage({ ...f, sets });
+  }
+  uploadFoliage(f: FoliageLod): GpuFoliage {
+    const sets = f.sets.filter((s) => s.count).map((s) => {
+      const buf = this.device.createBuffer({ size: Math.max(16, s.data.byteLength), usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST }); this.device.queue.writeBuffer(buf, 0, s.data);
+      const tmpl = (s.kind as string) === 'poly' ? this.polyTemplate(s.layer, (s as unknown as { cell: number }).cell) : s.kind;
+      return { kind: s.kind as GpuFoliage['sets'][number]['kind'], layer: s.layer, grid: s.grid, buf, count: s.count, tmpl };
+    });
+    const bytes = f.sets.reduce((a, s) => a + s.data.byteLength, 0); this.foliageBytes += bytes;
+    return { sets, bytes, instances: sets.reduce((a, s) => a + s.count, 0), triangles: sets.reduce((a, s) => a + s.count * this.templates[s.tmpl].tris, 0) };
+  }
+  private polyTemplate(layer: number, cell: number): string {
+    const key = `poly:${layer}:${cell}`;
+    if (!this.templates[key]) {
+      const v = this.outlines[layer]?.[cell] ?? [];
+      const b = this.device.createBuffer({ size: Math.max(16, v.length * 4), usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST }); this.device.queue.writeBuffer(b, 0, new Float32Array(v));
+      this.templates[key] = { buf: b, count: v.length / 2, tris: v.length / 6 };
+    }
+    return key;
+  }
+  destroyFoliage(g: GpuFoliage): void { for (const s of g.sets) s.buf.destroy(); this.foliageBytes -= g.bytes; }
+  /** Load the foliage texture array (textures/foliage.json from tools/foliage_textures.py): sprite layers and card
+   *  layers, mips built on the GPU like the bark's. */
+  async loadFoliage(base: string, bust = ''): Promise<TexStats> {
+    const t0 = performance.now(), d = this.device;
+    const man = await (await fetch(`${base}foliage.json${bust ? '?v=' + bust : ''}`)).json() as { size: number; layers: { id: string; albedo: string; normal: string; outlines?: number[][] }[] };
+    this.outlines = man.layers.map((l) => l.outlines ?? []);
+    if (man.layers.map((l) => l.id).join() !== FOLIAGE_LAYERS.join()) throw new Error('foliage texture manifest does not match the renderer layers');
+    const n = man.layers.length, S = man.size, levels = Math.floor(Math.log2(S)) + 1;
+    const mk = (f: GPUTextureFormat) => d.createTexture({ size: [S, S, n], format: f, mipLevelCount: levels, usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
+    const alb = mk('rgba8unorm-srgb'), nrm = mk('rgba8unorm');
+    let download = 0;
+    await Promise.all(man.layers.flatMap((l, k) => [[alb, l.albedo], [nrm, l.normal]].map(async ([tex, file]) => {
+      const blob = await (await fetch(base + (file as string))).blob(); download += blob.size;
+      const bmp = await createImageBitmap(blob, { premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+      d.queue.copyExternalImageToTexture({ source: bmp }, { texture: tex as GPUTexture, origin: [0, 0, k], premultipliedAlpha: false }, [S, S]);
+      bmp.close();
+    })));
+    this.mips(alb, nrm, n, levels);
+    this.folAlb.destroy(); this.folNrm.destroy(); this.folAlb = alb; this.folNrm = nrm; this.rebind();
+    let bytes = 0; for (let l = 0; l < levels; l++) bytes += Math.max(1, S >> l) ** 2 * 4 * n * 2;
+    this.folTex = { layers: n, size: S, bytes, download, ms: performance.now() - t0 };
+    return this.folTex;
+  }
   /** Bark textures: loaded once (loadBark); null until then (the materials mode shows a flat placeholder). */
   tex: TexStats | null = null;
   private rebind(): void {
     const d = this.device, av = this.barkAlb.createView({ dimension: '2d-array' }), nv = this.barkNrm.createView({ dimension: '2d-array' });
     this.bgs = [this.shadowTex, this.dummyDepth].map((t) => d.createBindGroup({ layout: this.bgl, entries: [{ binding: 0, resource: { buffer: this.ubuf, size: 256 } }, { binding: 1, resource: t.createView() }, { binding: 2, resource: this.cmp },
-      { binding: 3, resource: av }, { binding: 4, resource: nv }, { binding: 5, resource: this.barkSampler }] }));
+      { binding: 3, resource: av }, { binding: 4, resource: nv }, { binding: 5, resource: this.barkSampler },
+      { binding: 6, resource: this.folAlb.createView({ dimension: '2d-array' }) }, { binding: 7, resource: this.folNrm.createView({ dimension: '2d-array' }) }] }));
   }
 
   /** Load the bark texture arrays (textures/manifest.json from tools/textures.py), build their mip chains on the GPU
@@ -575,12 +809,12 @@ export class Viewer {
     this.shadowDirty = true;
   }
 
-  private writeU(slot: number, vp: Float32Array, cam: number[], kind: number, off: number[], mat = 0) {
+  private writeU(slot: number, vp: Float32Array, cam: number[], kind: number, off: number[], mat = 0, fol: [number, number, number] = [0, 0, 0], yaw = 0) {
     const L = this.light, s = L.sun, sl = Math.hypot(s[0], s[1], s[2]);
     const u = new Float32Array(64);
-    u.set(vp, 0); u.set(this.shadowVP, 16); u.set([cam[0], cam[1], cam[2], 0], 32); u.set([s[0] / sl, s[1] / sl, s[2] / sl, L.intensity], 36);
+    u.set(vp, 0); u.set(this.shadowVP, 16); u.set([cam[0], cam[1], cam[2], yaw], 32); u.set([s[0] / sl, s[1] / sl, s[2] / sl, L.intensity], 36);
     u.set([MODES.indexOf(this.mode), mat, this.tex ? 1 : 0, L.exposure], 40); u.set([off[0], off[1], off[2], kind], 44);
-    u.set([...L.sunColor, L.fill], 48); u.set([...L.zenith, L.ambient], 52); u.set([...L.horizon, L.shadow], 56); u.set([L.studio ? 1 : 0, 0, 0, 0], 60);
+    u.set([...L.sunColor, L.fill], 48); u.set([...L.zenith, L.ambient], 52); u.set([...L.horizon, L.shadow], 56); u.set([L.studio ? 1 : 0, fol[0], fol[1], fol[2]], 60);
     this.device.queue.writeBuffer(this.ubuf, slot * 256, u);
   }
 
@@ -592,12 +826,23 @@ export class Viewer {
   }
 
   private encode(enc: GPUCommandEncoder, view: GPUTextureView, tg: Target, vp: Float32Array, cam: number[], draws: Draw[], timed: boolean): number {
+    // uniform slots: 0 global, then one per draw, then one per foliage set
     this.writeU(0, vp, cam, 0, [0, 0, 0]);
-    draws.forEach((m, k) => this.writeU(1 + k, vp, cam, m.kind, m.offset, m.mat ?? 0));
+    draws.forEach((m, k) => this.writeU(1 + k, vp, cam, m.kind, m.offset, m.mat ?? 0, m.kind === 1 ? [this.woodland ? 1 : 0, 0, 0] : [0, 0, 0], m.yaw ?? 0));
+    const fslots: { draw: Draw; set: GpuFoliage['sets'][number]; slot: number }[] = [];
+    let next = 1 + draws.length;
+    for (const m of draws) if (m.foliage) for (const set of m.foliage.sets) {
+      if (next >= 1024) throw new Error('too many draws');
+      this.writeU(next, vp, cam, KIND[set.kind], m.offset, m.mat ?? 0, [set.layer, set.grid[0], set.grid[1]], m.yaw ?? 0);
+      fslots.push({ draw: m, set, slot: next++ });
+    }
     if (this.shadowDirty) {
       const p = enc.beginRenderPass({ colorAttachments: [], depthStencilAttachment: { view: this.shadowTex.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' } });
       p.setPipeline(this.shadowPipe);
       draws.forEach((m, k) => { if (m.kind === 1 || m.castShadow === false) return; p.setBindGroup(0, this.bgs[1], [(1 + k) * 256]); p.setVertexBuffer(0, m.mesh.vbuf); p.setIndexBuffer(m.mesh.ibuf, 'uint32'); p.drawIndexed(m.mesh.indexCount); });
+      // foliage casts alpha-tested shadows
+      p.setPipeline(this.folShadow);
+      for (const f of fslots) { const t = this.templates[f.set.tmpl]; p.setBindGroup(0, this.bgs[1], [f.slot * 256]); p.setVertexBuffer(0, t.buf); p.setVertexBuffer(1, f.set.buf); p.draw(t.count, f.set.count); }
       p.end(); this.shadowDirty = false;
     }
     const tsSlot = timed && this.hasTs ? (this.qbusy[0] ? (this.qbusy[1] ? -1 : 1) : 0) : -1;
@@ -615,6 +860,10 @@ export class Viewer {
       else { pass.setPipeline(this.pipe); pass.setIndexBuffer(m.mesh.ibuf, 'uint32'); pass.drawIndexed(m.mesh.indexCount); }
       calls++; tris += m.mesh.triangles; verts += m.mesh.vertices;
     });
+    if (!wire) {
+      pass.setPipeline(this.folPipe);
+      for (const f of fslots) { const t = this.templates[f.set.tmpl]; pass.setBindGroup(0, this.bgs[0], [f.slot * 256]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, f.set.buf); pass.draw(t.count, f.set.count); calls++; tris += t.tris * f.set.count; }
+    }
     pass.setPipeline(this.sky); pass.setBindGroup(0, this.bgs[0], [0]); pass.draw(3); calls++;
     pass.end();
     if (timed) { this.drawCalls = calls; this.tris = tris; this.verts = verts; }
@@ -624,7 +873,7 @@ export class Viewer {
 
   /** Render the current draw list to the canvas. */
   render(vp: Float32Array, cam: number[]): void {
-    if (this.draws.length > 127) throw new Error('too many draws');
+    if (this.draws.length > 900) throw new Error('too many draws');
     const t0 = performance.now();
     const d = this.device, cv = this.ctx.getCurrentTexture();
     this.screen = this.target(cv.width, cv.height, this.screen);
@@ -685,6 +934,59 @@ export class Viewer {
     }
     color.destroy(); tg.msaa.destroy(); tg.depth.destroy(); this.shadowDirty = true;
     return { wallMs, gpuMs };
+  }
+  private countPipes: { bark: GPURenderPipeline; fol: GPURenderPipeline } | null = null;
+  /** Overdraw at w×h for a draw list: every fragment rasterized (bark) or passing the alpha test (foliage) is
+   *  counted per pixel, with no depth rejection, so the figure is an upper bound on shading work that does not depend
+   *  on the GPU (draw order and early depth rejection decide how much of it a real GPU actually shades). */
+  async measureOverdraw(w: number, h: number, vp: Float32Array, cam: number[], draws: Draw[] = this.draws): Promise<{ coverage: number; foliageCoverage: number; meanFoliage: number; p95Foliage: number; maxFoliage: number; meanAll: number }> {
+    const d = this.device;
+    if (!this.countPipes) {
+      const m = d.createShaderModule({ code: SHADER });
+      const layout = d.createPipelineLayout({ bindGroupLayouts: [this.bgl] });
+      const add: GPUBlendState = { color: { operation: 'add', srcFactor: 'one', dstFactor: 'one' }, alpha: { operation: 'add', srcFactor: 'one', dstFactor: 'one' } };
+      const vb: GPUVertexBufferLayout[] = [{ arrayStride: VFLOATS * 4, attributes: [
+        { shaderLocation: 0, offset: 0, format: 'float32x3' }, { shaderLocation: 1, offset: 12, format: 'float32x3' },
+        { shaderLocation: 2, offset: 24, format: 'float32x4' }, { shaderLocation: 3, offset: 40, format: 'float32x3' }, { shaderLocation: 4, offset: 52, format: 'float32x3' }] }];
+      const fvb: GPUVertexBufferLayout[] = [{ arrayStride: 8, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] },
+        { arrayStride: FI * 4, stepMode: 'instance', attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x3' }, { shaderLocation: 2, offset: 12, format: 'float32x4' }, { shaderLocation: 3, offset: 28, format: 'float32x4' }, { shaderLocation: 4, offset: 44, format: 'float32x4' }] }];
+      this.countPipes = {
+        bark: d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vs', buffers: vb }, fragment: { module: m, entryPoint: 'fsCount', targets: [{ format: 'rgba16float', blend: add }] }, primitive: { topology: 'triangle-list', cullMode: 'none' } }),
+        fol: d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsFol', buffers: fvb }, fragment: { module: m, entryPoint: 'fsFolCount', targets: [{ format: 'rgba16float', blend: add }] }, primitive: { topology: 'triangle-list', cullMode: 'none' } }),
+      };
+    }
+    const tex = d.createTexture({ size: [w, h], format: 'rgba16float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
+    this.writeU(0, vp, cam, 0, [0, 0, 0]);
+    const enc = d.createCommandEncoder();
+    const pass = enc.beginRenderPass({ colorAttachments: [{ view: tex.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
+    let slot = 1;
+    for (const m of draws) {
+      if (m.kind === 1) continue;
+      this.writeU(slot, vp, cam, m.kind, m.offset, m.mat ?? 0, [0, 0, 0], m.yaw ?? 0);
+      pass.setPipeline(this.countPipes.bark); pass.setBindGroup(0, this.bgs[0], [slot * 256]); pass.setVertexBuffer(0, m.mesh.vbuf); pass.setIndexBuffer(m.mesh.ibuf, 'uint32'); pass.drawIndexed(m.mesh.indexCount); slot++;
+      if (m.foliage) for (const set of m.foliage.sets) {
+        this.writeU(slot, vp, cam, KIND[set.kind], m.offset, m.mat ?? 0, [set.layer, set.grid[0], set.grid[1]], m.yaw ?? 0);
+        const t = this.templates[set.tmpl];
+        pass.setPipeline(this.countPipes.fol); pass.setBindGroup(0, this.bgs[0], [slot * 256]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, set.buf); pass.draw(t.count, set.count); slot++;
+      }
+    }
+    pass.end();
+    const bpr = Math.ceil(w * 8 / 256) * 256;
+    const buf = d.createBuffer({ size: bpr * h, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+    enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: bpr }, [w, h]);
+    d.queue.submit([enc.finish()]);
+    await buf.mapAsync(GPUMapMode.READ);
+    const u16 = new Uint16Array(buf.getMappedRange());
+    const half = (x: number) => { const e = (x >> 10) & 31, f = x & 1023; return e === 0 ? f / 16777216 : (1 + f / 1024) * 2 ** (e - 15); };
+    let cov = 0, fcov = 0, fsum = 0, asum = 0, fmax = 0; const hist = new Uint32Array(512);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const o = (y * bpr) / 2 + x * 4, r = half(u16[o]), g = half(u16[o + 1]);
+      if (r + g > 0) { cov++; asum += r + g; }
+      if (g > 0) { fcov++; fsum += g; fmax = Math.max(fmax, g); hist[Math.min(511, Math.round(g))]++; }
+    }
+    buf.unmap(); buf.destroy(); tex.destroy();
+    let acc = 0, p95 = 0; for (let k = 0; k < 512; k++) { acc += hist[k]; if (acc >= fcov * 0.95) { p95 = k; break; } }
+    return { coverage: cov / (w * h), foliageCoverage: fcov / (w * h), meanFoliage: fcov ? fsum / fcov : 0, p95Foliage: p95, maxFoliage: fmax, meanAll: cov ? asum / cov : 0 };
   }
   /** Set to receive a PNG of the next frame presented to the canvas. */
   readback: ((b: Blob) => void) | null = null;

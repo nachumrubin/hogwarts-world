@@ -1,9 +1,9 @@
-# Tree Lab: technical report (bark phase)
+# Tree Lab: technical report (foliage phase)
 
-Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`; structural finishing pass `e4f3010`
-(`review/CHANGES-finishing-pass.md`); phase 3, photorealistic bark and woody surfaces, on top of it
-(`review/CHANGES-bark-phase.md`: what changed, why, the evidence, performance and known deficiencies). The five
-specimens and their growth are unchanged. No foliage and no wind.
+Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`; structural finishing pass `e4f3010`; bark phase `b4fe25e`
+(`review/CHANGES-bark-phase.md`); phase 4, summer foliage, on top of `c78db29` (`review/CHANGES-foliage-phase.md`:
+sources, growth model, the three-way proof of concept, rendering, LOD and the stress test, evidence, deficiencies).
+The specimens, their growth, bark meshes and bark materials are unchanged. No wind, no seasons.
 
 Public build: https://nachumrubin.github.io/hogwarts-world/dev/tree-lab/ (deployed with the Creature Lab;
 see "Public build" in README.md).
@@ -99,15 +99,24 @@ buffer (64 B/vertex) plus the index buffer.
 | Scots pine | 220k | 135k | 11.3 MB | 48k | 2.9k | 1.0 s | 2.5 s |
 | Silver birch | 175k | 107k | 8.9 MB | 25k | 1.5k | 0.4 s | 1.7 s |
 
-* **Bark textures:** 42.7 MiB on the GPU, shared by all trees (four 1024² layers, two arrays, full mips), from a
-  7.4 MiB download.
-* **Draw calls:** one per tree per LOD. In the single-specimen view the main pass has 5 draw calls (sky, tree,
-  ground, figure, ranging pole).
-* **Meshing:** 20–35% faster than e4f3010.
-* **LOD1 and LOD2:** back below 35d542d's counts.
-* **Caching:** a deployed build keeps built specimens in IndexedDB, so repeat visits skip generation.
+* **Bark textures:** 53.4 MiB on the GPU with the woodland floor layer.
+* **Foliage textures:** 64 MiB on the GPU from a 2.4 MiB download, shared by all trees.
+* **Foliage instances per tree (LOD0 / LOD1 / LOD2):**
+  * Oak A 194k / 42k / 2.3k
+  * Oak B 273k / 64k / 2.5k
+  * Oak C 124k / 24k / 1.3k
+  * pine 503k / 40k / 0.8k
+  * birch 98k / 31k / 1.4k
+* **Foliage triangles at LOD0:** 0.78–2.19M.
+* **Foliage generation:** 0.3–0.7 s per tree.
+* **Draw calls:** 1 bark + 2 foliage per tree at LOD0, and 1 + 1 at LOD1 and LOD2.
+* **Meshing:** 20–35% faster than e4f3010 (bark phase); unchanged since.
+* **Caching:** built specimens, foliage included, are cached in IndexedDB per deployed build.
+* **Measured foliage overdraw** (no depth rejection): mean 1.4–2.4 for a full tree at LOD0.
+* **Woodland stand** (12 trees, LOD by distance): 4.55M foliage + 1.22M bark triangles and 30 draw calls at ground
+  level; see the foliage report, section 5.
 
-Details and the offline-baking analysis are in `review/CHANGES-bark-phase.md`, section 5.
+Details: `review/CHANGES-foliage-phase.md` section 5; offline-baking analysis: `review/CHANGES-bark-phase.md` section 5.
 
 **Frame time, FPS, GPU time:** the lab measures these live (frame cadence, CPU encode time, and the GPU pass
 time from timestamp queries where the browser exposes them). The material sheets also carry clay versus materials
@@ -117,7 +126,7 @@ about GPU performance, so I haven't quoted them. Real figures need a run in Chro
 
 ## Outstanding defects
 
-Bark phase: section 7 of `review/CHANGES-bark-phase.md`.
+Foliage phase: section 8 of `review/CHANGES-foliage-phase.md`. Bark phase: section 7 of `review/CHANGES-bark-phase.md`.
 
 Structural, from section 4 of `review/CHANGES-finishing-pass.md`:
 * faint rings where the flare band fades on the pine and birch stems;
@@ -134,4 +143,4 @@ Interface screenshots: `review/lab-ui.png` (desktop) and `review/lab-mobile.png`
 the frame actually presented to the canvas, read back from the GPU, because headless page screenshots of
 WebGPU canvases are unreliable.
 
-Stopped here, before foliage and wind, for your bark review.
+Stopped here, before wind and seasons, for your foliage review.

@@ -6,7 +6,7 @@ import { groundAt } from '../framework/math.ts';
 import { SPECIES, type SpeciesDef } from '../species/index.ts';
 import type { BuiltSpecimen } from '../build.ts';
 import { cacheGet, cachePut } from './meshcache.ts';
-import { type Viewer, type GpuMesh, type Draw, KIND, MAT } from '../render/viewer.ts';
+import { type Viewer, type GpuMesh, type GpuFoliage, type Draw, type FoliageRep, KIND, MAT } from '../render/viewer.ts';
 import type { Box, V3 } from './camera.ts';
 
 export interface Comparison { id: string; label: string; members: string[] }
@@ -18,8 +18,8 @@ export const COMPARISONS: Comparison[] = [
   { id: 'pine-birch', label: 'Pine vs birch', members: ['pine', 'birch'] },
 ];
 
-export interface Entry { def: SpeciesDef; built?: BuiltSpecimen; gpu: (GpuMesh | null)[]; pending?: Promise<BuiltSpecimen>; error?: string; fromCache?: boolean }
-export interface Placed { id: string; offset: V3; box: Box }
+export interface Entry { def: SpeciesDef; built?: BuiltSpecimen; gpu: (GpuMesh | null)[]; gpuFolRep?: Record<string, GpuFoliage>; pending?: Promise<BuiltSpecimen>; error?: string; fromCache?: boolean }
+export interface Placed { id: string; offset: V3; box: Box; yaw?: number }
 
 /** Spawns generation workers (at most `parallel` at once) and caches results. */
 export class SpecimenStore {
@@ -67,6 +67,16 @@ export class SpecimenStore {
     if (!e.built) throw new Error(`${id} not built`);
     if (!e.gpu[lod]) { const L = e.built.lods[lod]; e.gpu[lod] = viewer.upload(L.v, L.i); }
     return e.gpu[lod]!;
+  }
+  /** Foliage of a specimen at a LOD on the GPU (uploaded on first use). */
+  foliage(viewer: Viewer, id: string, lod: number, rep: FoliageRep = 'hybrid'): GpuFoliage | null {
+    const e = this.get(id);
+    if (!e.built?.foliage) return null;
+    e.gpuFolRep ??= {};
+    const key = rep === 'hybrid' ? `h${lod}` : rep === 'cards' ? 'cards' : `g${lod === 0 ? 0 : lod}`;
+    if (rep === 'geometry' && lod > 0) return this.foliage(viewer, id, lod, 'hybrid');
+    if (!e.gpuFolRep[key]) e.gpuFolRep[key] = viewer.uploadFoliageAs(e.built.foliage.lods[rep === 'cards' ? 1 : lod], rep);
+    return e.gpuFolRep[key]!;
   }
 }
 
@@ -128,6 +138,21 @@ export function poleMesh(): { v: Float32Array; i: Uint32Array } {
 }
 
 /** Lay specimens out left to right, crowns not overlapping, at true scale; centred on the origin. */
+/** The woodland stand of the stress test: twelve trees from the five specimens (the oaks, pine and birch each used
+ *  more than once, turned so that copies do not read as copies), at woodland spacing. Deterministic. */
+export const STAND: { id: string; x: number; z: number; yaw: number }[] = [
+  { id: 'oak-b', x: 0, z: 0, yaw: 0 }, { id: 'oak-a', x: -30, z: 20, yaw: 2.1 }, { id: 'oak-c', x: 24, z: 16, yaw: 0.7 },
+  { id: 'oak-c', x: 12, z: -24, yaw: 3.6 }, { id: 'pine', x: -22, z: -16, yaw: 1.2 }, { id: 'pine', x: 36, z: -6, yaw: 4.4 },
+  { id: 'birch', x: -8, z: 24, yaw: 0.4 }, { id: 'birch', x: 14, z: 30, yaw: 2.9 }, { id: 'birch', x: -36, z: -34, yaw: 5.1 },
+  { id: 'birch', x: 4, z: -40, yaw: 1.7 }, { id: 'pine', x: -12, z: -44, yaw: 3.0 }, { id: 'oak-b', x: 40, z: 34, yaw: 4.0 },
+];
+export function standLayout(store: SpecimenStore): Placed[] {
+  return STAND.map((t) => {
+    const b = store.get(t.id).built!.bounds, r = Math.max(-b.min[0], b.max[0], -b.min[2], b.max[2]);
+    return { id: t.id, offset: [t.x, 0, t.z], yaw: t.yaw, box: { min: [t.x - r, b.min[1], t.z - r], max: [t.x + r, b.max[1], t.z + r] } };
+  });
+}
+
 export function layout(store: SpecimenStore, ids: string[], gap = 6): Placed[] {
   const out: Placed[] = []; let cursor = 0;
   for (const id of ids) {
@@ -150,12 +175,20 @@ export function unionBox(boxes: Box[]): Box {
 /** GPU scene for a set of placed specimens: trees, ground, a figure beside each tree and one ranging pole. */
 export class LabScene {
   placed: Placed[] = [];
+  /** draw the summer foliage (false: the leafless tree, for matched comparisons) */
+  showFoliage = true;
+  /** foliage representation (the foliage studies compare them; hybrid is the lab's choice) */
+  rep: FoliageRep = 'hybrid';
   box: Box = { min: [-10, 0, -10], max: [10, 20, 10] };
   private ground: GpuMesh | null = null; private figure: GpuMesh | null = null; private pole: GpuMesh | null = null;
   private viewer: Viewer; private store: SpecimenStore;
   constructor(viewer: Viewer, store: SpecimenStore) { this.viewer = viewer; this.store = store; }
-  set(ids: string[], lod: number): void {
-    this.placed = layout(this.store, ids);
+  /** stand mode: per-tree LOD by distance from `eye` (LOD0 < 35 m, LOD1 < 110 m, else LOD2); no figures */
+  stand = false; eye: V3 | null = null;
+  lodCounts = [0, 0, 0];
+  set(ids: string[], lod: number, stand = false): void {
+    this.stand = stand;
+    this.placed = stand ? standLayout(this.store) : layout(this.store, ids);
     this.box = unionBox(this.placed.map((p) => p.box));
     const pad = 12;
     const gbox: Box = { min: [this.box.min[0] - pad, 0, this.box.min[2] - pad], max: [this.box.max[0] + pad, 0, this.box.max[2] + pad] };
@@ -167,8 +200,12 @@ export class LabScene {
   }
   apply(lod: number): void {
     const draws: Draw[] = [{ mesh: this.ground!, offset: [0, 0, 0], kind: KIND.ground }];
+    this.lodCounts = [0, 0, 0];
     for (const p of this.placed) {
-      draws.push({ mesh: this.store.gpu(this.viewer, p.id, lod), offset: p.offset, kind: KIND.tree, mat: MAT[this.store.get(p.id).def.material] });
+      const l = this.stand && this.eye ? (() => { const d = Math.hypot(this.eye![0] - p.offset[0], this.eye![1] - 6, this.eye![2] - p.offset[2]); return d < 35 ? 0 : d < 110 ? 1 : 2; })() : lod;
+      this.lodCounts[l]++;
+      draws.push({ mesh: this.store.gpu(this.viewer, p.id, l), offset: p.offset, kind: KIND.tree, mat: MAT[this.store.get(p.id).def.material], foliage: this.showFoliage ? this.store.foliage(this.viewer, p.id, l, this.rep) : null, yaw: p.yaw ?? 0 });
+      if (this.stand) continue;
       const def = this.store.get(p.id).def, fz = def.figure ?? [def.crownR * 0.25 + 3, 2.5];
       const fx = p.offset[0] + fz[0], fzz = p.offset[2] + fz[1];
       draws.push({ mesh: this.figure!, offset: [fx, groundAt(fz[0], fz[1]), fzz], kind: KIND.figure });

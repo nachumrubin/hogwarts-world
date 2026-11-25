@@ -1,19 +1,20 @@
 // Lab controller: state (specimen or comparison, view, display mode, lighting, LOD), render loop (on demand, or
 // continuous in live mode), camera presets, standardized shots and review-sheet export. UI-agnostic: ui.ts binds the
 // DOM to it, and the headless capture script drives the same API through window.__lab.
-import { Viewer, viewProj, LIGHTS, MODES, type Mode } from '../render/viewer.ts';
+import { Viewer, viewProj, LIGHTS, MODES, type Mode, type FoliageRep } from '../render/viewer.ts';
 import { CameraController, FOV, type Box, type Preset, type V3 } from './camera.ts';
-import { SpecimenStore, LabScene, COMPARISONS } from './scene.ts';
+import { SpecimenStore, LabScene, COMPARISONS, STAND } from './scene.ts';
 import { PerfMonitor } from './perf.ts';
-import { REVIEW_SET, MATERIAL_SET, PROTOCOL, composeSheet, composeRows, zip, type ShotSpec, type ShotView } from './capture.ts';
+import { REVIEW_SET, MATERIAL_SET, FOLIAGE_SET, PROTOCOL, composeSheet, composeRows, zip, type ShotSpec, type ShotView } from './capture.ts';
 import { SPECIES } from '../species/index.ts';
 import type { BuiltSpecimen } from '../build.ts';
 
 declare const __COMMIT__: string;
 export const COMMIT = typeof __COMMIT__ === 'string' ? __COMMIT__ : 'dev';
 
-export type View = Preset | 'trunk' | 'junction' | 'broken';
-export interface LabState { kind: 'specimen' | 'compare'; specimen: string; compare: string; focus: string | null; mode: Mode; light: string; lod: number; live: boolean; view: View }
+export type View = Preset | 'trunk' | 'junction' | 'broken' | 'crown' | 'macro' | 'interior' | 'up' | 'elevated' | 'aerial' | 'backlit';
+const CLOSE: View[] = ['trunk', 'junction', 'broken', 'crown', 'macro', 'interior', 'up'];
+export interface LabState { kind: 'specimen' | 'compare'; specimen: string; compare: string; focus: string | null; mode: Mode; light: string; lod: number; live: boolean; view: View; foliage: boolean }
 
 export class Lab {
   viewer = new Viewer();
@@ -21,10 +22,14 @@ export class Lab {
   perf = new PerfMonitor();
   store: SpecimenStore;
   scene!: LabScene;
-  state: LabState = { kind: 'specimen', specimen: 'oak-a', compare: 'oaks', focus: null, mode: 'lit', light: 'day', lod: 0, live: true, view: 'three' };
+  state: LabState = { kind: 'specimen', specimen: 'oak-a', compare: 'oaks', focus: null, mode: 'lit', light: 'day', lod: 0, live: true, view: 'three', foliage: true };
   private dirty = true; private last = 0; private busy = false;
   /** > 0 while an offscreen render has the viewer's mode/light switched: no canvas frames then (they would flash it) */
   private hold = 0;
+  /** offscreen renders switch the shared viewer's mode and light: they run one at a time (thumbnails rendered
+   *  while a review shot awaited its overdraw pass had switched it to clay mid-shot) */
+  private gate: Promise<unknown> = Promise.resolve();
+  private exclusive<T>(fn: () => Promise<T>): Promise<T> { const r = this.gate.then(fn, fn); this.gate = r.catch(() => {}); return r; }
   frames = 0;
   onState: () => void = () => {};
   onFrame: () => void = () => {};
@@ -40,6 +45,7 @@ export class Lab {
     await this.viewer.init(this.canvas, shadowSize);
     // bark textures (a few MB); without them the materials mode shows a flat placeholder tone
     try { await this.viewer.loadBark('textures/', COMMIT); } catch (e) { console.error('bark textures', e); }
+    try { await this.viewer.loadFoliage('textures/', COMMIT); } catch (e) { console.error('foliage textures', e); }
     this.scene = new LabScene(this.viewer, this.store);
     this.cam.attach(this.canvas);
     this.cam.onChange = () => this.invalidate();
@@ -76,7 +82,7 @@ export class Lab {
     await Promise.all(missing.map((id) => this.store.load(id)));
     this.onStatus('', false);
   }
-  members(): string[] { return this.state.kind === 'specimen' ? [this.state.specimen] : COMPARISONS.find((c) => c.id === this.state.compare)!.members; }
+  members(): string[] { return this.state.kind === 'specimen' ? [this.state.specimen] : this.state.compare === 'stand' ? [...new Set(STAND.map((t) => t.id))] : COMPARISONS.find((c) => c.id === this.state.compare)!.members; }
 
   async select(id: string, view: View = this.state.view): Promise<void> {
     this.state.kind = 'specimen'; this.state.specimen = id; this.state.focus = null;
@@ -89,7 +95,40 @@ export class Lab {
     this.state.kind = 'compare'; this.state.compare = setId; this.state.focus = null;
     await this.ensure(set.members);
     this.scene.set(set.members, this.state.lod);
-    this.setView(this.state.view === 'trunk' || this.state.view === 'junction' || this.state.view === 'broken' ? 'front' : this.state.view, false); this.onState();
+    this.setView(CLOSE.includes(this.state.view) ? 'front' : this.state.view, false); this.onState();
+  }
+  /** The woodland stand (stress test): twelve trees, per-tree LOD by distance, on the woodland floor. */
+  async stand(): Promise<void> {
+    this.state.kind = 'compare'; this.state.compare = 'stand'; this.state.focus = null;
+    await this.ensure([...new Set(STAND.map((t) => t.id))]);
+    this.scene.set([], this.state.lod, true);
+    this.setView('three', false); this.onState();
+  }
+  setEnv(woodland: boolean): void { this.viewer.woodland = woodland; this.invalidate(); this.onState(); }
+  /** Stress test: the stand from a ground-level walk position and from an elevated overview; per view the image,
+   *  measured overdraw, instances and triangles drawn, draw calls, LOD mix, GPU-resident bytes and frame time. */
+  async standStress(w = 1200, h = 900): Promise<{ shots: Blob[]; labels: string[]; stats: Record<string, unknown>[] }> {
+    await this.stand(); this.setEnv(true);
+    const views: [string, V3, V3][] = [['ground-level walk (1.7 m)', [-14, 1.7, 46], [6, 9, 0]], ['elevated overview', [-70, 42, 70], [2, 4, -4]], ['aerial', [-20, 120, 30], [0, 0, -2]]];
+    const shots: Blob[] = [], labels: string[] = [], stats: Record<string, unknown>[] = [];
+    for (const [name, eye, target] of views) {
+      this.scene.eye = eye;
+      const d = [eye[0] - target[0], eye[1] - target[1], eye[2] - target[2]], L = Math.hypot(d[0], d[1], d[2]);
+      const orbit = { target, az: Math.atan2(d[0], d[2]), el: Math.asin(d[1] / L), dist: L };
+      let od: Record<string, number> = {};
+      const blob = await this.shoot('three', 'lit', { width: w, height: h, light: 'day', orbit, overdraw: (r) => { od = r; } });
+      // what that frame drew
+      this.scene.apply(0);
+      const draws = this.viewer.draws;
+      const inst = draws.reduce((a, x) => a + (x.foliage?.instances ?? 0), 0), ftri = draws.reduce((a, x) => a + (x.foliage?.triangles ?? 0), 0), btri = draws.reduce((a, x) => a + (x.kind === 0 ? x.mesh.triangles : 0), 0);
+      const calls = draws.length + draws.reduce((a, x) => a + (x.foliage?.sets.length ?? 0), 0) + 1;
+      const vp = viewProj(eye, target, FOV, w / h, 0.05, 3000);
+      const t = await this.viewer.timeRender(w, h, vp, eye, 2);
+      stats.push({ view: name, lodMix: [...this.scene.lodCounts], foliageInstances: inst, foliageTriangles: ftri, barkTriangles: btri, drawCalls: calls, overdraw: od, frame: t, foliageBytesResident: this.viewer.foliageBytes, geometryBytesResident: this.viewer.geometryBytes });
+      shots.push(blob); labels.push(`Woodland stand · ${name} · LOD by distance ${this.scene.lodCounts.join('/')}`);
+    }
+    this.scene.eye = null; this.restoreLook(); this.scene.apply(this.state.lod); this.invalidate();
+    return { shots, labels, stats };
   }
   focus(id: string | null): void { this.state.focus = id; this.setView(this.state.view, true); this.onState(); }
   setMode(m: Mode): void { this.state.mode = m; this.viewer.mode = m; this.invalidate(); this.onState(); }
@@ -98,6 +137,8 @@ export class Lab {
     this.state.light = id; this.viewer.light = L; if (this.viewer.draws.length) this.scene.apply(this.state.lod); this.invalidate(); this.onState();
   }
   setLod(k: number): void { this.state.lod = k; if (this.viewer.draws.length) this.scene.apply(k); this.invalidate(); this.onState(); }
+  setRep(r: FoliageRep): void { this.scene.rep = r; if (this.viewer.draws.length) this.scene.apply(this.state.lod); this.invalidate(); this.onState(); }
+  setFoliage(on: boolean): void { this.state.foliage = on; this.scene.showFoliage = on; if (this.viewer.draws.length) this.scene.apply(this.state.lod); this.invalidate(); this.onState(); }
   setLive(on: boolean): void { this.state.live = on; this.perf.reset(); this.invalidate(); this.onState(); }
 
   /** The specimen close-ups and focus refer to: the focused one in a comparison, else the selected/first. */
@@ -110,6 +151,24 @@ export class Lab {
   orbitFor(view: View, aspect: number, common = false): { target: V3; az: number; el: number; dist: number } {
     const s = this.subject();
     const built = this.store.get(s.id).built!;
+    if (view === 'backlit') {
+      // the common full-tree frame, seen from the side opposite the low sun (the light comes through the crown)
+      const f = this.orbitFor('front', aspect, true), sun = LIGHTS.find((l) => l.id === 'low')!.sun;
+      return { ...f, az: Math.atan2(sun[0], sun[2]) + Math.PI, el: 0.06 };
+    }
+    const C = built.poi.crown;
+    if (C && ['crown', 'macro', 'interior', 'up', 'elevated', 'aerial'].includes(view)) {
+      const o = s.offset, at = (p: V3): V3 => [o[0] + p[0], p[1], o[2] + p[2]];
+      const fromEye = (eye: V3, target: V3) => { const d = [eye[0] - target[0], eye[1] - target[1], eye[2] - target[2]], L = Math.hypot(d[0], d[1], d[2]); return { target, az: Math.atan2(d[0], d[2]), el: Math.asin(d[1] / L), dist: L }; };
+      const H = C.top - C.low;
+      if (view === 'crown') return { target: at(C.leaf), az: C.az + 0.25, el: 0.12, dist: 1.6 };
+      if (view === 'macro') return { target: at(C.leaf), az: C.az + 0.15, el: 0.18, dist: 0.42 };
+      if (view === 'interior') return fromEye(at([C.center[0] + Math.sin(C.az) * C.radius * 0.25, C.low + H * 0.45, C.center[2] + Math.cos(C.az) * C.radius * 0.25]), at([C.center[0] + Math.sin(C.az + 2.2) * C.radius * 0.6, C.low + H * 0.75, C.center[2] + Math.cos(C.az + 2.2) * C.radius * 0.6]));
+      if (view === 'up') return fromEye(at([C.center[0] + Math.sin(C.az + 0.8) * Math.min(C.radius * 0.45, 4), 1.6, C.center[2] + Math.cos(C.az + 0.8) * Math.min(C.radius * 0.45, 4)]), at([C.center[0], C.low + H * 0.7, C.center[2]]));
+      const box = s.box, size = Math.max(box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]);
+      if (view === 'elevated') return { target: at([C.center[0], C.low + H * 0.4, C.center[2]]), az: 0.6, el: 0.42, dist: size * 1.35 };
+      return { target: at([C.center[0], C.low + H * 0.5, C.center[2]]), az: 0.9, el: 1.2, dist: size * 1.5 };
+    }
     if (view === 'broken' && built.poi.broken) {
       const b = built.poi.broken;
       return { target: [s.offset[0] + b.p[0], b.p[1], s.offset[2] + b.p[2]], az: b.az, el: b.el, dist: b.dist };
@@ -119,15 +178,16 @@ export class Lab {
       if (view === 'trunk') return { target: [s.offset[0], p.trunkY, s.offset[2]], az: p.trunkAz, el: 0.08, dist: p.trunkDist };
       return { target: [s.offset[0] + p.junction[0], p.junction[1], s.offset[2] + p.junction[2]], az: p.junctionAz, el: p.junctionEl, dist: p.junctionDist };
     }
+    const pv: Preset = (['front', 'side', 'rear', 'three', 'top'] as View[]).includes(view) ? view as Preset : 'three';
     let box: Box = this.state.kind === 'compare' && !this.state.focus ? this.scene.box : s.box;
-    if (common && view !== 'top' && !(this.state.kind === 'compare' && !this.state.focus)) {
+    if (common && pv !== 'top' && !(this.state.kind === 'compare' && !this.state.focus)) {
       const cx = (s.box.min[0] + s.box.max[0]) / 2, cz = (s.box.min[2] + s.box.max[2]) / 2, F = PROTOCOL.commonFrame;
       box = { min: [cx - F.width / 2, 0, cz - F.width / 2], max: [cx + F.width / 2, F.height, cz + F.width / 2] };
       // the frame (F.width × F.height) is measured in the plane through the tree's centre, not at the box's face
       // the same distance for every specimen (common scale); framing() already allows for the frame's depth
-      return CameraController.framing(box, view, aspect, 1.0);
+      return CameraController.framing(box, pv, aspect, 1.0);
     }
-    return CameraController.framing({ min: [box.min[0], Math.min(0, box.min[1]), box.min[2]], max: box.max }, view, aspect);
+    return CameraController.framing({ min: [box.min[0], Math.min(0, box.min[1]), box.min[2]], max: box.max }, pv, aspect);
   }
   setView(v: View, animate = true): void {
     this.state.view = v;
@@ -142,7 +202,8 @@ export class Lab {
 
   // ---------------------------------------------------------------- capture
   /** Render one standardized shot of the current subject offscreen (fixed size, protocol lighting and LOD). */
-  async shoot(view: View, mode: Mode, opts: { width?: number; height?: number; light?: string; lod?: number; common?: boolean } = {}): Promise<Blob> {
+  shoot(view: View, mode: Mode, opts: Parameters<Lab['shootNow']>[2] = {}): Promise<Blob> { return this.exclusive(() => this.shootNow(view, mode, opts)); }
+  private async shootNow(view: View, mode: Mode, opts: { width?: number; height?: number; light?: string; lod?: number; common?: boolean; orbit?: { target: V3; az: number; el: number; dist: number }; overdraw?: (r: Record<string, number>) => void } = {}): Promise<Blob> {
     const w = opts.width ?? PROTOCOL.width, h = opts.height ?? PROTOCOL.height;
     const keep = { mode: this.viewer.mode, light: this.viewer.light, lod: this.state.lod };
     this.hold++;
@@ -150,16 +211,19 @@ export class Lab {
     this.viewer.light = LIGHTS.find((l) => l.id === (opts.light ?? PROTOCOL.light)) ?? keep.light;
     const lod = opts.lod ?? PROTOCOL.lod;
     this.scene.apply(lod);
-    const o = this.orbitFor(view, w / h, opts.common ?? true);
+    const o = opts.orbit ?? this.orbitFor(view, w / h, opts.common ?? true);
     const eye: V3 = [o.target[0] + Math.sin(o.az) * Math.cos(o.el) * o.dist, o.target[1] + Math.sin(o.el) * o.dist, o.target[2] + Math.cos(o.az) * Math.cos(o.el) * o.dist];
     try {
-      return await this.viewer.renderImage(w, h, viewProj(eye, o.target, FOV, w / h, 0.05, 3000), eye);
+      const vp = viewProj(eye, o.target, FOV, w / h, 0.05, 3000);
+      if (opts.overdraw) opts.overdraw(await this.viewer.measureOverdraw(w, h, vp, eye));
+      return await this.viewer.renderImage(w, h, vp, eye);
     } finally {
       this.restoreLook(); this.scene.apply(keep.lod); this.hold--; this.invalidate();
     }
   }
   /** Small clay portrait of one specimen for the library (its own draw list; the scene is restored after). */
-  async thumbnail(id: string, w = 360, h = 270): Promise<Blob> {
+  thumbnail(id: string, w = 360, h = 270): Promise<Blob> { return this.exclusive(() => this.thumbnailNow(id, w, h)); }
+  private async thumbnailNow(id: string, w = 360, h = 270): Promise<Blob> {
     const b = this.store.get(id).built!; const mesh = this.store.gpu(this.viewer, id, 2);
     const keep = { mode: this.viewer.mode, light: this.viewer.light };
     this.hold++;
@@ -199,7 +263,9 @@ export class Lab {
   async review(id: string, progress: (k: number, n: number) => void = () => {}): Promise<{ shots: { spec: ShotSpec; blob: Blob }[]; sheet: Blob }> {
     await this.select(id);
     const shots: { spec: ShotSpec; blob: Blob }[] = [];
-    for (let k = 0; k < REVIEW_SET.length; k++) { progress(k, REVIEW_SET.length); const s = REVIEW_SET[k]; shots.push({ spec: s, blob: await this.shoot(s.view as ShotView as View, s.mode) }); }
+    const fol = this.state.foliage; this.scene.showFoliage = false; // structural regression set: the leafless tree
+    try { for (let k = 0; k < REVIEW_SET.length; k++) { progress(k, REVIEW_SET.length); const s = REVIEW_SET[k]; shots.push({ spec: s, blob: await this.shoot(s.view as ShotView as View, s.mode) }); } }
+    finally { this.scene.showFoliage = fol; }
     progress(REVIEW_SET.length, REVIEW_SET.length);
     const sheet = await composeSheet(shots.map((s) => s.blob), shots.map((s) => s.spec.label), this.sheetInfo(id));
     return { shots, sheet };
@@ -208,10 +274,13 @@ export class Lab {
   async materialReview(id: string, progress: (k: number, n: number) => void = () => {}): Promise<{ shots: { spec: ShotSpec; blob: Blob }[]; sheet: Blob; stats: Record<string, unknown> }> {
     await this.select(id);
     const shots: { spec: ShotSpec; blob: Blob }[] = [];
-    for (let k = 0; k < MATERIAL_SET.length; k++) {
-      progress(k, MATERIAL_SET.length); const s = MATERIAL_SET[k];
-      shots.push({ spec: s, blob: await this.shoot(s.view as View, s.mode, { light: s.light, lod: s.lod }) });
-    }
+    const fol = this.state.foliage; this.scene.showFoliage = false; // bark regression set: the leafless tree
+    try {
+      for (let k = 0; k < MATERIAL_SET.length; k++) {
+        progress(k, MATERIAL_SET.length); const s = MATERIAL_SET[k];
+        shots.push({ spec: s, blob: await this.shoot(s.view as View, s.mode, { light: s.light, lod: s.lod }) });
+      }
+    } finally { this.scene.showFoliage = fol; }
     const stats = await this.renderStats(id);
     const info = this.sheetInfo(id);
     const T = this.viewer.tex, fmt = (x: number | null) => (x === null ? 'n/a' : x.toFixed(1) + ' ms');
@@ -231,9 +300,88 @@ export class Lab {
     progress(MATERIAL_SET.length, MATERIAL_SET.length);
     return { shots, sheet, stats };
   }
+  /** The foliage review set for one specimen (FOLIAGE_SET), with foliage statistics. */
+  async foliageReview(id: string, progress: (k: number, n: number) => void = () => {}): Promise<{ shots: { spec: ShotSpec; blob: Blob }[]; sheet: Blob; stats: Record<string, unknown> }> {
+    await this.select(id);
+    const shots: { spec: ShotSpec; blob: Blob }[] = [];
+    let overdraw: Record<string, number> = {};
+    const keepF = this.state.foliage, keepW = this.viewer.woodland;
+    try {
+      for (let k = 0; k < FOLIAGE_SET.length; k++) {
+        progress(k, FOLIAGE_SET.length); const s = FOLIAGE_SET[k];
+        this.scene.showFoliage = s.foliage !== false; this.viewer.woodland = !!s.woodland;
+        shots.push({ spec: s, blob: await this.shoot(s.view as View, s.mode, { light: s.light, lod: s.lod, overdraw: s.file === 'full-day' ? (r) => { overdraw = r; } : undefined }) });
+      }
+    } finally { this.scene.showFoliage = keepF; this.viewer.woodland = keepW; }
+    const e = this.store.get(id), F = e.built!.foliage, st = F.stats, T = this.viewer.folTex;
+    const stats = { foliage: st, lods: F.lods.map((l) => ({ instances: l.instances, triangles: l.triangles, bytes: l.sets.reduce((a, s) => a + s.data.byteLength, 0) })), overdrawFullTreeLOD0: overdraw, foliageTextures: T, barkTextures: this.viewer.tex, adapter: this.viewer.adapterName };
+    const info = this.sheetInfo(id);
+    info.lines = [
+      ...info.lines.slice(0, 4),
+      ['Shoots (shed in shade)', `${st.shoots.toLocaleString()} (${st.shed.toLocaleString()})`],
+      [e.def.foliage.type === 'pine' ? 'Needle fascicles' : 'Leaves', `${st.leaves.toLocaleString()} · ${st.leafArea} m² one side`],
+      ['Bearing wood', `${st.bearingLength} m`],
+      ['Foliage LOD0/1/2 inst.', F.lods.map((l) => (l.instances / 1000).toFixed(1) + 'k').join(' / ')],
+      ['Foliage LOD0/1/2 tris', F.lods.map((l) => (l.triangles / 1000).toFixed(0) + 'k').join(' / ')],
+      ['Foliage generation', `${st.ms} ms`],
+      ['Overdraw, full tree L0', overdraw.meanFoliage ? `${overdraw.meanFoliage.toFixed(2)} mean · p95 ${overdraw.p95Foliage}` : 'n/a'],
+      ['Foliage textures', T ? `${T.layers} × ${T.size}², ${(T.bytes / 1048576).toFixed(1)} MiB GPU` : 'not loaded'],
+      ['Draw calls (tree)', `1 bark + ${F.lods[0].sets.length} foliage (L0)`],
+      ['Adapter', this.viewer.adapterName],
+    ];
+    info.footer = `Tree Lab · ${COMMIT} · ${PROTOCOL.width}×${PROTOCOL.height} · lighting per shot · LOD 0 unless marked · full-tree views at common scale · leaves: ambientCG CC0 scans · ${this.viewer.adapterName}`;
+    const sheet = await composeSheet(shots.map((s) => s.blob), shots.map((s) => s.spec.label), info);
+    progress(FOLIAGE_SET.length, FOLIAGE_SET.length);
+    return { shots, sheet, stats };
+  }
+
+  /** Foliage study (proof of concept): one specimen's foliage in the three representations (opaque leaf
+   *  geometry, shoot cards, hybrid) at close (a single shoot, 0.8 m), medium (a branch, 6 m) and distant (the full
+   *  tree at the common frame) range, at matched cameras and daylight; triangles, instances and measured overdraw
+   *  per cell. The hybrid draws what the LOD chain would: sprites close and at branch range, shoot cards far. */
+  async foliageStudy(id: string, w = 800, h = 600, progress: (k: number, n: number) => void = () => {}): Promise<{ sheet: Blob; shots: { rep: string; range: string; blob: Blob; stats: Record<string, number> }[] }> {
+    await this.select(id);
+    const C = this.store.get(id).built!.poi.crown!, o = this.subject().offset;
+    const leaf: V3 = [o[0] + C.leaf[0], C.leaf[1], o[2] + C.leaf[2]];
+    const ranges: [string, ((a: number) => { target: V3; az: number; el: number; dist: number }) | null, number][] = [
+      ['close 0.8 m', () => ({ target: leaf, az: C.az + 0.2, el: 0.15, dist: 0.8 }), 0],
+      ['medium 6 m', () => ({ target: leaf, az: C.az + 0.2, el: 0.1, dist: 6 }), 0],
+      ['distant (full tree)', null, 1],
+    ];
+    const shots: { rep: string; range: string; blob: Blob; stats: Record<string, number> }[] = [];
+    const n = 9; let k = 0;
+    for (const rep of ['geometry', 'cards', 'hybrid'] as FoliageRep[]) {
+      this.scene.rep = rep;
+      for (const [range, orbit, hybLod] of ranges) {
+        progress(k++, n);
+        const lod = rep === 'hybrid' ? hybLod : 0;
+        let st: Record<string, number> = {};
+        this.scene.apply(lod);
+        const f = this.viewer.draws.find((d) => d.foliage)?.foliage;
+        const blob = await this.shoot(orbit ? 'crown' : 'front', 'lit', { width: w, height: h, light: 'day', lod, orbit: orbit ? orbit(w / h) : undefined, overdraw: (r) => { st = r; } });
+        shots.push({ rep, range, blob, stats: { ...st, triangles: f?.triangles ?? 0, instances: f?.instances ?? 0, lod } });
+      }
+    }
+    this.scene.rep = 'hybrid'; this.scene.apply(this.state.lod); this.invalidate();
+    const e = this.store.get(id);
+    const pct = (x: number) => (x * 100).toFixed(1) + ' %';
+    const info = {
+      title: `Foliage study — ${e.def.name}`,
+      subtitle: 'Rows: opaque leaf geometry (outline polygons) · shoot cards · hybrid (alpha-tested leaf sprites near, cards far). Columns: close · medium · distant. Daylight, matched cameras.',
+      lines: shots.map((s) => [`${s.rep} · ${s.range.split(' ')[0]}`, `${(s.stats.triangles / 1000).toFixed(0)}k tri · OD ${s.stats.meanFoliage.toFixed(2)} p95 ${s.stats.p95Foliage} · ${pct(s.stats.foliageCoverage)}`] as [string, string]),
+      footer: `Tree Lab · ${COMMIT} · ${w}×${h} · overdraw = foliage fragments passing the alpha test per covered pixel, no depth rejection (upper bound, GPU-independent) · ${this.viewer.adapterName}`,
+    };
+    const sheet = await composeSheet(shots.map((s) => s.blob), shots.map((s) => `${s.rep} · ${s.range}`), info, 600, 450);
+    progress(n, n);
+    return { sheet, shots };
+  }
+
   /** Offscreen render timings for one specimen (clay vs materials, full tree and trunk close-up, 1200×900). */
   async renderStats(id: string, frames = 3): Promise<Record<string, unknown>> {
     await this.select(id);
+    return this.exclusive(() => this.renderStatsNow(id, frames));
+  }
+  private async renderStatsNow(id: string, frames: number): Promise<Record<string, unknown>> {
     const out: Record<string, unknown> = {};
     const keep = { mode: this.viewer.mode, light: this.viewer.light };
     this.hold++;
@@ -258,9 +406,11 @@ export class Lab {
     const set = COMPARISONS.find((c) => c.id === setId)!;
     const rows: Blob[] = [];
     rows.push(await this.shoot('front', 'lit', { width: w, height: h, common: false, light: 'day' }));
-    for (const m of ['clay', 'silhouette'] as Mode[]) rows.push(await this.shoot('front', m, { width: w, height: h, common: false }));
+    const fol = this.state.foliage; this.scene.showFoliage = false;
+    try { rows.push(await this.shoot('front', 'lit', { width: w, height: h, common: false, light: 'day' })); } finally { this.scene.showFoliage = fol; }
+    rows.push(await this.shoot('front', 'silhouette', { width: w, height: h, common: false }));
     const names = set.members.map((id) => this.store.get(id).def.name).join('   ·   ');
-    return composeRows(rows, [`Front · materials, daylight — ${names}`, `Front · clay — ${names}`, `Front · silhouette — ${names}`], `${set.label} — true relative scale, common ground level`, `Tree Lab · ${COMMIT} · ${LIGHTS.find((l) => l.id === PROTOCOL.light)!.label} · LOD 0 · 5 m ground grid · 1.8 m figures · 10 m ranging pole`, w, h);
+    return composeRows(rows, [`Front · summer foliage, daylight — ${names}`, `Front · leafless, daylight — ${names}`, `Front · silhouette (foliage) — ${names}`], `${set.label} — true relative scale, common ground level`, `Tree Lab · ${COMMIT} · ${LIGHTS.find((l) => l.id === PROTOCOL.light)!.label} · LOD 0 · 5 m ground grid · 1.8 m figures · 10 m ranging pole`, w, h);
   }
   /** Everything as one ZIP: per-specimen shots + sheets + diagnostics, and the comparison sheets. */
   async exportAll(progress: (msg: string) => void = () => {}): Promise<Blob> {
@@ -273,6 +423,9 @@ export class Lab {
       const m = await this.materialReview(def.id, (k, n) => progress(`${def.name}: material shot ${Math.min(k + 1, n)}/${n}`));
       for (const sh of m.shots) files.push({ name: `${def.id}/materials/${def.id}-${sh.spec.file}.png`, data: sh.blob });
       files.push({ name: `sheets/${def.id}-materials.png`, data: m.sheet });
+      const fo = await this.foliageReview(def.id, (k, n) => progress(`${def.name}: foliage shot ${Math.min(k + 1, n)}/${n}`));
+      for (const sh of fo.shots) files.push({ name: `${def.id}/foliage/${def.id}-${sh.spec.file}.png`, data: sh.blob });
+      files.push({ name: `sheets/${def.id}-foliage.png`, data: fo.sheet });
       diag[def.id] = this.diagnostics(def.id);
     }
     for (const c of COMPARISONS) { progress(`Comparison: ${c.label}`); files.push({ name: `sheets/compare-${c.id}.png`, data: await this.comparisonSheet(c.id) }); }

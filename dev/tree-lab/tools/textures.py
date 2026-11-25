@@ -29,6 +29,7 @@ MIRROR = 'https://github.com/zuujis-cc0'  # CC0 mirror of polyhaven.com (git), s
 SOURCES = {
     'bark_willow_02': 'polyhaven-textures-wood', 'pine_bark': 'polyhaven-textures-wood-3',
     'japanese_zelkova_bark': 'polyhaven-textures-wood-2', 'sakura_bark': 'polyhaven-textures-wood-3',
+    'forest_leaves_02': 'polyhaven-textures-ground-and-terrain-2',
 }
 # layer id, source, real-world tile width/height (m), notes
 LAYERS = [
@@ -36,6 +37,7 @@ LAYERS = [
     ('pinelow', 'pine_bark', 1.5, 'Scots pine lower trunk plates'),
     ('pineup', 'japanese_zelkova_bark', 0.7, 'Scots pine upper stem flakes (recoloured orange)'),
     ('birch', 'sakura_bark', 1.1, 'silver birch paper bark (recoloured white, dark lenticels)'),
+    ('ground', 'forest_leaves_02', 2.5, 'woodland review environment: summer forest floor (moss, leaf litter)'),
 ]
 MAPS = ['diff', 'nor_gl', 'rough', 'disp', 'ao']
 
@@ -48,7 +50,9 @@ def fetch():
             subprocess.run(['git', 'clone', '-q', '--depth', '1', '--filter=blob:none', '--no-checkout', f'{MIRROR}/{repo}', tmp], check=True,
                            env={**os.environ, 'GIT_LFS_SKIP_SMUDGE': '1'})
         for m in MAPS:
-            data = subprocess.run(['git', '-C', tmp, 'show', f'HEAD:{name}/1k/{name}_{m}_1k.jpg'], check=True, capture_output=True).stdout
+            r = subprocess.run(['git', '-C', tmp, 'show', f'HEAD:{name}/1k/{name}_{m}_1k.jpg'], capture_output=True)
+            if r.returncode and m == 'diff': r = subprocess.run(['git', '-C', tmp, 'show', f'HEAD:{name}/1k/{name}_diffuse_1k.jpg'], check=True, capture_output=True)
+            data = r.stdout
             open(os.path.join(SRC, f'{name}_{m}.jpg'), 'wb').write(data)
 
 
@@ -147,6 +151,11 @@ def build():
             edge = np.clip((blur_wrap(h, 3) - h) * 8, 0, 1)
             col = col * (1 - 0.3 * edge[..., None]) + np.array([0.14, 0.12, 0.10], np.float32) * 0.3 * edge[..., None]
             r = np.clip(rough * 0.6 + 0.3, 0, 1)
+        elif lid == 'ground':
+            # remove the scan's low-frequency light falloff (it betrays the tiling): divide by a wide blur, keep the mean
+            lo = np.stack([blur_wrap(lin[..., c], 60) for c in range(3)], -1)
+            col = lin / np.maximum(lo, 1e-4) * lo.reshape(-1, 3).mean(0)
+            r = rough
         else:
             col, h, nx, ny, r, ao = birch_layer(diff, nrm, rough, h, ao, n)
         a = Image.fromarray(np.dstack([lin2srgb(col) * 255, h * 255]).round().astype(np.uint8), 'RGBA')

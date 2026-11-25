@@ -36,11 +36,33 @@ if (process.env.UI === '1') {
   // the frame actually presented to the canvas (headless compositing of WebGPU canvases is unreliable)
   save('lab-viewport.png', await page.evaluate(() => new Promise((r) => { window.__lab.viewer.readback = (b) => window.__b64(b).then(r); window.__lab.invalidate(); })));
 }
+// STAND=1: woodland stand stress test only
+if (process.env.STAND === '1') {
+  const r = await page.evaluate(async () => { const res = await window.__lab.standStress(); return { shots: await Promise.all(res.shots.map((b) => window.__b64(b))), labels: res.labels, stats: res.stats }; });
+  r.shots.forEach((u, k) => save(`stand-${k + 1}.png`, u));
+  writeFileSync(`${out}/stand-stats.json`, JSON.stringify(r.stats.map((s, k) => ({ label: r.labels[k], ...s })), null, 2));
+  await browser.close(); srv.kill(); process.exit(0);
+}
+// STUDY=oak-b,pine,birch: foliage studies only (sheets, shots and stats)
+if (process.env.STUDY) {
+  const all = {};
+  for (const id of process.env.STUDY.split(',')) {
+    const r = await page.evaluate(async (id) => { const res = await window.__lab.foliageStudy(id); return { sheet: await window.__b64(res.sheet), shots: await Promise.all(res.shots.map(async (s) => ({ rep: s.rep, range: s.range, stats: s.stats, url: await window.__b64(s.blob) }))) }; }, id);
+    mkdirSync(`${out}/study-${id}`, { recursive: true });
+    save(`study-${id}.png`, r.sheet);
+    for (const s of r.shots) save(`study-${id}/${s.rep}-${s.range.split(' ')[0]}.png`, s.url);
+    all[id] = r.shots.map((s) => ({ rep: s.rep, range: s.range, ...s.stats }));
+  }
+  writeFileSync(`${out}/study-stats.json`, JSON.stringify(all, null, 2));
+  await browser.close(); srv.kill(); process.exit(0);
+}
 // DEBUG=id:view:mode,... renders individual shots only (e.g. DEBUG=pine:trunk:normals)
 if (process.env.DEBUG) {
+  // id:view:mode[:lod[:foliage 0/1]]
   for (const spec of process.env.DEBUG.split(',')) {
-    const [id, view, mode] = spec.split(':');
-    save(`dbg-${id}-${view}-${mode}${process.env.DLIGHT ? '-' + process.env.DLIGHT : ''}.png`, await page.evaluate(async (id, view, mode, W, H, L, NS) => { await window.__lab.select(id); if (NS) for (const l of [window.__lab.viewer.light]) l.shadow = 0; return window.__b64(await window.__lab.shoot(view, mode, { width: W, height: H, light: L || undefined })); }, id, view, mode, +(process.env.DW || 800), +(process.env.DH || 600), process.env.DLIGHT || '', process.env.DNOSHADOW === '1'));
+    const [id, view, mode, lod, fol] = spec.split(':');
+    const tag = `${id}-${view}-${mode}${lod ? '-lod' + lod : ''}${fol === '0' ? '-bare' : ''}${process.env.DLIGHT ? '-' + process.env.DLIGHT : ''}`;
+    save(`dbg-${tag}.png`, await page.evaluate(async (id, view, mode, W, H, L, NS, lod, fol) => { await window.__lab.select(id); window.__lab.setFoliage(fol !== '0'); if (NS) for (const l of [window.__lab.viewer.light]) l.shadow = 0; return window.__b64(await window.__lab.shoot(view, mode, { width: W, height: H, light: L || undefined, lod: lod ? +lod : undefined })); }, id, view, mode, +(process.env.DW || 800), +(process.env.DH || 600), process.env.DLIGHT || '', process.env.DNOSHADOW === '1', lod || '', fol || '1'));
   }
   await browser.close(); srv.kill(); process.exit(0);
 }
@@ -85,6 +107,20 @@ if (process.env.MATERIALS !== '0') for (const id of (process.env.SPECIMENS ?? 'o
   stats[id] = r.stats; console.log(`  ${id} materials: ${((Date.now() - t) / 1000).toFixed(0)} s`);
 }
 if (Object.keys(stats).length) writeFileSync(`${out}/render-stats.json`, JSON.stringify(stats, null, 2));
+// foliage review set (FOLIAGE=0 to skip)
+const fstats = {};
+if (process.env.FOLIAGE !== '0') for (const id of (process.env.SPECIMENS ?? 'oak-a,oak-b,oak-c,pine,birch').split(',').filter(Boolean)) {
+  const t = Date.now();
+  const r = await page.evaluate(async (id) => {
+    const res = await window.__lab.foliageReview(id);
+    return { shots: await Promise.all(res.shots.map(async (s) => ({ file: s.spec.file, url: await window.__b64(s.blob) }))), sheet: await window.__b64(res.sheet), stats: res.stats };
+  }, id);
+  mkdirSync(`${out}/${id}/foliage`, { recursive: true });
+  for (const s of r.shots) save(`${id}/foliage/${id}-${s.file}.png`, s.url);
+  save(`${id}-foliage-sheet.png`, r.sheet);
+  fstats[id] = r.stats; console.log(`  ${id} foliage: ${((Date.now() - t) / 1000).toFixed(0)} s`);
+}
+if (Object.keys(fstats).length) writeFileSync(`${out}/foliage-stats.json`, JSON.stringify(fstats, null, 2));
 for (const c of (process.env.COMPARE ?? 'oaks,all,a-b,b-c,pine-birch').split(',').filter(Boolean)) {
   const url = await page.evaluate(async (c) => window.__b64(await window.__lab.comparisonSheet(c)), c);
   save(`compare-${c}.png`, url);

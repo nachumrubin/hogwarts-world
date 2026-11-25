@@ -4,10 +4,11 @@ A standalone, browser-based lab for developing, inspecting, comparing and docume
 the Hogwarts world. It is separate from the main world and from the forest POC. Nothing under `src/` or `dev/`
 outside this folder is touched.
 
-Phase 3 (bark): the default **Materials** mode renders physically based bark and exposed wood for all five
-specimens, from CC0 photoscanned textures distributed procedurally over each tree (see "Bark materials" below).
-Clay, silhouette, wireframe, normals and hierarchy modes are unchanged from the structural phase. No foliage and
-no wind yet.
+Phase 4 (foliage): every specimen carries species-specific summer foliage grown from its own branch hierarchy:
+lobed oak leaves, paired Scots pine needles, small serrated birch leaves on pendulous shoots (see "Foliage" below).
+Phase 3's photoscanned bark is unchanged. The **Materials** mode is the default; clay, silhouette, wireframe,
+normals and hierarchy are unchanged. An optional **woodland floor** environment sits beside the neutral plot. No
+wind and no seasons yet.
 
 ## Run it
 
@@ -28,8 +29,9 @@ collection keeps growing in the background, so switching between them is instant
 |---|---|
 | `specimen` | `oak-a` · `oak-b` · `oak-c` · `pine` · `birch` |
 | `compare` | `all` · `oaks` · `a-b` · `b-c` · `pine-birch` |
-| `view` | `front` · `side` · `rear` · `three` · `top` · `trunk` · `junction` · `broken` (thickest broken end: exposed wood) |
+| `view` | `front` · `side` · `rear` · `three` · `top` · `trunk` · `junction` · `broken` (exposed wood) · `crown` · `macro` · `interior` · `up` · `elevated` · `aerial` · `backlit` |
 | `mode` | `lit` (materials, default) · `clay` · `silhouette` · `wire` · `normals` · `hierarchy` |
+| `foliage` | `0` the leafless tree (default: summer foliage) |
 | `light` | `studio` · `day` · `overcast` · `low` |
 | `lod` | `0` · `1` · `2` |
 | `live` | `0` renders on demand only (default is continuous frames, for real FPS) |
@@ -55,7 +57,13 @@ inspected in place.
 ## Evidence capture
 
 * **Screenshot:** the viewport exactly as seen.
-* **Material sheet · this specimen:** full tree under daylight, overcast and low-angle sun; trunk, main junction
+* **Foliage review (in the ZIP and the capture script):** full tree foliated and leafless at one camera, woodland
+  floor under overcast, backlit, leaf/needle macro, branch-to-foliage junction, crown interior, ground level
+  looking up, elevated and aerial views, LOD 0/1/2 at one camera; foliage statistics and measured overdraw.
+* **Foliage study · this specimen:** the proof of concept: opaque leaf geometry vs shoot cards vs the hybrid, at
+  close, medium and distant range, with triangles and measured overdraw per cell.
+* **Woodland stand:** twelve trees on the woodland floor, LOD by distance; the stress test (capture `STAND=1`).
+* **Material sheet · this specimen:** (bark, leafless) full tree under daylight, overcast and low-angle sun; trunk, main junction
   and broken-limb close-ups, each with clay at the same camera and light (trunk also under low sun); LOD 1 and
   LOD 2 at the common full-tree frame; texture memory and render timings (clay vs materials) in the panel.
 * **Structural sheet · this specimen:** the standard set (front, side and ¾ clay; front and side silhouettes; trunk and
@@ -101,8 +109,9 @@ The staged site uses only relative URLs, so it works under any base path. Assets
 ## Layout
 
 ```
-textures/        bark texture layers (WebP, built by tools/textures.py from CC0 Poly Haven scans) + manifest.json
-src/framework/   growth and geometry framework, pure TS (no DOM): skeleton, pipe model, mechanics,
+textures/        bark layers and the woodland floor (WebP, tools/textures.py, CC0 Poly Haven scans, manifest.json);
+                 foliage sprite and card layers (foliage.*, foliage.json, tools/foliage_textures.py, CC0 ambientCG)
+src/framework/   growth and geometry framework, pure TS (no DOM): skeleton, pipe model, mechanics, foliage,
                  self-organizing growth (sotm), tube mesher, implicit fusion of junctions and roots
 src/species/     species algorithms (oak.ts, pine.ts, birch.ts) and the specimen catalogue (index.ts):
                  configurations, presets, seeds, meshing regions
@@ -120,6 +129,23 @@ meshes (interleaved `Float32Array` with 16 floats per vertex: position, normal, 
 bark-mapping axis and origin; plus `Uint32Array` indices), bounds and diagnostics. Generation is deterministic:
 same seed and configuration, same tree. The lab keeps built specimens in IndexedDB per build commit, so only the
 first visit to a deployed build pays the generation time.
+
+## Foliage
+
+* **Sources:** ambientCG CC0 photoscanned leaf atlases: LeafSet016 (lobed *Quercus* leaves), LeafSet014 (doubly
+  serrated, reshaped towards the silver birch's deltoid outline), PineNeedles001 (two-needle fascicles,
+  recoloured from dry brown to living blue-green). `tools/foliage_textures.py --fetch` rebuilds every layer:
+  sprites, LOD1 shoot cards and LOD2 clump cards composited from the same sprites, and leaf outlines.
+* **Growth** (`src/framework/foliage.ts`, deterministic, in the worker, cached with the specimen): shoots grow from
+  live, unbroken thin wood within reach of a live tip (dead limbs, storm breaks and stubs stay bare); broadleaves
+  get branching sprays of drawn twiglets; a voxel light model (zenith and side light, per-specimen) sheds shaded
+  shoots (crown gaps) and sets leaf numbers, size and attitude (sun vs shade leaves). Oak A carries the thinner
+  crown of a declining veteran, Oak B a dense open-grown crown, Oak C (forest-grown) foliage gathered at the top.
+* **Rendering:** one instanced draw per foliage set (template mesh × instances: bent leaf, needle fascicle, card,
+  twig), alpha-to-coverage with mip-aware alpha, alpha-tested shadows, separate leaf undersides, translucency
+  with its own shadow test, per-shoot pigmentation variation.
+* **LOD:** 0 every leaf / fascicle and twiglet; 1 one shoot card per shoot; 2 crossed clump cards per cluster. The
+  stand picks LOD by distance (< 35 m, < 110 m, beyond). Impostors for the far distance are the next step.
 
 ## Bark materials
 
