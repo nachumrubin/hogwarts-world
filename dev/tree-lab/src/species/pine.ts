@@ -10,12 +10,15 @@
 //     multi-leadered, umbrella crown of old Caledonian pines. Wind from the south-west suppresses windward growth
 //     and bends shoots leeward (crown asymmetry). Occasional leader loss leaves a kink in the stem.
 //   • Pipe-model radii scaled to the measured girth, sag under self-weight, lower branches broken.
-import { type V3, add, sub, mul, norm, len, rotate, rng, noise3, groundAt, clamp, smooth } from '../framework/math.ts';
+import { type V3, add, sub, mul, norm, len, rotate, rng, noise3, groundAt, clamp, smooth, barkSample } from '../framework/math.ts';
 import { Skeleton, type TNode, growRoots } from '../framework/skeleton.ts';
 
 export const PINE = { name: 'Ancient Scots pine', latin: 'Pinus sylvestris', seed: 1714, baseRadius: 0.62 };
 
-interface Shoot { node: TNode; dir: V3; order: number; age: number; vigor: number; shaded: number; alive: boolean; leader: boolean; born: number; dom?: boolean; vig?: number; sub?: boolean; kink?: number }
+interface Shoot { node: TNode; dir: V3; order: number; age: number; vigor: number; shaded: number; alive: boolean; leader: boolean; born: number; dom?: boolean; vig?: number; sub?: boolean; kink?: number; rise?: number; bend?: number }
+
+/** deterministic per-node hash in [0, 1) (habits that must not disturb the growth RNG stream) */
+const hash = (n: number, k: number) => { const x = Math.sin(n * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
 
 export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string, unknown> } {
   const r = rng(seed);
@@ -52,7 +55,7 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
       if (!s.leader && !s.dom && (s.shaded > (s.sub ? 7 : 4) || (s.order === 2 && s.age > (s.sub ? 22 : 9)) || (s.order === 3 && s.age > (s.sub ? 9 : 4)))) { s.alive = false; continue; }
       // extension
       let L: number;
-      if (s.leader) L = (old ? 0.08 : 1.15 * Math.exp(-t / 13) + 0.18) * (0.85 + 0.3 * r());
+      if (s.leader) L = (old ? 0.08 : 1.15 * Math.exp(-t / 13) + 0.18) * (0.62 + 0.76 * r()); // irregular whorl spacing
       // laterals slow down as they age (and as the tree ages): old pines do not have endlessly long limbs
       // laterals slow down with age; dominant upper limbs (fed by the crown they carry) keep growing for a century
       else L = (s.order === 1 ? 0.5 : s.order === 2 ? 0.36 : 0.2) * (0.4 + 0.6 * s.vigor) * (s.vig ?? 1) * Math.exp(-s.age / (s.dom ? 19 : s.sub ? 11 : s.order === 1 ? 13 : 6));
@@ -70,7 +73,11 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
         // dominant limbs: rise in a long S (up from the stem, out, then the tip turns up to the light); others level
         const up = s.dom ? (s.age < 4 ? 0.1 : s.age < 14 ? -0.015 : 0.07) : s.sub ? 0.035 : s.order === 1 && old && s.node.p[1] > 13 ? 0.08 : 0.03 * s.vigor;
         const wob = s.dom || s.sub ? 0.42 : 0.3;
-        d = norm(add(d, [(r() - 0.5) * wob + wind[0] * 0.04, up - 0.02 * s.order + (r() - 0.5) * 0.12, (r() - 0.5) * wob + wind[2] * 0.04]));
+        // each shoot keeps its own habit (set once from a hash of its first node): an elevation bias and a turning
+        // rate that fades with age, so neighbouring limbs do not run parallel in flat tiers
+        if (s.rise === undefined) { const id = s.node.id; s.rise = (hash(id, 1) - 0.5) * (s.dom || s.sub ? 0.16 : 0.12); s.bend = (hash(id, 2) - 0.5) * (s.dom || s.sub ? 0.24 : 0.16); }
+        d = norm(add(d, [(r() - 0.5) * wob + wind[0] * 0.04, up + s.rise - 0.02 * s.order + (r() - 0.5) * 0.12, (r() - 0.5) * wob + wind[2] * 0.04]));
+        { const bt = s.bend! * Math.exp(-s.age / 6), c = Math.cos(bt), sn = Math.sin(bt); /* bounded total change of course */ d = norm([d[0] * c - d[2] * sn, d[1], d[0] * sn + d[2] * c]); }
         // a lost shoot tip: a side bud takes over and the branch changes course (the angular elbows of old pine limbs)
         if (s.order <= 2 && r() < (s.dom ? 0.18 : 0.1)) { const sd = norm([-d[2], 0, d[0]]); const sg = r() < 0.5 ? 1 : -1; d = norm(add(d, add(mul(sd, sg * (0.35 + 0.35 * r())), [0, s.dom ? 0.12 : 0.03, 0]))); }
       }
@@ -78,6 +85,11 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
       const nn = sk.add(s.node, add(s.node.p, mul(d, Math.max(0.05, L))), s.order);
       s.node = nn;
       // branching
+      if (s.leader && !old && hash(nn.id, 3) < 0.3) {
+        // an occasional shoot between whorls (Scots pine's whorls are not perfectly regular)
+        const az = hash(nn.id, 4) * 6.283;
+        next.push({ node: nn, dir: norm([Math.cos(az), 0.05 + (hash(nn.id, 5) - 0.5) * 0.5, Math.sin(az)]), order: 1, age: 0, vigor: 1, shaded: 0, alive: true, leader: false, born: t, vig: 0.4 + 0.5 * hash(nn.id, 6) });
+      }
       if (s.leader && (!old || r() < 0.5)) {
         // irregular whorls: 2–5 laterals, sometimes a whole whorl missing (frost, browsing)
         if (r() < 0.22) { /* skipped whorl */ } else {
@@ -85,7 +97,7 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
         for (let i = 0; i < nw; i++) {
           if (r() < 0.2) continue;
           const az = a0 + (i / nw) * 6.283 + (r() - 0.5) * 0.5;
-          const el = 0.18 - t * 0.008 + (r() - 0.5) * 0.25; // lower whorls (laid down early) end up drooping
+          const el = 0.18 - t * 0.008 + (r() - 0.5) * 0.5; // lower whorls (laid down early) end up drooping
           // dominant limbs: a few laterals laid down in the upper stem when the tree was 100–170 years old
           const dom = t >= 14 && t <= 28 && r() < 0.28 && domCount < 6;
           if (dom) domCount++;
@@ -161,12 +173,13 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
 }
 
 /** Scots pine bark: deep fissures between thick plates at the base, thin papery flakes up the stem. */
-export function pineBark(p: V3, axis: V3, r: number): number {
-  const a = Math.atan2(p[2], p[0]);
+export function pineBark(p: V3, axis: V3, r: number, _node?: TNode, at?: [number, number]): number {
   const upper = smooth(5, 11, p[1]);
   const s = 2.6 / Math.max(0.2, Math.min(r, 1));
-  const plates = 1 - Math.abs(noise3(a * r * s, p[1] * 1.6, 3, 21));
-  const deep = Math.pow(plates, 4) - 0.4;
-  const flakes = noise3(a * r * 14, p[1] * 7, 5, 22) * 0.4;
-  return clamp(r, 0.03, 1) * ((1 - upper) * 0.075 * deep + upper * 0.012 * flakes);
+  return barkSample(p, axis, (a, along, tube) => {
+    const plates = 1 - Math.abs(noise3(a * r * s, along * 1.6, 3, 21));
+    const deep = Math.pow(plates, 4) - 0.4;
+    const flakes = tube ? 0 : noise3(a * r * 14, along * 7, 5, 22) * 0.4; // fine flakes: geometry only where resolved
+    return clamp(r, 0.03, 1) * ((1 - upper) * 0.075 * deep + upper * 0.012 * flakes);
+  }, at);
 }

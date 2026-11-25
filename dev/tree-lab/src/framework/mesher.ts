@@ -10,7 +10,9 @@ import { type V3, add, sub, mul, norm, len, dot, cross, perp, lerp, clamp } from
 import type { Chain, Skeleton, TNode } from './skeleton.ts';
 
 export const VFLOATS = 12;
-export const FUSE_OVERLAP = 0.45; // pos3 normal3 attr4 (order, flags, radius, flex) uv2
+/** How far (along the branch) a tube starts before the point where it leaves a blended region: the full width of
+ *  the band in which the blended surface relaxes to the bare branch and sinks inside it. */
+export const FUSE_OVERLAP = 1.0; // vertex layout: pos3 normal3 attr4 (order, flags, radius, flex) uv2
 
 export class MeshOut {
   v: number[] = []; i: number[] = [];
@@ -36,14 +38,19 @@ export class MeshOut {
   }
 }
 
-export interface LodSpec { edge: number; maxSides: number; minSides: number; minRadius: number; step: number; displace: number }
+/** `chord`: rings on branches thinner than `adaptiveBelow` (no bark relief there) are placed by curvature: a ring
+ *  is kept only where the dense spline would deviate from the straight run between kept rings by more than
+ *  chord × radius (min 1.5 mm), where the radius changes by > 8 % (this traces collar flares), or at live/dead
+ *  changes and broken ends. */
+export interface LodSpec { edge: number; maxSides: number; minSides: number; minRadius: number; step: number; displace: number; chord: number; adaptiveBelow: number }
 export const LODS: LodSpec[] = [
-  { edge: 0.045, maxSides: 72, minSides: 5, minRadius: 0, step: 1, displace: 1 },
-  { edge: 0.12, maxSides: 24, minSides: 4, minRadius: 0.012, step: 2.2, displace: 0.6 },
-  { edge: 0.35, maxSides: 10, minSides: 3, minRadius: 0.05, step: 5, displace: 0 },
+  { edge: 0.045, maxSides: 72, minSides: 5, minRadius: 0, step: 1, displace: 1, chord: 0.12, adaptiveBelow: 0.03 },
+  { edge: 0.12, maxSides: 24, minSides: 4, minRadius: 0.012, step: 2.2, displace: 0.6, chord: 0.25, adaptiveBelow: 0.06 },
+  { edge: 0.35, maxSides: 10, minSides: 3, minRadius: 0.05, step: 5, displace: 0, chord: 0.5, adaptiveBelow: 0.2 },
 ];
 
-export type BarkFn = (p: V3, axis: V3, r: number, node: TNode) => number;
+/** Bark relief (m, outward) at a surface point; tubes also pass `at` = [ring angle, arc length] (continuous). */
+export type BarkFn = (p: V3, axis: V3, r: number, node: TNode, at?: [number, number]) => number;
 
 /** Flags packed in attr.y: 1 dead, 2 broken end region, 4 root, 8 collar. */
 export function meshChains(sk: Skeleton, chains: Chain[], lod: LodSpec, bark: BarkFn | null, out: MeshOut, opts: { skip?: (c: Chain) => boolean; startCut?: (c: Chain) => number } = {}): void {
@@ -79,7 +86,7 @@ function samples(ch: Chain, lod: LodSpec, noCollar = false): Sample[] {
     const p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
     const segL = len(sub(p2, p1));
     const rr = Math.max(R[i], R[i + 1]);
-    const step = clamp(rr * 1.1, 0.035, 0.6) * lod.step;
+    const step = rr < lod.adaptiveBelow ? 0.02 : clamp(rr * 1.1, 0.035, 0.6) * lod.step;
     const k = Math.max(1, Math.ceil(segL / step));
     for (let j = 0; j < k; j++) {
       const t = j / k;
@@ -90,6 +97,7 @@ function samples(ch: Chain, lod: LodSpec, noCollar = false): Sample[] {
     acc += segL;
   }
   out.push({ p: P[P.length - 1], r: R[R.length - 1], node: N[N.length - 1], t: acc, collar: 0 });
+  // sample at least every 2 cm where the branch is thin, so the curvature test below sees the true spline
   // collar: the branch runs inside its parent from the parent's axis, emerges at distance e (depends on the
   // branching angle) and is widened just around the emergence point, so it flows out of the parent's surface
   if (ch.attach && out.length > 2 && !noCollar) {
@@ -108,7 +116,36 @@ function samples(ch: Chain, lod: LodSpec, noCollar = false): Sample[] {
       if (k > 0) { s.collar = k; s.r = s.r + Math.max(0, widest - s.r) * k; }
     }
   }
-  return out;
+  return lod.chord > 0 ? adapt(out, lod, ch.attach ? parentR : 0) : out;
+}
+
+/** Curvature-adaptive ring placement for thin branches (see LodSpec.chord). Thick (bark-relief) stretches keep
+ *  the radius-based spacing; the dense spline stays the reference for the deviation test. */
+function adapt(S: Sample[], lod: LodSpec, parentR: number): Sample[] {
+  if (S.length < 3) return S;
+  const keep: Sample[] = [S[0]];
+  let a = 0;
+  // thick (bark-relief) stretches keep the radius-based spacing; live/dead changes and broken ends always get a ring
+  const must = (i: number) => {
+    const s = S[i], p = S[i - 1];
+    if (s.node.dead !== p.node.dead || s.node.broken) return true;
+    // (on thin branches the collar flare and the run inside the parent are traced by the radius-change test)
+    if (s.r >= lod.adaptiveBelow) return s.t - keep[keep.length - 1].t >= clamp(s.r * 1.1, 0.035, 0.6) * lod.step;
+    return false;
+  };
+  for (let j = 1; j < S.length; j++) {
+    if (j === S.length - 1 || must(j)) { keep.push(S[j]); a = j; continue; }
+    // can the straight run a → j+1 stand in for every dense sample in between?
+    const A = S[a], Bq = S[j + 1], d = sub(Bq.p, A.p), L2 = Math.max(dot(d, d), 1e-12);
+    let ok = Math.abs(Bq.r - A.r) <= 0.08 * A.r + 0.0005;
+    for (let k = a + 1; k <= j && ok; k++) {
+      const q = sub(S[k].p, A.p), t = clamp(dot(q, d) / L2, 0, 1);
+      const e = sub(q, mul(d, t));
+      if (Math.sqrt(dot(e, e)) > Math.max(lod.chord * S[k].r, 0.0015)) ok = false;
+    }
+    if (!ok) { keep.push(S[j]); a = j; }
+  }
+  return keep;
 }
 
 function smoothstep(a: number, b: number, x: number) { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); }
@@ -116,10 +153,17 @@ function smoothstep(a: number, b: number, x: number) { const t = clamp((x - a) /
 function sidesFor(r: number, lod: LodSpec): number { return clamp(Math.round((2 * Math.PI * r) / lod.edge), lod.minSides, lod.maxSides); }
 
 function tube(ch: Chain, lod: LodSpec, bark: BarkFn | null, out: MeshOut, startCut: number): void {
-  const S = samples(ch, lod, startCut > 0).filter((s) => s.t >= startCut);
+  const all = samples(ch, lod, startCut > 0);
+  const S = all.filter((s) => s.t >= startCut);
+  // begin exactly at the cut (rings on a thick stem can be ~0.7 m apart: starting at the next ring left a gap)
+  const k0 = all.findIndex((s) => s.t >= startCut);
+  if (startCut > 0 && k0 > 0 && all[k0].t > startCut + 1e-4) {
+    const a = all[k0 - 1], b = all[k0], u = (startCut - a.t) / (b.t - a.t);
+    S.unshift({ p: lerp(a.p, b.p, u), r: a.r + (b.r - a.r) * u, node: u < 0.5 ? a.node : b.node, t: startCut, collar: 0 });
+  }
   if (S.length < 2) return;
   // taking over from a fused (implicit) surface: start slightly inside it and ramp up to full radius
-  if (startCut > 0) for (const s of S) { const k = (s.t - startCut) / (FUSE_OVERLAP * 0.45); if (k < 1) s.r *= 0.9 + 0.1 * Math.max(0, k); }
+  if (startCut > 0) for (const s of S) { const k = (s.t - startCut) / 0.25; if (k < 1) s.r *= 0.9 + 0.1 * Math.max(0, k); }
   let T = norm(sub(S[1].p, S[0].p));
   let Nf = perp(T);
   let prev: { idx: number[]; n: number } | null = null;
@@ -147,12 +191,17 @@ function tube(ch: Chain, lod: LodSpec, bark: BarkFn | null, out: MeshOut, startC
         let rr = s.r, nrm = d;
         const base = add(s.p, mul(d, rr));
         if (bark && lod.displace > 0 && rr > 0.03) {
-          const b0 = bark(base, Ta, s.r, node);
+          // bark coordinates: the stem (order 0) uses the world angle and height, exactly like the blended base it
+          // continues (no pattern switch at the handover); branches use their own continuous ring angle and length
+          const stem = order === 0, at0: [number, number] = stem ? [Math.atan2(base[2], base[0]), base[1]] : [a, s.t];
+          const b0 = bark(base, Ta, s.r, node, at0);
           rr += b0 * lod.displace;
           // shading normal of the displaced surface (finite differences of the bark field around and along the
-          // axis), so tube bark shades exactly like the fused surface's gradient normals — no seam at a takeover
+          // axis, in the tube's own continuous coordinates)
           const t1 = cross(Ta, d), e = 0.008;
-          const g1 = (bark(add(base, mul(t1, e)), Ta, s.r, node) - b0) / e, g2 = (bark(add(base, mul(Ta, e)), Ta, s.r, node) - b0) / e;
+          const p1 = add(base, mul(t1, e)), p2 = add(base, mul(Ta, e));
+          const g1 = (bark(p1, Ta, s.r, node, stem ? [Math.atan2(p1[2], p1[0]), p1[1]] : [a + e / s.r, s.t]) - b0) / e;
+          const g2 = (bark(p2, Ta, s.r, node, stem ? [Math.atan2(p2[2], p2[0]), p2[1]] : [a, s.t + e]) - b0) / e;
           nrm = norm(sub(d, mul(add(mul(t1, g1), mul(Ta, g2)), lod.displace)));
         }
         idx.push(out.vert(add(s.p, mul(d, rr)), nrm, order, flags, s.r, flex, q / n, s.t));
@@ -179,21 +228,32 @@ function stitch(out: MeshOut, a: number[], b: number[]): void {
   }
 }
 
-/** Jagged, splintered end of a broken limb. */
+/** Splintered end of a broken limb. A branch snaps on an oblique plane: the tension side tears out in a few long
+ *  splinters, the compression side breaks short and shredded, and the end narrows as the fibres pull apart. All
+ *  irregularity comes from a hash of the chain id and the ring position (deterministic). */
 function brokenCap(out: MeshOut, ring: number[], s: Sample, T: V3, order: number, flags: number, flex: number, seed: number): void {
   const n = ring.length - 1;
   const v = out.v;
-  const tip: number[] = [];
+  const H = (k: number) => { const x = Math.sin(seed * 91.17 + k * 12.9898) * 43758.5453; return x - Math.floor(x); };
+  // direction of the tension side (in the ring plane), how oblique the break is, where the long splinters stand
+  const phase = H(1) * Math.PI * 2, slant = 0.5 + 0.9 * H(2);
+  const spl = [H(3), H(4), H(5)].map((x) => Math.floor(x * n));
+  const tip: number[] = [], vFrom = out.count, iFrom = out.i.length;
   for (let q = 0; q <= n; q++) {
     const o = ring[q] * VFLOATS;
     const p: V3 = [v[o], v[o + 1], v[o + 2]];
-    const h = Math.abs(Math.sin(q * 2.7 + seed * 1.3)) * Math.abs(Math.sin(q * 0.9 + seed)) * s.r * 2.2;
+    const a = (q / n) * Math.PI * 2;
+    const side = 0.5 + 0.5 * Math.cos(a - phase); // 1 on the tension side, 0 on the compression side
+    let h = s.r * (slant * side + 0.12 + 0.18 * H(10 + (q % n)));
+    for (const k of spl) { const dq = Math.min(Math.abs(q - k), n - Math.abs(q - k)); if (dq <= 1) h += s.r * (dq ? 0.35 : 0.9) * (0.5 + side) * H(20 + k); }
     const inward = sub(s.p, p);
-    tip.push(out.vert(add(add(p, mul(inward, 0.35)), mul(T, h)), T, order, flags, s.r, flex, q / n, s.t + h));
+    tip.push(out.vert(add(add(p, mul(inward, 0.25 + 0.35 * H(30 + (q % n)))), mul(T, h)), T, order, flags, s.r, flex, q / n, s.t + h));
   }
   stitch(out, ring, tip);
-  const c = out.vert(add(s.p, mul(T, s.r * 0.4)), T, order, flags, s.r, flex, 0.5, s.t);
+  // the broken face: low in the middle (decayed pith), on the compression side of centre
+  const c = out.vert(add(s.p, mul(T, s.r * (0.15 + 0.3 * slant * 0.5))), T, order, flags, s.r, flex, 0.5, s.t);
   for (let q = 0; q < n; q++) out.tri(tip[q], tip[q + 1], c);
+  out.normals(vFrom, iFrom); // splinters shade by their own faces
 }
 
 export { lerp };

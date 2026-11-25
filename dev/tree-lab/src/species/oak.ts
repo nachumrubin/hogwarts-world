@@ -9,7 +9,7 @@
 //   • forest-grown (Oak C "Forest Veteran"): neighbours' canopies shade the sides and the lower trunk, so light
 //     comes from above; strong apical control → tall clear stem, high narrow crown, irregular top.
 // Afterwards: pipe-model radii scaled to the measured girth, self-weight sag, interior shade death, root flare.
-import { type V3, add, mul, rng, noise3, groundAt, clamp, smooth } from '../framework/math.ts';
+import { type V3, add, mul, rng, noise3, fbm3, groundAt, clamp, smooth, barkSample } from '../framework/math.ts';
 import { Skeleton, type TNode, growRoots } from '../framework/skeleton.ts';
 import { growSOTM } from '../framework/sotm.ts';
 
@@ -45,6 +45,16 @@ export interface OakConfig {
   /** optional: fair the main stem above this height too (loops in a tall leader); die back any bare, unbranched
    *  shoot run longer than `whipLimit` m (shade-starved whips). Absent on Oak A (preserved checkpoint behaviour). */
   stemFairAbove?: number; whipLimit?: number;
+  /** optional growth-model terms (absent on Oak A):
+   *  outward — pull of secondary and finer shoots away from the stem axis (outward and oblique growth instead of
+   *    a uniform up-turn); crownLobes — [m, wavelength m]: the hydraulic height limit varies over the crown with
+   *    low-frequency noise (an uneven crown boundary instead of a flat ceiling); stemSway — [weight, wavelength m]:
+   *    low-frequency lateral pull on the leader (trunk curvature, e.g. reaching for the gap); wander — deterministic
+   *    position-noise pull on limbs (meander instead of dead-straight runs); lowDroop — shaded limbs below the
+   *    canopy base sag before turning up. */
+  outward?: number; crownLobes?: [number, number]; stemSway?: [number, number]; wander?: number; lowDroop?: number;
+  /** structural fairing iterations (default 6) */
+  fairIterations?: number;
 }
 
 /** Oak A — Survivor. The structural checkpoint 9c024fe (seed 1603): open-grown, storm-damaged, one-sided. */
@@ -63,23 +73,25 @@ export const OAK_A: OakConfig = {
 export const OAK_B: OakConfig = {
   seed: 2206, iterations: 72, extent: [17, 22, 17], voxel: 0.55, shadowA: 0.2, shadowB: 1.75, shadowDepth: 7,
   alphaYoung: 2.4, alphaOld: 2.05, lambda: [0.68, 0.42, 0.5], youth: 8, boleHeight: 3.0, metamer: [0.55, 0.0042],
-  flat: [0.62, 0.36], twigUp: 0.1, free: 0.3, branchAngle: [1.05, 0.3], shedRatio: 0.032, budLife: 3, maxTurn: 0.32,
+  flat: [0.62, 0.36], twigUp: 0.03, free: 0.3, branchAngle: [1.05, 0.3], shedRatio: 0.032, budLife: 3, maxTurn: 0.32,
   boleLight: 0.25, heightLimit: [15.5, 21, 0.8],
   events: [{ kind: 'crownLoss', at: 18, maxY: 6.5 }, { kind: 'dieback', at: 60, count: 5 }],
   baseRadius: 1.15, radiusExp: 2.6, sag: 1.0, interiorDeath: 0.06,
   roots: { count: 10, length: [3.2, 6.0], startR: 0.55, exposure: 1.1 }, whipLimit: 3,
+  outward: 0.14, crownLobes: [2.6, 7], wander: 0.08, fairIterations: 14,
 };
 
 /** Oak C — Forest Veteran. Grew up in closed woodland: shaded sides, light from above, competition for the gap. */
 export const OAK_C: OakConfig = {
   seed: 3119, iterations: 72, extent: [10, 30, 10], voxel: 0.5, shadowA: 0.2, shadowB: 1.7, shadowDepth: 7,
-  alphaYoung: 2.5, alphaOld: 2.3, lambda: [0.74, 0.6, 0.5], youth: 16, boleHeight: 9, metamer: [0.6, 0.004],
-  flat: [0.12, 0.08], twigUp: 0.16, free: 0.5, branchAngle: [0.7, 0.3], shedRatio: 0.045, budLife: 2, maxTurn: 0.35,
+  alphaYoung: 2.5, alphaOld: 2.4, lambda: [0.74, 0.6, 0.44], youth: 16, boleHeight: 9, metamer: [0.6, 0.004],
+  flat: [0.12, 0.08], twigUp: 0.1, free: 0.5, branchAngle: [0.7, 0.3], shedRatio: 0.038, budLife: 3, maxTurn: 0.35,
   boleLight: 0.12, heightLimit: [19, 25, 0.92],
   forest: { canopyBase: 10, understorey: 0.18, room: 7.5 },
   events: [{ kind: 'storm', at: 52, maxY: 20, depth: 5 }, { kind: 'dieback', at: 64, count: 6 }],
   baseRadius: 0.78, radiusExp: 2.6, sag: 1.1, interiorDeath: 0.12,
-  roots: { count: 8, length: [2.4, 4.5], startR: 0.42, exposure: 0.8 }, stemFairAbove: 12, whipLimit: 2.5,
+  roots: { count: 8, length: [2.4, 4.5], startR: 0.42, exposure: 0.8 }, stemFairAbove: 9.5, whipLimit: 2.5,
+  outward: 0.06, crownLobes: [1.8, 5], stemSway: [0.16, 9], wander: 0.12, lowDroop: 0.12, fairIterations: 14,
 };
 
 export function growOak(cfg: OakConfig = OAK_A): { sk: Skeleton; info: Record<string, unknown> } {
@@ -100,17 +112,32 @@ export function growOak(cfg: OakConfig = OAK_A): { sk: Skeleton; info: Record<st
     weights: (b) => {
       const o = b.terminal ? b.node.order : b.node.order + 1;
       const low = b.node.p[1] < cfg.boleHeight + 0.3;
-      if (o === 0) return { prev: 1, free: low ? 0.1 : F ? 0.2 : 0.35, tropism: [0, low ? 0.9 : F ? 0.7 : 0.15, 0] };
+      const p = b.node.p;
+      if (o === 0) {
+        const trop: V3 = [0, low ? 0.9 : F ? 0.7 : 0.15, 0];
+        if (cfg.stemSway && !low) {
+          // low-frequency lateral pull: the stem wanders as it reaches for light (two incommensurate waves)
+          // (fading out where the leader meets the height limit, so the top does not hook over)
+          const [w0, L] = cfg.stemSway, w = w0 * (1 - smooth(cfg.heightLimit[0] - 4, cfg.heightLimit[0], p[1]));
+          trop[0] += w * Math.sin(p[1] / L * 6.283 + 1.3); trop[2] += w * Math.sin(p[1] / (L * 1.37) * 6.283 + 4.1);
+        }
+        return { prev: 1, free: low ? 0.1 : F ? 0.2 : 0.35, tropism: trop };
+      }
       // plagiotropic limbs: long, nearly horizontal stretches (stronger on the heavy, low, old limbs); twigs turn up
       const h: V3 = [b.dir[0], 0, b.dir[2]]; const hl = Math.hypot(h[0], h[2]) || 1;
-      const flat = o <= 2 ? (b.node.p[1] < 9 ? cfg.flat[0] : cfg.flat[1]) : 0.06;
-      return { prev: 1, free: cfg.free, tropism: add(mul([h[0] / hl, 0, h[2] / hl], flat), [0, o <= 2 ? -0.02 : cfg.twigUp, 0]) };
+      const flat = o <= 2 ? (p[1] < 9 ? cfg.flat[0] : cfg.flat[1]) : 0.06;
+      let trop = add(mul([h[0] / hl, 0, h[2] / hl], flat), [0, o <= 2 ? -0.02 : cfg.twigUp, 0]);
+      if (cfg.outward && o >= 2) { const rl = Math.hypot(p[0], p[2]) || 1; trop = add(trop, [p[0] / rl * cfg.outward, 0, p[2] / rl * cfg.outward]); }
+      if (cfg.wander) trop = add(trop, mul([noise3(p[0] * 0.6, p[1] * 0.6, p[2] * 0.6, 61), noise3(p[0] * 0.6, p[1] * 0.6, p[2] * 0.6, 62) * 0.6, noise3(p[0] * 0.6, p[1] * 0.6, p[2] * 0.6, 63)], cfg.wander));
+      if (cfg.lowDroop && F && o <= 2 && p[1] < F.canopyBase) trop = add(trop, [0, -cfg.lowDroop * (1 - p[1] / F.canopyBase) + cfg.lowDroop * 0.3, 0]);
+      return { prev: 1, free: cfg.free, tropism: trop };
     },
     branchAngle: () => cfg.branchAngle[0] + cfg.branchAngle[1] * r(),
     shedRatio: cfg.shedRatio, budLife: cfg.budLife, maxTurn: cfg.maxTurn,
     lightCap: (p, b) => {
       // youth: shaded by its own crown below the clear bole; old age: hydraulic height limit
-      let L = (p[1] < cfg.boleHeight && !(b.terminal && b.node.order === 0) ? cfg.boleLight : 1) * (1 - cfg.heightLimit[2] * smooth(cfg.heightLimit[0], cfg.heightLimit[1], p[1]));
+      const lobe = cfg.crownLobes ? cfg.crownLobes[0] * fbm3(p[0] / cfg.crownLobes[1], 0, p[2] / cfg.crownLobes[1], 64, 2) * 2 : 0;
+      let L = (p[1] < cfg.boleHeight && !(b.terminal && b.node.order === 0) ? cfg.boleLight : 1) * (1 - cfg.heightLimit[2] * smooth(cfg.heightLimit[0] + lobe, cfg.heightLimit[1] + lobe, p[1]));
       if (F) {
         // neighbours: below their canopy only diffuse understorey light; sideways, the gap is only so wide
         // (the leader's tip stands in the gap's light shaft; everything else below the canopy is in shade)
@@ -169,7 +196,7 @@ export function growOak(cfg: OakConfig = OAK_A): { sk: Skeleton; info: Record<st
     if (n2) events.push(`${n2} bare shade whips died back`);
     sk.computeRadii({ tipR: 0.006, n: cfg.radiusExp, taper: 0.03, targetBase: cfg.baseRadius });
   }
-  sk.fair(0.05, 6, 0.5, cfg.stemFairAbove); // relax loops and hooks in the woody limbs (structural fairing)
+  sk.fair(0.05, cfg.fairIterations ?? 6, 0.5, cfg.stemFairAbove); // relax loops and hooks in the woody limbs (structural fairing)
   sk.sag({ stiffness: cfg.sag, maxAngle: 0.04, minOrder: 1, upturn: 0.005 });
   // a few interior secondary branches die in the shade of the outer crown (they keep their wood for decades)
   const inner = sk.nodes.filter((n) => n.order === 3 && n.parent && n.parent.order === 2 && Math.hypot(n.p[0], n.p[2]) < 7 && n.p[1] < 12 && n.children.length);
@@ -184,13 +211,13 @@ export function growOak(cfg: OakConfig = OAK_A): { sk: Skeleton; info: Record<st
 }
 
 /** Oak bark: deep, blocky vertical fissures, ridged; amplitude grows with girth. */
-export function oakBark(p: V3, axis: V3, r: number): number {
-  const up = Math.abs(axis[1]);
-  const a = Math.atan2(p[2], p[0]);
+export function oakBark(p: V3, axis: V3, r: number, _node?: TNode, at?: [number, number]): number {
   // fissures run along the branch axis: stretch the noise along it
   const s = 3.2 / Math.max(0.25, Math.min(r, 1.2));
-  const along = p[1] * up + (p[0] * axis[0] + p[2] * axis[2]) * (1 - up);
-  const ridge = 1 - Math.abs(noise3(a * r * s * 1.1, along * 0.9, r * 3, 11));
-  const plates = noise3(a * r * 9, along * 4.5, 0, 12) * 0.25;
-  return clamp(r, 0.03, 1.5) * 0.065 * (Math.pow(ridge, 3) - 0.35 + plates);
+  return barkSample(p, axis, (a, along, tube) => {
+    const ridge = 1 - Math.abs(noise3(a * r * s * 1.1, along * 0.9, r * 3, 11));
+    const plates = tube ? 0 : noise3(a * r * 9, along * 4.5, 0, 12) * 0.25; // fine plates: geometry only where resolved
+    // full relief on the bole, about half on limbs (fine fissures there are for the bark material, not geometry)
+    return clamp(r, 0.03, 1.5) * 0.065 * (0.45 + 0.55 * smooth(0.45, 0.9, r)) * (Math.pow(ridge, 3) - 0.35 + plates);
+  }, at);
 }

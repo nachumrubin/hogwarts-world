@@ -52,3 +52,19 @@ export function fbm3(x: number, y: number, z: number, s: number, oct: number): n
 }
 /** Ground height of the lab plot (gentle undulation so roots have something to follow). */
 export function groundAt(x: number, z: number): number { return 0.18 * fbm3(x * 0.12, 0, z * 0.12, 77, 3) + 0.05 * noise3(x * 0.6, 0, z * 0.6, 78); }
+/** Bark coordinates for a surface point: `f(angle, along)`. Swept tubes pass their own continuous coordinates
+ *  (`at`: the parallel-transported ring angle and the arc length along the branch), so a limb's pattern runs
+ *  seamlessly along it; the blended bole and forks use the angle around the vertical stem axis and the height,
+ *  one continuous pattern shared by everything they join. */
+export function barkSample(p: V3, axis: V3, f: (a: number, along: number, tube: boolean) => number, at?: [number, number]): number {
+  let a: number, along: number;
+  if (at) { a = at[0]; along = at[1]; } else {
+    // (height, not the nearest segment's axis: that switches at every joint and drew a ring there)
+    a = Math.atan2(p[2], p[0]); along = p[1];
+  }
+  // periodic in the angle: the last quarter turn fades into the pattern before 0, so there is no seam at the wrap
+  const T = Math.PI * 2; a = ((a % T) + T) % T;
+  const w = smooth(T * 0.75, T, a);
+  const tube = !!at; // tubes sample along the branch only every ~r: fine along-branch detail would alias into rings
+  return w <= 0 ? f(a, along, tube) : f(a, along, tube) * (1 - w) + f(a - T, along, tube) * w;
+}

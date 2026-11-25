@@ -10,7 +10,7 @@
 //     curtains. These carry the leaves later.
 //   • Light: crowded primaries (too close to a neighbour in azimuth and height) are suppressed; the lowest die and
 //     break off (old birches shed lower limbs), a few upper limbs are dead or snapped; crown density is uneven.
-import { type V3, add, sub, mul, norm, len, rotate, rng, noise3, groundAt, clamp, smooth, perp, cross } from '../framework/math.ts';
+import { type V3, add, sub, mul, norm, len, rotate, rng, noise3, groundAt, clamp, smooth, perp, cross, barkSample } from '../framework/math.ts';
 import { Skeleton, type TNode, growRoots } from '../framework/skeleton.ts';
 
 export const BIRCH = { name: 'Mature silver birch', latin: 'Betula pendula', seed: 1903, height: 21, baseRadius: 0.3, crownR: 5.6 };
@@ -30,29 +30,37 @@ export function growBirch(seed = BIRCH.seed): { sk: Skeleton; info: Record<strin
     m = sk.add(m, add(m.p, mul(d, seg)), 0); stem.push(m);
   }
   // ---- primaries: spiral, steep, arching
+  // each primary's individual character comes from a second stream, so the main stream (which primaries exist, the
+  // twig curtains) is unchanged: arch strength, departure angle, length, sideways bend, wander, ascending tip
+  const r2 = rng(seed + 7);
   const prims: { node: TNode; az: number; h: number; L: number }[] = [];
   let az = r() * 6.283;
   for (let i = Math.round(n * 0.2); i < n - 2; i++) {
     if (r() < 0.25) continue;
-    az += 2.39996 + (r() - 0.5) * 0.4;
+    // primaries come in loose clusters with gaps between them (not one per stem metre)
+    if (noise3(1.37, stem[i].p[1] * 0.45, 2.71, 17) < -0.06 && r2() < 0.75) continue;
+    az += 2.39996 + (r() - 0.5) * 0.4 + (r2() - 0.5) * 1.1;
     const hn = (stem[i].p[1] - H * 0.2) / (H * 0.8);
     // narrow oval envelope, widest at 40 % of the crown
     const L = BIRCH.crownR * 1.25 * Math.pow(Math.sin(Math.PI * clamp(hn * 0.85 + 0.12, 0, 1)), 0.75) * (0.7 + 0.5 * r());
     if (L < 0.8) continue;
     // crowding: suppress a primary right above another at a similar azimuth (light competition)
     const crowded = prims.some((p) => Math.abs(p.h - stem[i].p[1]) < 1.2 && Math.abs(Math.atan2(Math.sin(p.az - az), Math.cos(p.az - az))) < 0.7);
-    prims.push({ node: stem[i], az, h: stem[i].p[1], L: crowded ? L * 0.45 : L });
+    prims.push({ node: stem[i], az, h: stem[i].p[1], L: (crowded ? L * 0.45 : L) * (0.7 + 0.6 * r2()) });
   }
   const primChains: TNode[][] = [];
   for (const p of prims) {
-    const steep = 0.55 + 0.35 * r(); // angle from vertical (rad): 30–50°
+    const steep = 0.55 + 0.35 * r() + (r2() - 0.5) * 0.6; // angle from vertical (rad): ~20–65°
     let d: V3 = norm([Math.cos(p.az) * Math.sin(steep), Math.cos(steep), Math.sin(p.az) * Math.sin(steep)]);
     const steps = Math.max(3, Math.round(p.L / 0.35));
+    const arch = 0.45 + 1.15 * r2(), wander = 0.05 + 0.14 * r2(), lift = r2() < 0.35 ? 0.06 + 0.08 * r2() : 0;
+    const bend = (r2() - 0.5) * 0.16, tan: V3 = [-Math.sin(p.az), 0, Math.cos(p.az)];
     let q = p.node; const chain: TNode[] = [];
     for (let k = 0; k < steps; k++) {
       const t = k / steps;
-      // arching: gravitropism increases along the branch; slight wander
-      d = norm(add(d, [(r() - 0.5) * 0.08, -0.045 - 0.11 * t * t, (r() - 0.5) * 0.08]));
+      // arching: gravitropism increases along the branch (each primary its own strength), a sideways bend and
+      // wander; some tips turn up again (arching, then ascending)
+      d = norm(add(d, [(r() - 0.5) * 0.08 + (r2() - 0.5) * wander + tan[0] * bend, (-0.045 - 0.11 * t * t) * arch + lift * t * t, (r() - 0.5) * 0.08 + (r2() - 0.5) * wander + tan[2] * bend]));
       q = sk.add(q, add(q.p, mul(d, p.L / steps)), 1); chain.push(q);
     }
     primChains.push(chain);
@@ -114,10 +122,11 @@ export function growBirch(seed = BIRCH.seed): { sk: Skeleton; info: Record<strin
 }
 
 /** Birch bark: smooth papery upper stem with horizontal lenticel grooves; rough, dark fissured base. */
-export function birchBark(p: V3, axis: V3, r: number): number {
-  const a = Math.atan2(p[2], p[0]);
+export function birchBark(p: V3, axis: V3, r: number, _node?: TNode, at?: [number, number]): number {
   const base = 1 - smooth(0.4, 2.6, p[1]);
-  const fiss = Math.pow(1 - Math.abs(noise3(a * r * 10, p[1] * 2.2, 1, 31)), 4) - 0.35;
-  const lent = Math.pow(Math.max(0, noise3(a * r * 6, p[1] * 26, 2, 32)), 3);
-  return clamp(r, 0.02, 0.5) * (base * 0.09 * fiss - (1 - base) * 0.012 * lent);
+  return barkSample(p, axis, (a, along, tube) => {
+    const fiss = Math.pow(1 - Math.abs(noise3(a * r * 10, along * 2.2, 1, 31)), 4) - 0.35;
+    const lent = tube ? 0 : Math.pow(Math.max(0, noise3(a * r * 6, along * 26, 2, 32)), 3); // lenticels: for the material
+    return clamp(r, 0.02, 0.5) * (base * 0.09 * fiss - (1 - base) * 0.012 * lent);
+  }, at);
 }

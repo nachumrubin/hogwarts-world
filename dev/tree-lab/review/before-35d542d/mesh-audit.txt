@@ -1,0 +1,40 @@
+
+oak-a LOD0: 629,734 tris, 364,627 verts
+  blended junctions/roots: 142,162 tris (22.6 %), 71,419 verts;  tube roots 3,496
+  twig <1 cm    199,970 tris (31.8 %)     188 m of branch   1064 tris/m
+  1–3 cm        143,540 tris (22.8 %)     764 m of branch    188 tris/m
+  3–10 cm        80,604 tris (12.8 %)     446 m of branch    181 tris/m
+  10–30 cm       52,579 tris ( 8.3 %)     244 m of branch    215 tris/m
+  >30 cm          7,383 tris ( 1.2 %)      52 m of branch    143 tris/m
+
+oak-b LOD0: 867,537 tris, 502,142 verts
+  blended junctions/roots: 216,288 tris (24.9 %), 108,806 verts;  tube roots 4,803
+  twig <1 cm    289,280 tris (33.3 %)     289 m of branch   1002 tris/m
+  1–3 cm        193,360 tris (22.3 %)    1028 m of branch    188 tris/m
+  3–10 cm       106,480 tris (12.3 %)     639 m of branch    167 tris/m
+  10–30 cm       56,386 tris ( 6.5 %)     303 m of branch    186 tris/m
+  >30 cm            940 tris ( 0.1 %)      44 m of branch     21 tris/m
+
+oak-c LOD0: 332,449 tris, 187,330 verts
+  blended junctions/roots: 121,514 tris (36.6 %), 61,058 verts;  tube roots 2,865
+  twig <1 cm     94,890 tris (28.5 %)     165 m of branch    575 tris/m
+  1–3 cm         53,670 tris (16.1 %)     277 m of branch    193 tris/m
+  3–10 cm        43,328 tris (13.0 %)     210 m of branch    206 tris/m
+  10–30 cm       15,179 tris ( 4.6 %)      70 m of branch    217 tris/m
+  >30 cm          1,003 tris ( 0.3 %)      18 m of branch     55 tris/m
+
+pine LOD0: 482,525 tris, 290,291 verts
+  blended junctions/roots: 35,570 tris (7.4 %), 17,944 verts;  tube roots 1,706
+  twig <1 cm    221,230 tris (45.8 %)     595 m of branch    372 tris/m
+  1–3 cm        170,960 tris (35.4 %)     538 m of branch    318 tris/m
+  3–10 cm        40,093 tris ( 8.3 %)     251 m of branch    160 tris/m
+  10–30 cm        7,635 tris ( 1.6 %)      33 m of branch    232 tris/m
+  >30 cm          5,331 tris ( 1.1 %)      17 m of branch    320 tris/m
+
+birch LOD0: 795,176 tris, 479,256 verts
+  blended junctions/roots: 23,134 tris (2.9 %), 11,702 verts;  tube roots 1,104
+  twig <1 cm    666,650 tris (83.8 %)    2050 m of branch    325 tris/m
+  1–3 cm         77,845 tris ( 9.8 %)     341 m of branch    228 tris/m
+  3–10 cm        21,085 tris ( 2.7 %)      95 m of branch    222 tris/m
+  10–30 cm        5,358 tris ( 0.7 %)      24 m of branch    225 tris/m
+  >30 cm              0 tris ( 0.0 %)       0 m of branch      0 tris/m

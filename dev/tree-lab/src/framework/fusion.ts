@@ -8,7 +8,7 @@
 // the implicit surface with a radius ramp, so the two meet without a visible seam.
 import { type V3, add, sub, mul, norm, dot, clamp } from './math.ts';
 import type { Skeleton, TNode, Chain } from './skeleton.ts';
-import { MeshOut, type BarkFn } from './mesher.ts';
+import { MeshOut, VFLOATS, type BarkFn } from './mesher.ts';
 
 export interface FusionOpts {
   min: V3; max: V3; cell: number; minR: number;
@@ -17,9 +17,16 @@ export interface FusionOpts {
   blend: number;
   /** optional carve: signed distance of the removed volume (negative inside), given the uncarved distance */
   carve?: (p: V3, d: number) => number;
+  /** optional ground height (tree-local): faces lying wholly more than 10 cm below it are never visible and are
+   *  not emitted, and vertices left unused are dropped. Pass the same ground the roots were grown on. */
+  ground?: (x: number, z: number) => number;
+  /** root flare without undercuts: below `top` m above ground, each point also takes the shape found up to `depth`
+   *  m higher, expanded by `slope` × the lift (a smooth union of `steps` lifted copies). The stem then widens
+   *  continuously into the ground instead of bulging into a lip with a downward-facing underside. */
+  flare?: { top: number; depth: number; steps: number; slope: number };
 }
 
-interface Cap { a: V3; b: V3; ra: number; rb: number; axis: V3; L: number; node: TNode; lo: V3; hi: V3 }
+interface Cap { a: V3; b: V3; ra: number; rb: number; axis: V3; L: number; node: TNode; lo: V3; hi: V3; chain: number; at: number }
 
 function sdCone(p: V3, c: Cap): { d: number; t: number } {
   // round cone approximated: distance to the axis segment minus the interpolated radius
@@ -38,6 +45,9 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
   const t0 = performance.now();
   const from = out.count, fromIdx = out.i.length;
   // ---- capsules
+  // branch axis and position along it for every node (same-branch segments blend lightly; see raw())
+  const axisOf = new Map<TNode, [number, number]>();
+  for (const ch of sk.chains()) ch.nodes.forEach((n, i) => axisOf.set(n, [ch.id, i]));
   const caps: Cap[] = [];
   for (const n of sk.nodes) {
     const p = n.parent; if (!p) continue;
@@ -46,7 +56,8 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
     if (!inRegion(p.p, o, ra) && !inRegion(n.p, o, rb)) continue;
     const ax = sub(n.p, p.p), L = Math.sqrt(dot(ax, ax)); if (L < 1e-4) continue;
     const R = Math.max(ra, rb) * 1.15 + 0.1;
-    caps.push({ a: p.p, b: n.p, ra, rb, axis: mul(ax, 1 / L), L, node: n,
+    const ci = axisOf.get(n) ?? [-1 - n.id, 0];
+    caps.push({ a: p.p, b: n.p, ra, rb, axis: mul(ax, 1 / L), L, node: n, chain: ci[0], at: ci[1],
       lo: [Math.min(p.p[0], n.p[0]) - R, Math.min(p.p[1], n.p[1]) - R, Math.min(p.p[2], n.p[2]) - R],
       hi: [Math.max(p.p[0], n.p[0]) + R, Math.max(p.p[1], n.p[1]) + R, Math.max(p.p[2], n.p[2]) + R] });
   }
@@ -60,13 +71,43 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
   let samples = 0;
   // field evaluation with a per-block capsule list
   const field = (p: V3, list: Cap[]): { d: number; cap: Cap | null; t: number } => {
+    const f0 = raw(p, list);
+    const F = o.flare;
+    if (F) {
+      const gy = o.ground ? o.ground(p[0], p[2]) : 0, hy = p[1] - gy;
+      if (hy < F.top && hy > -F.depth - 0.3) {
+        let d = f0.d;
+        for (let k = 1; k <= F.steps; k++) {
+          const h = (F.depth * k) / F.steps, q: V3 = [p[0], p[1] + h, p[2]];
+          if (q[1] - gy > F.top + F.depth) break;
+          const w = clamp((F.top - hy) / F.top, 0, 1), ws = w * w * (3 - 2 * w); // fades in gradually below the top
+          const dk = raw(q, flareCaps).d - F.slope * h * ws;
+          // near-hard minimum: a smooth union would inflate the surface a little at every step (a skirt); the slight
+          // smoothing left fades to nothing at the top of the band, where the surface must continue the trunk
+          const kb = 0.03 * ws + 1e-4, hh = clamp(0.5 + 0.5 * (dk - d) / kb, 0, 1);
+          d = dk * (1 - hh) + d * hh - kb * hh * (1 - hh);
+        }
+        f0.d = d;
+      }
+    }
+    if (o.carve) f0.d = Math.max(f0.d, -o.carve(p, f0.d));
+    return f0;
+  };
+  // capsules near the ground, for the flare's lifted look-ups (they may cross block boundaries)
+  const flareCaps = o.flare ? caps.filter((c) => c.lo[1] < (o.flare!.top + o.flare!.depth + 0.5)) : [];
+  const raw = (p: V3, list: Cap[]): { d: number; cap: Cap | null; t: number } => {
     let d = 1e9, best: Cap | null = null, bt = 0, dPlain = 1e9;
     for (const c of list) {
       if (p[0] < c.lo[0] || p[1] < c.lo[1] || p[2] < c.lo[2] || p[0] > c.hi[0] || p[1] > c.hi[1] || p[2] > c.hi[2]) continue;
       const q = sdCone(p, c);
       if (q.d < d + 0.5) {
-        // polynomial smooth minimum, blend radius ∝ the thinner member (continuous forks, no fat webbing on twigs)
-        const k = o.blend * Math.min(c.ra + (c.rb - c.ra) * q.t, best ? best.ra : 1e9) + 1e-4;
+        // polynomial smooth minimum, blend radius ∝ the thinner member (continuous forks, no fat webbing on twigs).
+        // Segments of one branch (up to four joints apart: on a thick stem those reach each other) join with a light
+        // blend (0.12 r): the full blend inflated a straight stem in rings (and made it fatter than the tube that
+        // continues it); a plain minimum left a crease at every joint.
+        const seq = best !== null && c.chain === best.chain && Math.abs(c.at - best.at) <= 4;
+        const rr = Math.min(c.ra + (c.rb - c.ra) * q.t, best ? best.ra : 1e9);
+        const k = (seq ? 0.12 : o.blend) * rr + 1e-4;
         const h = clamp(0.5 + 0.5 * (q.d - d) / k, 0, 1);
         const nd = d > 1e8 ? q.d : q.d * (1 - h) + d * h - k * h * (1 - h);
         if (q.d < dPlain) { best = c; bt = q.t; dPlain = q.d; }
@@ -78,16 +119,17 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
       const bk = o.bark ? o.bark(p, best.axis, rb, best.node) : 0;
       d -= bk;
       // towards the region's faces the blended surface relaxes to the bare nearest capsule (what the tube that
-      // takes over there follows) and then sinks 4 % inside it, so the tube covers the rim and no ledge shows
+      // takes over there follows), so the tube covers the rim and no ledge shows
       const m = Math.min(p[0] - o.min[0], o.max[0] - p[0], p[1] - o.min[1], o.max[1] - p[1], p[2] - o.min[2], o.max[2] - p[2]);
       if (m < 1.0) {
         const w = 1 - clamp((m - 0.15) / 0.85, 0, 1), ws = w * w * (3 - 2 * w);
-        const u = 1 - clamp(m / 0.5, 0, 1);
-        const bare = dPlain - bk + 0.04 * rb * u * u * (3 - 2 * u);
+        // the relaxed surface also sinks 12 % inside, in step with the relaxation: the tube (which starts where the
+        // relaxation starts) then crosses it once, at any exit angle (a sink tied to the face distance left oblique
+        // limbs with two near-coincident surfaces over a metre or more, which z-fought in bands)
+        const bare = dPlain - bk + 0.2 * rb;
         d = d * (1 - ws) + bare * ws;
       }
     }
-    if (o.carve) d = Math.max(d, -o.carve(p, d));
     return { d, cap: best, t: bt };
   };
   const blockCaps: (Cap[] | null)[] = new Array(bx * by * bz).fill(null);
@@ -96,7 +138,8 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
     const ctr: V3 = mul(add(c0, c1), 0.5), half = Math.sqrt(dot(sub(c1, c0), sub(c1, c0))) / 2;
     const list = caps.filter((c) => !(c1[0] < c.lo[0] - 0.3 || c1[1] < c.lo[1] - 0.3 || c1[2] < c.lo[2] - 0.3 || c0[0] > c.hi[0] + 0.3 || c0[1] > c.hi[1] + 0.3 || c0[2] > c.hi[2] + 0.3));
     const dc = list.length ? field(ctr, list).d : 1e3;
-    const active = Math.abs(dc) < half * 1.7 + 0.35; // conservative: a missed block would leave a crack along its faces
+    const flareMargin = o.flare && ctr[1] - half < o.flare.top + 0.5 ? o.flare.depth * (1 + o.flare.slope) + 0.2 : 0;
+    const active = Math.abs(dc) < half * 1.7 + 0.35 + flareMargin; // conservative: a missed block would leave a crack along its faces
     const fill = dc < 0 ? -1e3 : 1e3;
     if (active) blockCaps[I + bx * (J + by * K)] = list;
     for (let k = K * B; k <= Math.min(nz - 1, (K + 1) * B); k++) for (let j = J * B; j <= Math.min(ny - 1, (J + 1) * B); j++) for (let i = I * B; i <= Math.min(nx - 1, (I + 1) * B); i++) {
@@ -141,9 +184,10 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
   function quad(c0: number, c1: number, c2: number, c3: number, flip: boolean) {
     const v0 = vid[c0], v1 = vid[c1], v2 = vid[c2], v3 = vid[c3];
     if (v0 < 0 || v1 < 0 || v2 < 0 || v3 < 0) return;
+    if (o.ground && [v0, v1, v2, v3].every((q) => { const w = out.v, b = q * VFLOATS; return w[b + 1] < o.ground!(w[b], w[b + 2]) - 0.1; })) return;
     if (flip) { out.tri(v0, v1, v2); out.tri(v0, v2, v3); } else { out.tri(v0, v2, v1); out.tri(v0, v3, v2); }
   }
-  void from; void fromIdx;
+  if (o.ground) compact(out, from, fromIdx);
   return { triangles: (out.i.length - fromIdx) / 3, ms: performance.now() - t0, caps: caps.length, samples };
 }
 
@@ -172,3 +216,17 @@ export function tubeStarts(chains: Chain[], o: FusionOpts, overlap: number): Map
   return res;
 }
 export { norm };
+
+/** Drop vertices in [from, end) that no triangle from `fromIdx` on references, remapping the indices. */
+function compact(out: MeshOut, from: number, fromIdx: number): void {
+  const n = out.count - from, used = new Int32Array(n).fill(-1);
+  for (let k = fromIdx; k < out.i.length; k++) { const q = out.i[k] - from; if (q >= 0) used[q] = 1; }
+  let w = 0;
+  for (let q = 0; q < n; q++) if (used[q] > 0) {
+    if (w !== q) for (let c = 0; c < VFLOATS; c++) out.v[(from + w) * VFLOATS + c] = out.v[(from + q) * VFLOATS + c];
+    used[q] = w++;
+  }
+  out.v.length = (from + w) * VFLOATS;
+  for (let k = fromIdx; k < out.i.length; k++) { const q = out.i[k] - from; if (q >= 0) out.i[k] = from + used[q]; }
+}
+

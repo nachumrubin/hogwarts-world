@@ -1,0 +1,20 @@
+oak-a: grow 954 ms, nodes 4807, skel 818b09d7df02
+  LOD0: 7011 ms, 204562 verts, 354131 tris, 9.8 MB, mesh cf16af6cf8b5
+  LOD1: 1038 ms, 75448 verts, 122520 tris, 3.6 MB, mesh d9316a62e010
+  LOD2: 25 ms, 12429 verts, 18495 tris, 0.6 MB, mesh a314d903b881
+oak-b: grow 1328 ms, nodes 5595, skel 225d516771bc
+  LOD0: 8295 ms, 229378 verts, 395730 tris, 11.0 MB, mesh af86e2fdc61d
+  LOD1: 1229 ms, 85856 verts, 138894 tris, 4.1 MB, mesh db45c6b245fc
+  LOD2: 35 ms, 14369 verts, 21353 tris, 0.7 MB, mesh 75dbf9902c66
+oak-c: grow 805 ms, nodes 2747, skel d20b54cc7bee
+  LOD0: 2832 ms, 109311 verts, 188134 tris, 5.2 MB, mesh 7441cf3344e3
+  LOD1: 524 ms, 38638 verts, 62978 tris, 1.9 MB, mesh a7b6dde83406
+  LOD2: 12 ms, 7183 verts, 10646 tris, 0.3 MB, mesh 31cbd15c5c7c
+pine: grow 993 ms, nodes 9281, skel a2f3c0cae743
+  LOD0: 3808 ms, 133161 verts, 216985 tris, 6.4 MB, mesh 3a24081931b7
+  LOD1: 483 ms, 43570 verts, 68449 tris, 2.1 MB, mesh b837f13cb87e
+  LOD2: 10 ms, 5351 verts, 7845 tris, 0.3 MB, mesh a8a9507711b3
+birch: grow 392 ms, nodes 8832, skel 4620859d4cc5
+  LOD0: 2143 ms, 106191 verts, 173912 tris, 5.1 MB, mesh 31ba84545d7f
+  LOD1: 287 ms, 23161 verts, 37050 tris, 1.1 MB, mesh 8fa7a7c1def1
+  LOD2: 4 ms, 3030 verts, 4465 tris, 0.1 MB, mesh 4baac4769a40

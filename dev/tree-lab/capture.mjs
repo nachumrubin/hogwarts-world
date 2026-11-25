@@ -40,7 +40,7 @@ if (process.env.UI === '1') {
 if (process.env.DEBUG) {
   for (const spec of process.env.DEBUG.split(',')) {
     const [id, view, mode] = spec.split(':');
-    save(`dbg-${id}-${view}-${mode}.png`, await page.evaluate(async (id, view, mode) => { await window.__lab.select(id); return window.__b64(await window.__lab.shoot(view, mode, { width: 800, height: 600 })); }, id, view, mode));
+    save(`dbg-${id}-${view}-${mode}${process.env.DLIGHT ? '-' + process.env.DLIGHT : ''}.png`, await page.evaluate(async (id, view, mode, W, H, L, NS) => { await window.__lab.select(id); if (NS) for (const l of [window.__lab.viewer.light]) l.shadow = 0; return window.__b64(await window.__lab.shoot(view, mode, { width: W, height: H, light: L || undefined })); }, id, view, mode, +(process.env.DW || 800), +(process.env.DH || 600), process.env.DLIGHT || '', process.env.DNOSHADOW === '1'));
   }
   await browser.close(); srv.kill(); process.exit(0);
 }

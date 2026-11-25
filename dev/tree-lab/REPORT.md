@@ -1,6 +1,8 @@
 # Tree Lab: technical report (structural review gate)
 
-Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`. No foliage and no bark materials.
+Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`; structural finishing pass on top of `35d542d` (see
+`review/CHANGES-finishing-pass.md` for what changed, why, and the before/after evidence). No foliage and no bark
+materials.
 
 Public build: https://nachumrubin.github.io/hogwarts-world/dev/tree-lab/ (deployed with the Creature Lab;
 see "Public build" in README.md).
@@ -47,10 +49,10 @@ There is one tree-generation system, used by the lab, the Node tools and (later)
 | | status | seed | height | crown | DBH | primary limbs* | branches | history |
 |---|---|---|---|---|---|---|---|---|
 | Oak A, Survivor | preserved | 1603 | 18.9 m | 32.8 m | 2.11 m | 5 | 1,803 | storm-lost limb (5.5 m), stag-headed top |
-| Oak B, Ancient Guardian | new | 2206 | 19.1 m | 28.7 m (25.9 × 28.7) | 2.21 m | 5 | 2,467 | leader lost at 6.5 m in youth → spread; late dieback |
-| Oak C, Forest Veteran | new | 3119 | 24.8 m | 16.3 m | 1.50 m | 5 | 531 | woodland light (canopy from 10 m, 7.5 m gap); storm at 17.7 m; whips died back |
-| Scots pine | refined | 1714 | 20.4 m | 14.9 m | 1.19 m | 2 | 1,721 | 6 dominant limbs, 64 primaries self-pruned, leader died back |
-| Silver birch | refined | 1903 | 21.1 m | 10.0 m | 0.59 m | 10 | 1,309 | 33 arching primaries, 5 low limbs lost |
+| Oak B, Ancient Guardian | refined | 2206 | 19.4 m | 26.9 m (24.8 × 26.9) | 2.21 m | 6 | 2,024 | leader lost at 6.5 m in youth → spread; late dieback |
+| Oak C, Forest Veteran | refined | 3119 | 24.6 m | 18.4 m | 1.50 m | 6 | 853 | woodland light (canopy from 10 m, 7.5 m gap); storm at 13.4 m; whips died back |
+| Scots pine | refined | 1714 | 21.6 m | 13.4 m | 1.19 m | 3 | 1,729 | 6 dominant limbs, 73 primaries self-pruned, leader died back |
+| Silver birch | refined | 1903 | 21.0 m | 10.4 m | 0.59 m | 8 | 1,093 | 28 arching primaries, 5 low limbs lost |
 
 \* A primary limb is a limb leaving the stem with a base radius of at least 20% of the trunk radius at 1.3 m,
 plus the stem's own continuation once it has divided. By this measure the pine's dominant limbs are slender
@@ -89,11 +91,11 @@ These are counts measured from the actual meshes, from `diagnostics.json`:
 
 | | LOD0 triangles | LOD0 vertices | LOD0 memory | LOD1 tris | LOD2 tris | grow | mesh LOD0 |
 |---|---|---|---|---|---|---|---|
-| Oak A | 630k | 365k | 25.1 MB | 131k | 14k | 1.1 s | 1.5 s |
-| Oak B | 868k | 502k | 34.5 MB | 179k | 19k | 1.9 s | 2.9 s |
-| Oak C | 332k | 187k | 13.0 MB | 69k | 7.6k | 0.9 s | 1.7 s |
-| Scots pine | 483k | 290k | 19.7 MB | 92k | 5.6k | 1.6 s | 0.9 s |
-| Silver birch | 795k | 479k | 32.5 MB | 73k | 4.8k | 0.6 s | 1.1 s |
+| Oak A | 354k | 205k | 14.1 MB | 122k | 18.5k | 1.2 s | 6.1 s |
+| Oak B | 396k | 229k | 15.8 MB | 139k | 21.4k | 2.0 s | 10.4 s |
+| Oak C | 188k | 109k | 7.5 MB | 63k | 10.6k | 1.7 s | 4.2 s |
+| Scots pine | 217k | 133k | 9.0 MB | 68k | 7.8k | 2.1 s | 4.9 s |
+| Silver birch | 174k | 106k | 7.2 MB | 37k | 4.5k | 0.5 s | 2.8 s |
 
 The grow and mesh times were measured in this headless session's Worker, on 2 CPU cores. In the single-specimen
 view the viewer reports 5 draw calls for the main pass (sky, tree, ground, figure, ranging pole).
@@ -103,27 +105,16 @@ timestamp queries, GPU pass time). The only numbers I have so far come from the 
 say nothing about GPU performance, so I haven't quoted them. Real figures need a run in Chrome on your machine with
 "Live rendering" on.
 
-LOD0 is the hero inspection mesh. Oak B and the birch at LOD0, at more than 0.8M triangles each, are too heavy for
-the world. LOD1 (70–180k) is the realistic near-field budget.
+LOD0 fell by 43–78% in the finishing pass: curvature-adaptive rings on thin branches, underground blended faces
+culled, tighter blend regions. The audit and method are in `review/CHANGES-finishing-pass.md`. Meshing got slower,
+mainly from the root-flare look-ups; it runs in the worker and is the next thing to optimise.
 
 ## Outstanding structural defects
 
-1. **Oak A:** a low limb bends sharply toward the viewer near the trunk. From the front it reads as a curl,
-   although it isn't a reversal. The 23 remaining minor direction reversals are high in the crown (r < 0.16 m).
-2. **Oak A, B and C bases:** a thin dark sliver where the blended root flare meets the ground in close-ups.
-3. **Blended surfaces:** faint dotted creases where surface-net blocks meet. They are visible in the normals mode at
-   the forks.
-4. **Oak B:** dense, fairly uniform twig layer at the crown rim, so the dome reads as somewhat even. One long
-   hanging branch on the right side.
-5. **Oak C:** thin crown (531 branches) and a plain, smooth upper stem. Two small loops remain at 19–20 m.
-6. **Pine:** dominant limbs are slender relative to the 1.19 m stem. Stubs still project almost horizontally from
-   the upper bole.
-7. **Birch:** primaries that pass in front of the stem show their rounded start inside the stem's silhouette from
-   some angles.
-8. **Comparison framing:** full-tree views use one 36 m frame, so the narrow trees occupy a small part of the image.
-   Close-ups are framed per tree.
-9. **Headless only:** page screenshots of the WebGPU canvas can show compositing artifacts under SwiftShader. Lab
-   captures render offscreen and are not affected.
+Current list: section 4 of `review/CHANGES-finishing-pass.md`. Faint rings where the flare band fades on the pine
+and birch stems, narrow handover bands at oak forks, Oak A's preserved low-limb curl, Oak B slightly narrower,
+the birch leader running on above the top primaries, crisp twig shadows under the studio light, and slower
+generation.
 
 Interface screenshots: `review/lab-ui.png` (desktop) and `review/lab-mobile.png` (phone). The viewport in both is
 the frame actually presented to the canvas, read back from the GPU, because headless page screenshots of

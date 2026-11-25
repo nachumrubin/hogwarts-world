@@ -58,12 +58,14 @@ struct VOut { @builtin(position) cp: vec4f, @location(0) wp: vec3f, @location(1)
 fn aces(x: vec3f) -> vec3f { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3f(0.0), vec3f(1.0)); }
 fn srgb(c: vec3f) -> vec3f { return select(1.055 * pow(c, vec3f(1.0 / 2.4)) - 0.055, c * 12.92, c <= vec3f(0.0031308)); }
 fn shadow(wp: vec3f, n: vec3f) -> f32 {
-  let s = u.sm * vec4f(wp + n * 0.03, 1.0);
+  // normal offset and depth bias grow at grazing light angles (shadow acne showed as bands on limbs lit edge-on)
+  let g = 1.0 - max(dot(n, normalize(u.sun.xyz)), 0.0);
+  let s = u.sm * vec4f(wp + n * (0.03 + 0.06 * g), 1.0);
   let uv = vec2f(s.x * 0.5 + 0.5, 0.5 - s.y * 0.5);
   if (any(uv < vec2f(0.0)) || any(uv > vec2f(1.0))) { return 1.0; }
   var a = 0.0;
   let e = 1.0 / f32(textureDimensions(shadowMap).x);
-  for (var y = -1; y <= 1; y++) { for (var x = -1; x <= 1; x++) { a += textureSampleCompareLevel(shadowMap, cmp, uv + vec2f(f32(x), f32(y)) * e * 1.5, s.z - 0.0004); } }
+  for (var y = -1; y <= 1; y++) { for (var x = -1; x <= 1; x++) { a += textureSampleCompareLevel(shadowMap, cmp, uv + vec2f(f32(x), f32(y)) * e * 1.5, s.z - 0.0004 - 0.0012 * g); } }
   return a / 9.0;
 }
 fn hierCol(order: f32, flags: f32) -> vec3f {
