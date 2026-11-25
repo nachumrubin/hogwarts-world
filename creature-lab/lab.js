@@ -38,7 +38,7 @@ export class Lab{
   this.bounds=kind==='hippogriff'?new THREE.Box3(new V(-.67,0,-1.74),new V(.67,2.86,1.85)):catalog[kind]?new THREE.Box3().setFromObject(this.actor.root):null;
   this.clock=0;this.action=catalog[kind]?Object.keys(catalog[kind].actions)[0]:kind==='squid'?'Swim':'Idle';this.level=0;this.angle='three-quarter';this.setAngle(this.angle);this.applyDebug();this.calculateMemory();this.render();
  }
- widePose(action){return this.kind==='hippogriff'?['Unfold','Fly','Glide','Bank','Takeoff','Descend','Land','Sequence'].includes(action):this.kind==='owl'&&['Unfold','Flap','Fly'].includes(action)}
+ widePose(action){return this.kind==='hippogriff'?['Unfold','Fly','Glide','Bank','Takeoff','Descend','Land','Sequence'].includes(action):this.kind==='owl'&&['Unfold','Takeoff','Fly','Glide','Bank','Land'].includes(action)}
  setAction(action){
   const reframe=this.widePose(action)!==this.widePose(this.action);
   this.action=action;
@@ -50,7 +50,7 @@ export class Lab{
   else if(angle==='habitat')radius*=1.44;
   if(this.bounds){
     this.bounds.getCenter(this.target);
-    if(this.kind==='owl'&&this.widePose(this.action))this.target.y+=.24;
+    if(this.kind==='owl'&&this.widePose(this.action))this.target.y+=this.action==='Unfold'?0:.16;
     if(angle==='close-up'){const size=this.bounds.getSize(new V());this.target.y+=size.y*.28;this.target.z+=size.z*.22;radius=this.fit()*.48}
   }
   if(this.kind==='merperson'&&angle==='close-up'){
@@ -59,7 +59,7 @@ export class Lab{
   const dir=(this.kind==='merperson'&&merpersonViews[angle])||(this.kind!=='squid'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];
   this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
  }
- fit(){if(this.bounds){const s=this.bounds.getSize(new V());if(this.kind==='hippogriff'&&this.widePose(this.action))s.x=7.92;if(this.kind==='owl'&&this.widePose(this.action)){s.x=1.55;s.y+=.48}return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
+ fit(){if(this.bounds){const s=this.bounds.getSize(new V());if(this.kind==='hippogriff'&&this.widePose(this.action))s.x=7.92;if(this.kind==='owl'&&this.widePose(this.action)){s.x=1.12;s.y+=.32}return Math.max(s.y*1.95,Math.max(s.x,s.z)*1.9/this.camera.aspect)+s.z*.32}const width=this.kind==='squid'?18.3:7.8;return Math.max(width/(2*Math.tan(THREE.MathUtils.degToRad(19.5))*this.camera.aspect),this.kind==='squid'?9.2:5.6)}
  orbit(){this.camera.position.copy(this.target).add(new V().setFromSpherical(this.spherical));this.camera.lookAt(this.target);if(this.kind==='squid')this.camera.rotateZ(-.085)}
  bindCamera(){
   const c=this.canvas;c.addEventListener('pointerdown',e=>{c.focus({preventScroll:true});c.setPointerCapture(e.pointerId);this.drag=[e.clientX,e.clientY]});c.addEventListener('pointerup',()=>this.drag=null);c.addEventListener('pointercancel',()=>this.drag=null);

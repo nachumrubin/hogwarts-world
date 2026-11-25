@@ -404,8 +404,8 @@ export function createHabitat(scene,kind) {
   plants(group,terrainHeight,random,lake,clock);
   if(!lake)addForest(group,terrainHeight,random,clock,obstacles);
   if(kind==='owl'){
-    const perch=new THREE.Mesh(new THREE.CylinderGeometry(.108,.13,1.14,14),new THREE.MeshStandardMaterial({color:0x675440,roughness:1}));
-    perch.rotation.z=Math.PI/2-.04;perch.position.y=-.095;group.add(perch);
+    const perch=new THREE.Mesh(new THREE.CylinderGeometry(.017,.019,.48,20),new THREE.MeshStandardMaterial({color:0x675440,roughness:1}));
+    perch.rotation.z=Math.PI/2;perch.position.set(0,-.006,.011);group.add(perch);
   }
   groundShadow(group,terrainHeight,lake);
   const shafts=lightShafts(group,lake,clock), motes=particles(group,random,lake);
