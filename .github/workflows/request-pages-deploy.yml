@@ -47,7 +47,9 @@ jobs:
           echo "Deploy run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$id" | tee -a "$GITHUB_STEP_SUMMARY"
           gh run watch "$id" --repo "$GITHUB_REPOSITORY" --exit-status --interval 10
       - name: Check the live site
+        shell: bash
         run: |
+          set -eo pipefail
           short=${GITHUB_SHA::7}
           for i in $(seq 1 60); do
             got=$(curl -fsS "$SITE/dev/tree-lab/version.json?nocache=$RANDOM$i" | jq -r .commit || true)
@@ -68,6 +70,8 @@ jobs:
         with:
           node-version: 24
       - name: Run the public Tree Lab (headless Chrome, WebGPU)
+        shell: bash
         run: |
+          set -eo pipefail
           npm install --no-save --no-package-lock puppeteer-core@24
           node dev/tree-lab/tools/pages-smoke.mjs "$SITE/dev/tree-lab/" "${GITHUB_SHA::7}" | tee -a "$GITHUB_STEP_SUMMARY"
