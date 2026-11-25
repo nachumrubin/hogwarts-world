@@ -9,7 +9,7 @@ export const actions={Idle:'Idle',Walk:'Walk',Trot:'Trot',Gallop:'Gallop',Unfold
 export const sequence=[['Idle',1.4],['Walk',2.2],['Trot',2.0],['Gallop',2.0],['Takeoff',2.0],['Fly',2.1],
  ['Glide',1.7],['Bank',2.2],['Descend',2.1],['Land',2.2],['Fold',1.7],['Idle',1.5]];
 const gaits={Idle:[0,.9,.70,[0,.25,.5,.75]],Walk:[.86,.86,.68,[0,.25,.5,.75]],
- Trot:[2.05,1.31,.47,[0,.5,.5,0]],Gallop:[3.65,1.55,.34,[0,.41,.14,.55]]};
+ Trot:[2.05,1.31,.47,[0,.5,.5,0]],Gallop:[4.15,1.65,.26,[0,.38,.115,.51]]};
 const tau=2*Math.PI,mod=x=>x-Math.floor(x),mix=(a,b,t)=>a+(b-a)*t;
 const Q=()=>new T.Quaternion(),rot=(x,y=0,z=0)=>Q().setFromEuler(new T.Euler(x,y,z,'YXZ'));
 const fixed=new T.Vector3(1,1,1),down=V(0,-1,0),headPivot=V(0,2.40,.98);
@@ -23,7 +23,7 @@ export class Hippogriff extends Anatomy{
  constructor(){
    super();this.age=0;this.elapsed=0;this.sequenceTime=0;this.phase=.06;this.speed=0;this.yaw=0;this.height=0;
    this.vertical=0;this.open=0;this.flap=0;this.wingPhase=0;this.secondary=0;this.bank=0;this.bow=0;this.alert=0;
-   this.cadence=.9;this.duty=.68;this.run=0;this.tuck=0;this.impact=0;this.gaze=0;this.gazePitch=0;
+   this.cadence=.9;this.duty=.68;this.run=0;this.tuck=0;this.impact=0;this.gaze=0;this.gazePitch=0;this.gallop=0;this.brake=0;this.landingDelay=0;this.impactTime=1;
    this.contacts=legs.map((leg,k)=>({offset:gaits.Walk[3][k],stance:true,anchor:null,start:V(),end:V(),target:V(),yaw:0,leg}));
  }
  prepare(){
@@ -73,14 +73,18 @@ export class Hippogriff extends Anatomy{
    const speed=inAir?airSpeed:landing?1.20*Math.exp(-e*1.8):gait[0];
    this.speed=damp(this.speed,speed,3.5,dt);
    this.cadence=damp(this.cadence,gait[1],4,dt);this.duty=damp(this.duty,gait[2],4,dt);
-   this.run=damp(this.run,clamp(gait[0]/3.65),4,dt);this.phase+=this.cadence*dt;
+   this.gallop=damp(this.gallop,state==='Gallop'?1:0,6,dt);
+   this.brake=damp(this.brake,state==='Descend'?smooth(e/1.3):state==='Land'?1-smooth((e-.65)/.8):0,4,dt);
+   this.run=damp(this.run,clamp(gait[0]/3.65),4,dt);this.phase+=mix(this.cadence,this.speed/(4.15/1.65),this.gallop)*dt;
    const desiredHeight=state==='Descend'?.48:inAir?(state==='Takeoff'?2.35*smooth((e-.32)/1.55):2.35):0;
    const old=this.height;
    this.vertical+=(13*(desiredHeight-this.height)-5.4*this.vertical)*dt;
    this.height=Math.max(0,this.height+this.vertical*dt);
    if(landing && this.height<.035 && this.vertical<0){this.height=0;this.vertical=0;}
    this.impact=damp(this.impact,0,4.3,dt);
-   if(landing&&old>.04&&this.height<=.04)this.impact=.16;
+   if(landing&&old>.04&&this.height<=.04){this.impactTime=0;this.landingDelay=.14;}
+   this.impactTime+=dt;this.landingDelay=Math.max(0,this.landingDelay-dt);
+   this.impact=.15*Math.sin(Math.PI*clamp(this.impactTime/.42))**2;
    this.tuck=damp(this.tuck,inAir&&state!=='Descend'?smooth((this.height-.09)/.67):0,4.8,dt);
    this.bank=damp(this.bank,state==='Bank'?.42:0,2.5,dt);
    let turn=-this.bank*.88;
@@ -109,9 +113,10 @@ export class Hippogriff extends Anatomy{
    this.contacts.forEach((c,k)=>{
      const diff=mod(targetOffsets[k]-c.offset+.5)-.5;c.offset+=diff*(1-Math.exp(-4*dt));
      const ph=mod(stamp-c.offset),anchorHome=this.home(c),height=ctx.terrainHeight??(()=>0);
-     const air=this.height>.04;
+     const air=this.height>.04||(!c.leg.fore&&this.landingDelay>0);
      const moving=this.speed>.045 && !air;
-     const stance=(!moving || ph<this.duty)&&!air;
+     const touchdown=landing&&this.impactTime<.45;
+     const stance=(touchdown||!moving||ph<this.duty)&&!air;
      if(!c.anchor){c.anchor=anchorHome.clone();c.anchor.y=height(c.anchor.x,c.anchor.z)+this.origin.y;c.yaw=this.yaw;}
      if(!stance && (c.stance||(!air&&c.airborne))){
        c.start=(!air&&c.airborne?anchorHome:c.anchor).clone();c.start.y=height(c.start.x,c.start.z)+this.origin.y;
@@ -126,7 +131,7 @@ export class Hippogriff extends Anatomy{
      }
      if(air&&!c.airborne){c.release=c.target.clone().sub(anchorHome);c.release.y=0;}
      c.airborne=air;
-     c.spread=damp(c.spread??1,Number(stance),18,dt);
+     c.spread=damp(c.spread??1,Math.max(Number(stance),c.leg.fore?this.brake:0),18,dt);
      c.stance=stance;c.swing=air?1:stance?0:clamp((ph-this.duty)/(1-this.duty));
      if(stance)c.target.copy(c.anchor);
      else if(air){c.target.copy(anchorHome).addScaledVector(c.release,1-smooth((this.height-.04)/.48));c.target.y=height(anchorHome.x,anchorHome.z)+this.origin.y;}
@@ -144,25 +149,27 @@ export class Hippogriff extends Anatomy{
    const t=this.age,p=this.phase*tau,air=smooth(this.height/.7),wave=Math.sin(this.wingPhase),load=this.run;
    const crouch=this.state==='Takeoff'?.16*Math.sin(Math.PI*clamp(this.elapsed/.53)):0;
    const breathing=.008*Math.sin(t*1.93),bob=(.024+.071*load)*Math.cos(2*p)*load*(1-air);
-   const pitch=.068*load*Math.sin(p)*(1-air)-.10*this.vertical+.14*this.bow;
+   const pitch=-.145*this.brake+.065*this.gallop*Math.sin(p-.6)+.068*load*Math.sin(p)*(1-air)-.10*this.vertical+.14*this.bow;
    const roll=.032*load*Math.sin(p)*(1-air)+this.bank;
-   const mid=V(0,1.43,-.04),spine=around(mid,rot(pitch,0,roll),mid.clone().add(V(.028*load*Math.sin(p),bob+breathing-crouch-this.impact+.060*air*this.flap*wave,0)),V(1+breathing*.36,1+breathing*.27,1));
+   const mid=V(0,1.43,-.04),spine=around(mid,rot(pitch,0,roll),mid.clone().add(V(.028*load*Math.sin(p),bob+this.gallop*(.10*Math.cos(p+1.1)-.025)+breathing-crouch-this.impact+.060*air*this.flap*wave-.085*air*this.flap*Math.cos(this.wingPhase),0)),V(1+breathing*.36,1+breathing*.27,1));
    // Lower the shoulder girdle when stride reach approaches full extension.
    // A grounded foot keeps its anchor while the trunk yields to the load.
    this.root.updateMatrixWorld(true);
    let compression=0;
    for(const c of this.contacts){
-     if(!c.leg.fore||this.height>.6)continue;
-     const r=c.leg.points,base=point(spine,r[0]),foot=this.root.worldToLocal(c.target.clone());
+     if(!c.leg.fore)continue;
+     const r=c.leg.points,base=point(spine,r[0]),{foot}=this.footGoal(c);
      const swing=c.stance?0:Math.sin(Math.PI*c.swing),bend=.13+.95*swing+this.tuck;
      const a=r[0].distanceTo(r[1]),b=r[1].distanceTo(r[2]),d=r[2].distanceTo(r[3]);
      const reach=a+Math.sqrt(b*b+d*d+2*b*d*Math.cos(bend))-.008;
      const dx=base.x-foot.x,dz=base.z-foot.z;
      const limit=Math.sqrt(Math.max(.01,reach*reach-dx*dx-dz*dz));
-     compression=Math.max(compression,(base.y-foot.y-r.at(-1).y-limit)*(1-smooth((this.height-.04)/.56)));
+     compression=Math.max(compression,base.y-foot.y-limit);
    }
    spine.elements[13]-=compression;
    this.write('spine',spine);
+   const pelvis=spine.clone().multiply(around(V(0,1.49,-.28),rot(.16*this.gallop*Math.sin(p-.95))));
+   this.write('pelvis',pelvis);
    const neckBase=V(0,1.77,.48);
    const neck=spine.clone().multiply(around(neckBase,rot(.80*this.bow-.58*pitch-.09*this.alert,.45*this.gaze,-.47*roll)));
    const head=neck.clone().multiply(around(headPivot,rot(.20*this.bow-.37*pitch-.5*this.gazePitch,.55*this.gaze,-.44*roll)));
@@ -177,12 +184,12 @@ export class Hippogriff extends Anatomy{
      this.write('lid'+i,head.clone().multiply(around(eye,Q(),eye,V(1,1-.80*blink,1))));
    }
    const swish=(this.state==='Swish'?.41:.075)*Math.sin(t*(this.state==='Swish'?3.9:1.52));
-   const tail=spine.clone().multiply(around(V(0,1.69,-1.18),rot(.33*air+.10*load*Math.cos(p),0,swish*.55)));
+   const tail=pelvis.clone().multiply(around(V(0,1.69,-1.18),rot(.33*air+.10*load*Math.cos(p),0,swish*.55)));
    this.write('tailRoot',tail);this.write('tailTip',tail.clone().multiply(around(V(0,1.13,-1.42),rot(.22*air,0,swish+.06*Math.sin(t*1.52-.5)))));
    const open=smooth(this.open);this.setWings(open);
    for(let k=0;k<2;k++){
      const s=k?1:-1,stroke=this.flap*open,shoulder=V(s*.31,1.91,.32),elbow=V(s*1.11,2.24,-.07),wrist=V(s*1.96,2.22,.29);
-     let m=spine.clone().multiply(around(shoulder,rot(.07*wave*stroke,.035*s*stroke,s*(.78*wave*stroke+.08*open-.26*this.bank*s))));
+     let m=spine.clone().multiply(around(shoulder,rot(.07*wave*stroke+.14*this.brake,.035*s*stroke,s*(.78*(wave+.14*Math.cos(2*this.wingPhase)*stroke)*stroke+.08*open-.26*this.bank*s))));
      this.write('shoulder'+k,m);
      m=m.clone().multiply(around(elbow,rot(.09*stroke*Math.cos(this.wingPhase),s*.12*stroke*Math.max(0,wave),s*.21*stroke*Math.sin(this.wingPhase-.45))));
      this.write('elbow'+k,m);
@@ -191,15 +198,22 @@ export class Hippogriff extends Anatomy{
      this.write('wrist'+k,m);this.write('primary'+k,m.clone().multiply(around(wrist,rot(.14*stroke*this.secondary,s*.11*stroke*wave,s*.13*stroke*this.secondary))));
    }
    this.root.updateMatrixWorld(true);
-   for(let k=0;k<4;k++)this.legPose(k,spine,ctx);
+   for(let k=0;k<4;k++)this.legPose(k,legs[k].fore?spine:pelvis,ctx);
+ }
+ footGoal(c){
+   const {fore,s,points}=c.leg,end=points.at(-1);
+   let foot=this.root.worldToLocal(c.target.clone());foot.y+=end.y;
+   const gather=c.stance?0:smooth((this.height-.04)/.61);
+   const folded=fore?V(s*.35,mix(.84,.12,this.brake),mix(-.20,.78,this.brake)):
+     V(s*.35,.65,-1.78);
+   if(!fore&&this.brake>0&&!c.stance)foot.y+=.16*this.brake*smooth(this.height/.20+this.landingDelay/.14);
+   foot.lerp(folded,gather);
+   return {foot,gather};
  }
  legPose(k,spine,ctx){
    const c=this.contacts[k],{fore,s,points:rest}=c.leg,end=rest.at(-1),base=point(spine,rest[0]);
-   let foot=this.root.worldToLocal(c.target.clone());foot.y+=end.y;
+   const {foot,gather}=this.footGoal(c);
    const swing=c.stance?0:Math.sin(Math.PI*c.swing);
-   const gather=c.stance?0:smooth((this.height-.04)/.61);
-   const folded=fore?V(s*.35,.84,-.20):V(s*.35,.92,-1.50);
-   foot.lerp(folded,gather);
    const footRot=rot(.30*swing+(fore?1.03:.76)*this.tuck,(c.yaw-this.yaw)*(1-gather),0);
    if(c.stance&&ctx.terrainHeight){
      const h=ctx.terrainHeight,{x,z}=c.target,d=.035;

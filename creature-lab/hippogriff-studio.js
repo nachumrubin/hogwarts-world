@@ -2,7 +2,7 @@
 // once per selected actor/LOD. Both renderers use the actor's skin palette.
 import * as T from './vendor/three.module.js';
 const shader=`
-struct Frame { vp:mat4x4f, motion:vec4f, root:vec4f, feet:array<vec4f,4> };
+struct Frame { vp:mat4x4f, motion:vec4f, root:vec4f, feet:array<vec4f,4>, eye:vec4f };
 @group(0) @binding(0) var<uniform> f:Frame;
 @group(0) @binding(1) var<storage,read> bone:array<mat4x4f>;
 struct In { @location(0) p:vec3f,@location(1) n:vec3f,@location(2) ids:u32,@location(3) w:f32,
@@ -28,14 +28,17 @@ fn clip(p:vec3f)->vec4f {let q=f.vp*vec4f(p,1.);return vec4f(q.xy,(q.z+q.w)*.5,q
  for(var i=0;i<4;i++){
   let r=uv-f.feet[i].xz;shade+=.27*exp(-dot(r,r)/.028)*exp(-9.*max(f.feet[i].y,0.));
  }
- let fade=exp(-.065*length(delta));
- return vec4f(mix(vec3f(.21,.23,.24),vec3f(.48,.49,.48)-shade-lines*.063,fade),1.);
+ let fade=exp(-.035*length(uv-f.eye.xz));
+ let station=abs(fract(uv.y/5.+.5)-.5)*5.;
+ let marker=(1.-smoothstep(.045,.075,station))*(1.-smoothstep(.36,.40,abs(uv.x-2.)));
+
+ return vec4f(mix(vec3f(.21,.23,.24),mix(vec3f(.48,.49,.48),vec3f(.95,.75,.32),marker)-shade-lines*.085,fade),1.);
 }
-@fragment fn fs(v:Out,@builtin(front_facing) front:bool)->@location(0) vec4f{
- let n=normalize(v.n)*select(-1.,1.,front);
+@fragment fn fs(v:Out)->@location(0) vec4f{
+ let n=faceForward(normalize(v.n),v.world-f.eye.xyz,normalize(v.n));
  let key=max(0.,dot(n,normalize(vec3f(-.46,.78,.55))));
  let rim=max(0.,dot(n,normalize(vec3f(.58,.48,-.72))));
- let clay=vec3f(.79,.774,.744)*v.tint*(.42+.12*n.y+.44*key+.14*rim);
+ let clay=vec3f(.79,.774,.744)*v.tint*(.49+.065*n.y+.40*key+.13*rim);
  return vec4f(clay,1.);
 }`;
 function vertices(actor){
@@ -74,15 +77,15 @@ export class MotionStudio {
    this.device=await adapter.requestDevice();const d=this.device;
    this.adapter=adapter.info?.description||adapter.info?.architecture||adapter.info?.vendor||'WebGPU';
    d.addEventListener('uncapturederror',e=>{this.error=e.error;console.error(e.error);});
-   this.frame=d.createBuffer({size:160,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+   this.frame=d.createBuffer({size:176,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
    this.palette=d.createBuffer({size:128*64,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
    const module=d.createShaderModule({code:shader});
    const messages=await module.getCompilationInfo();if(messages.messages.some(m=>m.type==='error'))throw Error(messages.messages.map(m=>m.message).join('\n'));
    const depthStencil={format:'depth24plus',depthCompare:'less',depthWriteEnabled:true};
    const attr=['float32x3','float32x3','uint32','float32','float32x3','float32x3','float32x3','float32'];
    this.model=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'vs',buffers:[{arrayStride:72,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68][i]}))}]},
-     fragment:{module,entryPoint:'fs',targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'back'},depthStencil});
-   this.floor=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'floorVS'},fragment:{module,entryPoint:'floorFS',targets:[{format:'rgba8unorm'}]},depthStencil});
+     fragment:{module,entryPoint:'fs',targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'none'},multisample:{count:4},depthStencil});
+   this.floor=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'floorVS'},fragment:{module,entryPoint:'floorFS',targets:[{format:'rgba8unorm'}]},multisample:{count:4},depthStencil});
    this.bind=d.createBindGroup({layout:this.model.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}}]});
    this.floorBind=d.createBindGroup({layout:this.floor.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.frame}}]});
    this.initialized=true;
@@ -96,21 +99,22 @@ export class MotionStudio {
      this.vb=upload(packed,GPUBufferUsage.VERTEX);this.ib=upload(indices,GPUBufferUsage.INDEX);this.actor=actor;this.lod=actor.level;
    }
    if(width!==this.width||height!==this.height){
-     this.color?.destroy();this.depth?.destroy();this.buffer?.destroy();
+     this.samples?.destroy();this.color?.destroy();this.depth?.destroy();this.buffer?.destroy();
      this.width=this.canvas.width=width;this.height=this.canvas.height=height;
      this.color=d.createTexture({size:[width,height],format:'rgba8unorm',usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC});
-     this.depth=d.createTexture({size:[width,height],format:'depth24plus',usage:GPUTextureUsage.RENDER_ATTACHMENT});
+     this.samples=d.createTexture({size:[width,height],sampleCount:4,format:'rgba8unorm',usage:GPUTextureUsage.RENDER_ATTACHMENT});
+     this.depth=d.createTexture({size:[width,height],sampleCount:4,format:'depth24plus',usage:GPUTextureUsage.RENDER_ATTACHMENT});
      this.stride=Math.ceil(width/64)*256;this.buffer=d.createBuffer({size:this.stride*height,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
      this.image=new ImageData(width,height);
    }
    actor.root.updateMatrixWorld(true);actor.rig.skeleton.update();camera.updateMatrixWorld(true);
-   const data=new Float32Array(40);
+   const data=new Float32Array(44);
    data.set(new T.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).elements);
    const wing=actor.rig.groups.wing[0].mesh;
-   data.set(wing.morphTargetInfluences,16);data.set(actor.root.position.toArray(),20);
+   data.set(camera.position.toArray(),40);data.set(wing.morphTargetInfluences,16);data.set(actor.root.position.toArray(),20);
    actor.contacts.forEach((c,i)=>data.set(c.footWorld.toArray(),24+i*4));
    d.queue.writeBuffer(this.frame,0,data);d.queue.writeBuffer(this.palette,0,actor.rig.skeleton.boneMatrices);
-   const encoder=d.createCommandEncoder(),pass=encoder.beginRenderPass({colorAttachments:[{view:this.color.createView(),loadOp:'clear',storeOp:'store',clearValue:[.21,.23,.24,1]}],
+   const encoder=d.createCommandEncoder(),pass=encoder.beginRenderPass({colorAttachments:[{view:this.samples.createView(),resolveTarget:this.color.createView(),loadOp:'clear',storeOp:'discard',clearValue:[.21,.23,.24,1]}],
      depthStencilAttachment:{view:this.depth.createView(),depthLoadOp:'clear',depthClearValue:1,depthStoreOp:'discard'}});
    pass.setPipeline(this.floor);pass.setBindGroup(0,this.floorBind);pass.draw(6);
    pass.setPipeline(this.model);pass.setBindGroup(0,this.bind);pass.setVertexBuffer(0,this.vb);pass.setIndexBuffer(this.ib,'uint32');

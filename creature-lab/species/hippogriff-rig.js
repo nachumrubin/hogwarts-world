@@ -15,7 +15,7 @@ export const legs=[-1,1].flatMap(s=>[false,true].map(fore=>{
 const toeEnds=[[-.258,.305],[.016,.412],[.258,.279],[-.097,-.271]];
 export const toes=toeEnds.map(([x,z])=>V(x,0,z));
 const identity=new T.Matrix4();
-const paletteNames=['spine','neck','skull','tailRoot','tailTip','ruff'];
+const paletteNames=['spine','neck','skull','tailRoot','tailTip','ruff','pelvis'];
 for(let k=0;k<2;k++)paletteNames.push('eye'+k,'lid'+k,...['shoulder','elbow','wrist','primary','secondary'].map(n=>n+k));
 for(let k=0;k<4;k++){
  for(let j=0;j<legs[k].points.length;j++)paletteNames.push('leg'+k+'_'+j);
@@ -30,8 +30,9 @@ function binding(region,p,k,detail){
    const names=['shoulder','elbow','wrist',x<1.85?'secondary':'primary'].map(n=>n+side);
    if(x<.56)return pair('spine',names[0],smooth((x-.22)/.34));
    if(x<1.30)return pair(names[0],names[1],smooth((x-.82)/.48));
-   if(x<2.1 && p.z>-.25)return pair(names[1],names[2],smooth((x-1.48)/.57));
-   return pair(x<1.8?names[1]:names[2],names[3],Math.max(tip,smooth((x-2.05)/1.4),smooth((-.22-p.z)/.94)));
+   if(x<1.50)return pair(names[1],'secondary'+side,tip*Math.sin(Math.PI*(x-1.30)/.20)**2*.25);
+   if(x<2.08)return pair(names[1],names[2],smooth((x-1.50)/.58));
+   return pair(names[2],'primary'+side,smooth((x-2.08)/.85)*(.55+.45*tip));
  }
  if(region==='folded')return pair('spine','spine',0);
  if(region==='orbit'||region==='lid')return pair('skull',(region==='orbit'?'eye':'lid')+Number(p.x>0),1);
@@ -40,6 +41,7 @@ function binding(region,p,k,detail){
  if(region==='body'||region==='ruff'){
    if(p.y>2.29 && p.z>.57)return pair('neck','skull',smooth((p.y-2.29)/.31));
    if(region==='ruff'&&p.y<2.14)return pair('neck','ruff',1-smooth((p.y-1.97)/.17));
+   if(p.z<-.20)return pair('spine','pelvis',smooth((-.20-p.z)/.65));
    return pair('spine','neck',neckMix(p));
  }
  const {points,s,fore}=legs[k],key=j=>'leg'+k+'_'+j;
@@ -50,7 +52,7 @@ function binding(region,p,k,detail){
      if(along-3*off>best){digit=i;best=along-3*off;fraction=along/end.length();}});
    return pair(key(points.length-1),'toe'+k+'_'+digit,smooth((fraction-.12)/.54));
  }
- if(p.y>points[0].y-.05)return pair(key(0),'spine',smooth((p.y-points[0].y+.05)/.24));
+ if(p.y>points[0].y-.05)return pair(key(0),fore?'spine':'pelvis',smooth((p.y-points[0].y+.05)/.24));
  for(let j=1;j<points.length;j++){
    const radius=j===1?.15:j===2?.105:.055;
    if(p.y>points[j].y-radius)return pair(key(j-1),key(j),smooth((points[j].y+radius-p.y)/(2*radius)));
@@ -127,8 +129,16 @@ export function bindSpecimen(actor){
    g.applyMatrix4(record.matrix);
    if(record.matrix.determinant()<0){const ix=g.index.array;for(let i=0;i<ix.length;i+=3)[ix[i],ix[i+1]]=[ix[i+1],ix[i]];}
    const p=g.attributes.position,ids=new Uint16Array(p.count*4),weights=new Float32Array(ids.length),v=V(),detail=V();
+   let vaneIndex=0;
+   const vanes=record.region==='wing'&&g.userData.vanes;
    for(let i=0;i<p.count;i++){
      v.fromBufferAttribute(p,i);if(g.attributes.clayDetail)detail.fromBufferAttribute(g.attributes.clayDetail,i);
+     if(vanes){
+       if(vanes[vaneIndex+1]?.offset===i)vaneIndex++;
+       const {offset,stride}=vanes[vaneIndex];
+       // Keep both faces and margins of the vane attached to the same shaft station.
+       v.fromBufferAttribute(p,offset+Math.floor((i-offset)/stride)*stride+3);
+     }
      const [a,b,w]=binding(record.region,v,record.k,detail);
      ids[4*i]=a;ids[4*i+1]=b;weights[4*i]=1-w;weights[4*i+1]=w;
    }
