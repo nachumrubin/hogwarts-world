@@ -2,6 +2,9 @@
 
 Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`. No foliage and no bark materials.
 
+Public build: https://nachumrubin.github.io/hogwarts-world/dev/tree-lab/ (deployed with the Creature Lab;
+see "Public build" in README.md).
+
 ## What was taken from the Creature Lab, and what was not
 
 I read the Creature Lab source (`creature-lab` branch: `index.html`, `app.js`, `lab.js`, `inspection.js`,
