@@ -83,8 +83,10 @@ by a single workflow, `.github/workflows/deploy-pages.yml` on the `creature-lab`
 
 A push to `creature-lab` redeploys both. A push touching `dev/tree-lab/` on `world-v2-webgpu` runs
 `.github/workflows/request-pages-deploy.yml`, which dispatches that same deploy for the pushed commit. It then checks the live site: the new commit in
-`version.json`, every asset returning 200, Creature Lab intact, and the public Tree Lab running in headless Chrome
-with WebGPU (`tools/pages-smoke.mjs`). Neither
+`version.json`, every asset returning 200, and Creature Lab intact. These checks block a failed update. It also runs
+`tools/pages-smoke.mjs` (headless Chrome with WebGPU) against the public page, but only as an advisory step:
+GitHub's hosted runners lose the software WebGPU device. Run the same script locally against the live URL, or
+against a locally staged copy, to check WebGPU. Neither
 lab can overwrite the other, and no branches are merged.
 
 The staged site uses only relative URLs, so it works under any base path. Assets get content-hashed names
