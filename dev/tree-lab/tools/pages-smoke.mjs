@@ -9,7 +9,7 @@ const expect = process.argv[3] || '';
 const chrome = process.env.CHROME_PATH || '/usr/bin/google-chrome';
 const browser = await puppeteer.launch({
   executablePath: chrome, headless: 'new', protocolTimeout: 1800000,
-  args: ['--no-sandbox', '--enable-unsafe-webgpu', '--enable-features=Vulkan', '--disable-vulkan-surface', '--use-angle=swiftshader', '--use-webgpu-adapter=swiftshader'],
+  args: ['--no-sandbox', '--enable-unsafe-webgpu', '--enable-features=Vulkan', '--disable-vulkan-surface', '--use-angle=swiftshader', '--use-webgpu-adapter=swiftshader', '--disable-gpu-watchdog', '--disable-gpu-sandbox', '--disable-dev-shm-usage'],
 });
 const problems = [], requests = [], consoleLog = [];
 const results = {}; let adapter = '';
