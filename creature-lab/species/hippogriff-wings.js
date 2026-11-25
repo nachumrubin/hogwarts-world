@@ -8,7 +8,7 @@ const vec=p=>new T.Vector3(...p);
 // rolled margins give both faces a readable profile even in plain clay.
 export function featherTract(actor,parent,feathers){
  return actor.mesh(parent,clay,lod=>{
-   const pos=[],idx=[],normals=[],detail=[];
+   const pos=[],idx=[],normals=[],detail=[],vanes=[];
    // Closely spaced samples at the midrib resolve a narrow rounded rachis.
    // Upper and lower faces meet only at their thin rolled margins.
    const cross=[-1,-.48,-.075,0,.075,.46,1],stride=cross.length*2;
@@ -18,6 +18,7 @@ export function featherTract(actor,parent,feathers){
      const side=delta.clone().cross(outward(0)).normalize(),up=side.clone().cross(delta).normalize();
      const phase=Math.sin(index*17.3),offset=pos.length/3;
      const steps=(flight?[18,11,6]:[15,10,6])[lod];
+     vanes.push({offset,steps,stride});
      const len=delta.length();
      const path=t=>curve?vec(curve(t)):a.clone().addScaledVector(delta,t)
        .addScaledVector(up,width*.39*Math.sin(Math.PI*t))
@@ -57,6 +58,7 @@ export function featherTract(actor,parent,feathers){
    }
    const g=new T.BufferGeometry();
    g.setAttribute('position',new T.Float32BufferAttribute(pos,3));
+   g.userData.vanes=vanes;
    g.setAttribute('clayDetail',new T.Float32BufferAttribute(detail,3));
    g.setAttribute('normal',new T.Float32BufferAttribute(normals,3));g.setIndex(idx);
    return g;

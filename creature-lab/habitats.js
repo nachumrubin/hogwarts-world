@@ -399,7 +399,7 @@ export function createHabitat(scene,kind) {
   const sky=backdrop(group,lake);
   const ground=terrainMesh(terrainHeight,surfaceMaterial(lake?0x62736a:0x645743,'soil',lake,clock));
   group.add(ground);
-  const contactHeight=kind==='centaur'||kind==='unicorn'?triangleGroundHeight(ground,terrainHeight):terrainHeight;
+  const contactHeight=kind==='centaur'||kind==='unicorn'||kind==='hippogriff'?triangleGroundHeight(ground,terrainHeight):terrainHeight;
   addRocks(group,terrainHeight,random,lake,clock,obstacles);
   plants(group,terrainHeight,random,lake,clock);
   if(!lake)addForest(group,terrainHeight,random,clock,obstacles);

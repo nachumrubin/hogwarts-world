@@ -208,7 +208,7 @@ export class Hippogriff extends Specimen {
      [1.629,2.534,2.474,.115],[1.719,2.514,2.468,.078],
      [1.770,2.490,2.469,.020]],true));
    for(const s of [-1,1]){
-     const eye=joint(body,s*.192,2.634,1.386);eye.rotation.y=s*.95;
+     const eye=joint(body,s*.192,2.634,1.386);eye.rotation.y=s*.95;eye.name="orbit";
      this.oval(eye,0x908f8b,0,0,0,.079,.055,.037);
      this.oval(eye,0x74716a,0,.001,.031,.044,.043,.014);
      this.oval(eye,0x373632,0,.001,.043,.022,.026,.007);
@@ -226,12 +226,12 @@ export class Hippogriff extends Specimen {
      this.hindLeg(s);
      this.foreLeg(s);
    }
-   this.mesh(body,clay,lod=>tailHair(lod));
+   this.mesh(body,clay,lod=>tailHair(lod)).name="tail";
    this.folded=buildWing(this,false);this.extended=buildWing(this,true);
    this.update(0,0,'Idle');
  }
  hindLeg(s){
-   const leg=joint(this.body,s*.29,0,s*.058);
+   const leg=joint(this.body,s*.29,0,s*.058);leg.name="hind";
    // Use the centaur's rest profile from hip through the coronet,
    // fitted under the existing croup and the staggered C.3 stance.
    const rows=hindProfile.map(([y,z,w,d,offset])=>{
@@ -263,7 +263,7 @@ export class Hippogriff extends Specimen {
 
  }
  foreLeg(s){
-   const leg=joint(this.body,s*.278,0,s*.065);
+   const leg=joint(this.body,s*.278,0,s*.065);leg.name="fore";
    const profile=[[-s*.038,1.93,.37,.115,.19],[0,1.69,.48,.201,.242],
     [s*.028,1.39,.58,.183,.207],[s*.044,1.16,.49,.144,.171],
     [s*.046,.986,.432,.111,.127],[s*.047,.84,.48,.086,.100],
@@ -298,7 +298,7 @@ export class Hippogriff extends Specimen {
      }
    }
    featherTract(this,leg,upper);
-   const foot=joint(leg,s*.07,0,.70);
+   const foot=joint(leg,s*.07,0,.70);foot.name="talons";
    foot.scale.x=s;
    this.mesh(foot,clay,plantarSkin);
 

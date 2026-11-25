@@ -92,6 +92,20 @@ function groundNormal(height,x,z){
   return vec(height(x-d,z)-height(x+d,z),2*d,height(x,z-d)-height(x,z+d)).normalize();
 }
 
+export function hindAngles(a,b,c,distance,axis){
+    const ratio=.68;
+    let low=0,high=2.85;
+    for(let i=0;i<45;i++){
+      const k=(low+high)*.5;
+      const reach2=a*a+b*b+c*c+2*(a*b*Math.cos(k)+b*c*Math.cos(ratio*k)+a*c*Math.cos((1-ratio)*k));
+      if(reach2>distance*distance)low=k;else high=k;
+    }
+    const k=(low+high)*.5;
+    const upperAngle=axis-Math.atan2(-b*Math.sin(k)-c*Math.sin((1-ratio)*k),
+      a+b*Math.cos(k)+c*Math.cos((1-ratio)*k));
+    return [upperAngle,upperAngle-k];
+}
+
 function poseLeg(leg,rig,terrain,weight){
   const {fore,ref,offsets,lengths,bones}=leg;
   const swing=Math.sin(Math.PI*leg.swing);
@@ -122,17 +136,7 @@ function poseLeg(leg,rig,terrain,weight){
   }else{
     // The reciprocal apparatus couples stifle and hock flexion. Solve
     // the coupled chain's reach, keeping each rigid lever at bind length.
-    const ratio=.68;
-    let low=0,high=2.85;
-    for(let i=0;i<45;i++){
-      const k=(low+high)*.5;
-      const reach2=a*a+b*b+c*c+2*(a*b*Math.cos(k)+b*c*Math.cos(ratio*k)+a*c*Math.cos((1-ratio)*k));
-      if(reach2>distance*distance)low=k;else high=k;
-    }
-    const k=(low+high)*.5;
-    upperAngle=axis-Math.atan2(-b*Math.sin(k)-c*Math.sin((1-ratio)*k),
-      a+b*Math.cos(k)+c*Math.cos((1-ratio)*k));
-    lowerAngle=upperAngle-k;
+    [upperAngle,lowerAngle]=hindAngles(a,b,c,distance,axis);
   }
   const elbow=root.clone().addScaledVector(direction(upperAngle),a);
   const middle=elbow.clone().addScaledVector(direction(lowerAngle),b);
