@@ -36,14 +36,15 @@ function h3(x: number, y: number, z: number, s: number): number {
   h = Math.imul(h ^ (h >>> 15), 0x85ebca6b); h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35); h ^= h >>> 16;
   return (h >>> 0) / 2147483648 - 1;
 }
-/** 3D value noise in [-1, 1], quintic. */
+/** 3D value noise in [-1, 1], quintic. (Written without closures: it is the hot loop of meshing.) */
 export function noise3(x: number, y: number, z: number, s = 0): number {
   const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z), fx = x - ix, fy = y - iy, fz = z - iz;
-  const q = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
-  const u = q(fx), v = q(fy), w = q(fz);
-  const l = (a: number, b: number, t: number) => a + (b - a) * t;
-  const c = (dx: number, dy: number, dz: number) => h3(ix + dx, iy + dy, iz + dz, s);
-  return l(l(l(c(0, 0, 0), c(1, 0, 0), u), l(c(0, 1, 0), c(1, 1, 0), u), v), l(l(c(0, 0, 1), c(1, 0, 1), u), l(c(0, 1, 1), c(1, 1, 1), u), v), w);
+  const u = fx * fx * fx * (fx * (fx * 6 - 15) + 10), v = fy * fy * fy * (fy * (fy * 6 - 15) + 10), w = fz * fz * fz * (fz * (fz * 6 - 15) + 10);
+  const c000 = h3(ix, iy, iz, s), c100 = h3(ix + 1, iy, iz, s), c010 = h3(ix, iy + 1, iz, s), c110 = h3(ix + 1, iy + 1, iz, s);
+  const c001 = h3(ix, iy, iz + 1, s), c101 = h3(ix + 1, iy, iz + 1, s), c011 = h3(ix, iy + 1, iz + 1, s), c111 = h3(ix + 1, iy + 1, iz + 1, s);
+  const a0 = c000 + (c100 - c000) * u, a1 = c010 + (c110 - c010) * u, b0 = c001 + (c101 - c001) * u, b1 = c011 + (c111 - c011) * u;
+  const a = a0 + (a1 - a0) * v, b = b0 + (b1 - b0) * v;
+  return a + (b - a) * w;
 }
 export function fbm3(x: number, y: number, z: number, s: number, oct: number): number {
   let a = 0.5, t = 0, n = 0;

@@ -60,7 +60,7 @@ if (process.env.MOBILE === '1') {
 const [sw, sh] = (process.env.SHOT || '1200x900').split('x').map(Number);
 await page.evaluate((w, h) => { const P = window.__labProtocol; if (P) { P.width = w; P.height = h; } }, sw, sh);
 const diag = {};
-for (const id of (process.env.SPECIMENS ?? 'oak-a,oak-b,oak-c,pine,birch').split(',').filter(Boolean)) {
+if (process.env.STRUCT !== '0') for (const id of (process.env.SPECIMENS ?? 'oak-a,oak-b,oak-c,pine,birch').split(',').filter(Boolean)) {
   const t = Date.now();
   const r = await page.evaluate(async (id) => {
     const res = await window.__lab.review(id);
@@ -71,11 +71,25 @@ for (const id of (process.env.SPECIMENS ?? 'oak-a,oak-b,oak-c,pine,birch').split
   save(`${id}-review-sheet.png`, r.sheet);
   diag[id] = r.diag; console.log(`  ${id}: ${((Date.now() - t) / 1000).toFixed(0)} s`);
 }
+// bark/material review set (MATERIALS=0 to skip) with texture and render-time statistics
+const stats = {};
+if (process.env.MATERIALS !== '0') for (const id of (process.env.SPECIMENS ?? 'oak-a,oak-b,oak-c,pine,birch').split(',').filter(Boolean)) {
+  const t = Date.now();
+  const r = await page.evaluate(async (id) => {
+    const res = await window.__lab.materialReview(id);
+    return { shots: await Promise.all(res.shots.map(async (s) => ({ file: s.spec.file, url: await window.__b64(s.blob) }))), sheet: await window.__b64(res.sheet), stats: res.stats };
+  }, id);
+  mkdirSync(`${out}/${id}/materials`, { recursive: true });
+  for (const s of r.shots) save(`${id}/materials/${id}-${s.file}.png`, s.url);
+  save(`${id}-material-sheet.png`, r.sheet);
+  stats[id] = r.stats; console.log(`  ${id} materials: ${((Date.now() - t) / 1000).toFixed(0)} s`);
+}
+if (Object.keys(stats).length) writeFileSync(`${out}/render-stats.json`, JSON.stringify(stats, null, 2));
 for (const c of (process.env.COMPARE ?? 'oaks,all,a-b,b-c,pine-birch').split(',').filter(Boolean)) {
   const url = await page.evaluate(async (c) => window.__b64(await window.__lab.comparisonSheet(c)), c);
   save(`compare-${c}.png`, url);
 }
 const meta = await page.evaluate(() => ({ adapter: window.__lab.viewer.adapterName, hasTimestamps: window.__lab.viewer.hasTs }));
-writeFileSync(`${out}/diagnostics.json`, JSON.stringify({ ...meta, specimens: diag }, null, 2));
+if (Object.keys(diag).length) writeFileSync(`${out}/diagnostics.json`, JSON.stringify({ ...meta, specimens: diag }, null, 2));
 writeFileSync(`${out}/log.txt`, log.join('\n'));
 await browser.close(); srv.kill();

@@ -1,0 +1,39 @@
+{
+ "layers": [
+  {
+   "id": "oak",
+   "source": "https://polyhaven.com/a/bark_willow_02",
+   "tile": 1.0,
+   "note": "old pedunculate oak trunk and limbs; birch base (recoloured in the shader)",
+   "albedo": "oak.albedo.webp?e217926c79",
+   "normal": "oak.normal.webp?8826c600dc"
+  },
+  {
+   "id": "pinelow",
+   "source": "https://polyhaven.com/a/pine_bark",
+   "tile": 1.5,
+   "note": "Scots pine lower trunk plates",
+   "albedo": "pinelow.albedo.webp?b53e267b7a",
+   "normal": "pinelow.normal.webp?6b91b8c511"
+  },
+  {
+   "id": "pineup",
+   "source": "https://polyhaven.com/a/japanese_zelkova_bark",
+   "tile": 0.7,
+   "note": "Scots pine upper stem flakes (recoloured orange)",
+   "albedo": "pineup.albedo.webp?57691b8124",
+   "normal": "pineup.normal.webp?e84c1cf5fd"
+  },
+  {
+   "id": "birch",
+   "source": "https://polyhaven.com/a/sakura_bark",
+   "tile": 1.1,
+   "note": "silver birch paper bark (recoloured white, dark lenticels)",
+   "albedo": "birch.albedo.webp?19991cff55",
+   "normal": "birch.normal.webp?bd047d5780"
+  }
+ ],
+ "size": 1024,
+ "license": "CC0 1.0 (Poly Haven)",
+ "tool": "tools/textures.py"
+}

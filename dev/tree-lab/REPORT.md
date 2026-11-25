@@ -1,8 +1,9 @@
-# Tree Lab: technical report (structural review gate)
+# Tree Lab: technical report (bark phase)
 
-Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`; structural finishing pass on top of `35d542d` (see
-`review/CHANGES-finishing-pass.md` for what changed, why, and the before/after evidence). No foliage and no bark
-materials.
+Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`; structural finishing pass `e4f3010`
+(`review/CHANGES-finishing-pass.md`); phase 3, photorealistic bark and woody surfaces, on top of it
+(`review/CHANGES-bark-phase.md`: what changed, why, the evidence, performance and known deficiencies). The five
+specimens and their growth are unchanged. No foliage and no wind.
 
 Public build: https://nachumrubin.github.io/hogwarts-world/dev/tree-lab/ (deployed with the Creature Lab;
 see "Public build" in README.md).
@@ -87,37 +88,50 @@ branch radii, so there is no ball joint where a branch leaves the stem.
 
 ## Performance
 
-These are counts measured from the actual meshes, from `diagnostics.json`:
+Counts are measured from the actual meshes (`tools/timing.ts`, Node, one thread). Geometry memory is the vertex
+buffer (64 B/vertex) plus the index buffer.
 
 | | LOD0 triangles | LOD0 vertices | LOD0 memory | LOD1 tris | LOD2 tris | grow | mesh LOD0 |
 |---|---|---|---|---|---|---|---|
-| Oak A | 354k | 205k | 14.1 MB | 122k | 18.5k | 1.2 s | 6.1 s |
-| Oak B | 396k | 229k | 15.8 MB | 139k | 21.4k | 2.0 s | 10.4 s |
-| Oak C | 188k | 109k | 7.5 MB | 63k | 10.6k | 1.7 s | 4.2 s |
-| Scots pine | 217k | 133k | 9.0 MB | 68k | 7.8k | 2.1 s | 4.9 s |
-| Silver birch | 174k | 106k | 7.2 MB | 37k | 4.5k | 0.5 s | 2.8 s |
+| Oak A | 364k | 210k | 17.8 MB | 91k | 5.8k | 1.2 s | 4.6 s |
+| Oak B | 407k | 235k | 20.0 MB | 103k | 6.5k | 1.2 s | 5.0 s |
+| Oak C | 194k | 112k | 9.5 MB | 50k | 4.2k | 0.9 s | 1.8 s |
+| Scots pine | 220k | 135k | 11.3 MB | 48k | 2.9k | 1.0 s | 2.5 s |
+| Silver birch | 175k | 107k | 8.9 MB | 25k | 1.5k | 0.4 s | 1.7 s |
 
-The grow and mesh times were measured in this headless session's Worker, on 2 CPU cores. In the single-specimen
-view the viewer reports 5 draw calls for the main pass (sky, tree, ground, figure, ranging pole).
+* **Bark textures:** 42.7 MiB on the GPU, shared by all trees (four 1024² layers, two arrays, full mips), from a
+  7.4 MiB download.
+* **Draw calls:** one per tree per LOD. In the single-specimen view the main pass has 5 draw calls (sky, tree,
+  ground, figure, ranging pole).
+* **Meshing:** 20–35% faster than e4f3010.
+* **LOD1 and LOD2:** back below 35d542d's counts.
+* **Caching:** a deployed build keeps built specimens in IndexedDB, so repeat visits skip generation.
 
-**Frame time and FPS:** the lab measures these live (frame cadence, CPU encode time and, where the browser exposes
-timestamp queries, GPU pass time). The only numbers I have so far come from the SwiftShader software renderer. They
-say nothing about GPU performance, so I haven't quoted them. Real figures need a run in Chrome on your machine with
-"Live rendering" on.
+Details and the offline-baking analysis are in `review/CHANGES-bark-phase.md`, section 5.
 
-LOD0 fell by 43–78% in the finishing pass: curvature-adaptive rings on thin branches, underground blended faces
-culled, tighter blend regions. The audit and method are in `review/CHANGES-finishing-pass.md`. Meshing got slower,
-mainly from the root-flare look-ups; it runs in the worker and is the next thing to optimise.
+**Frame time, FPS, GPU time:** the lab measures these live (frame cadence, CPU encode time, and the GPU pass
+time from timestamp queries where the browser exposes them). The material sheets also carry clay versus materials
+render timings. The only numbers I have so far come from the SwiftShader software renderer. They say nothing
+about GPU performance, so I haven't quoted them. Real figures need a run in Chrome on your machine: Materials mode,
+"Live rendering" on, then the performance panel.
 
-## Outstanding structural defects
+## Outstanding defects
 
-Current list: section 4 of `review/CHANGES-finishing-pass.md`. Faint rings where the flare band fades on the pine
-and birch stems, narrow handover bands at oak forks, Oak A's preserved low-limb curl, Oak B slightly narrower,
-the birch leader running on above the top primaries, crisp twig shadows under the studio light, and slower
-generation.
+Bark phase: section 7 of `review/CHANGES-bark-phase.md`.
+
+Structural, from section 4 of `review/CHANGES-finishing-pass.md`:
+* faint rings where the flare band fades on the pine and birch stems;
+* a faint ridge at the pine and birch handover (the lip is much reduced in this phase);
+* narrow handover bands at oak forks;
+* Oak A's preserved low-limb curl;
+* Oak B slightly narrower than intended;
+* the birch leader running on above the top primaries;
+* crisp twig shadows under the studio light.
+
+Generation is no longer slower than at 35d542d by as much: meshing is 20–35% faster than at e4f3010.
 
 Interface screenshots: `review/lab-ui.png` (desktop) and `review/lab-mobile.png` (phone). The viewport in both is
 the frame actually presented to the canvas, read back from the GPU, because headless page screenshots of
 WebGPU canvases are unreliable.
 
-Stopped here, before bark and foliage, for your structural review.
+Stopped here, before foliage and wind, for your bark review.

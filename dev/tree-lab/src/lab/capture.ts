@@ -3,8 +3,8 @@
 // standardized shot offscreen; this module only defines the protocol and composes/exports.
 import type { Mode } from '../render/viewer.ts';
 
-export type ShotView = 'front' | 'side' | 'three' | 'rear' | 'top' | 'trunk' | 'junction';
-export interface ShotSpec { view: ShotView; mode: Mode; label: string; file: string }
+export type ShotView = 'front' | 'side' | 'three' | 'rear' | 'top' | 'trunk' | 'junction' | 'broken';
+export interface ShotSpec { view: ShotView; mode: Mode; label: string; file: string; light?: string; lod?: number }
 
 /** The standard structural review set (same for every specimen). */
 export const REVIEW_SET: ShotSpec[] = [
@@ -15,6 +15,22 @@ export const REVIEW_SET: ShotSpec[] = [
   { view: 'side', mode: 'silhouette', label: 'Side · silhouette', file: 'side-silhouette' },
   { view: 'trunk', mode: 'clay', label: 'Trunk close-up · clay', file: 'trunk-clay' },
   { view: 'junction', mode: 'clay', label: 'Main junction close-up · clay', file: 'junction-clay' },
+];
+/** The bark/material review set: full tree under the three outdoor lights, close-ups of trunk, main junction and
+ *  exposed wood with clay at the same camera and light, and the three LODs at the common full-tree frame. */
+export const MATERIAL_SET: ShotSpec[] = [
+  { view: 'front', mode: 'lit', light: 'day', label: 'Full tree · materials · daylight', file: 'full-day' },
+  { view: 'three', mode: 'lit', light: 'overcast', label: 'Full tree · materials · overcast', file: 'full-overcast' },
+  { view: 'three', mode: 'lit', light: 'low', label: 'Full tree · materials · low-angle sun', file: 'full-low' },
+  { view: 'trunk', mode: 'lit', light: 'day', label: 'Trunk · materials · daylight', file: 'trunk-day' },
+  { view: 'trunk', mode: 'clay', light: 'day', label: 'Trunk · clay (same camera and light)', file: 'trunk-clay-day' },
+  { view: 'trunk', mode: 'lit', light: 'low', label: 'Trunk · materials · low-angle sun', file: 'trunk-low' },
+  { view: 'junction', mode: 'lit', light: 'day', label: 'Main junction · materials · daylight', file: 'junction-day' },
+  { view: 'junction', mode: 'clay', light: 'day', label: 'Main junction · clay (same camera and light)', file: 'junction-clay-day' },
+  { view: 'broken', mode: 'lit', light: 'day', label: 'Broken limb / exposed wood · materials', file: 'broken-day' },
+  { view: 'broken', mode: 'lit', light: 'overcast', label: 'Broken limb / exposed wood · overcast', file: 'broken-overcast' },
+  { view: 'three', mode: 'lit', light: 'day', lod: 1, label: 'LOD 1 · materials · daylight', file: 'lod1-day' },
+  { view: 'three', mode: 'lit', light: 'day', lod: 2, label: 'LOD 2 · materials · daylight', file: 'lod2-day' },
 ];
 /** Standard capture protocol. Full-tree views use a common scale (a 36 m × 27 m frame at the tree) so specimens
  *  can be compared sheet to sheet; close-ups are framed on the feature. */

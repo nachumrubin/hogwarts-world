@@ -6,7 +6,7 @@
 import { build } from 'esbuild';
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,6 +41,9 @@ if (pagesAt < 0) {
     writeFile(`${out}/index.html`, page), writeFile(`${out}/${mainName}`, main), writeFile(`${out}/${workerName}`, worker), writeFile(`${out}/${cssName}`, css),
     writeFile(`${out}/version.json`, JSON.stringify({ commit, built: new Date().toISOString(), main: mainName, worker: workerName, css: cssName }, null, 2)),
   ]);
+  // bark textures (tools/textures.py): the manifest names each file with a content-hash query, so caches stay right
+  await mkdir(`${out}/textures`, { recursive: true });
+  for (const f of await readdir(here + 'textures')) if (/\.(webp|json)$/.test(f)) await cp(here + 'textures/' + f, `${out}/textures/${f}`);
   for (const f of ['README.md', 'REPORT.md']) if (existsSync(here + f)) await cp(here + f, `${out}/${f}`);
   if (existsSync(here + 'review')) await cp(here + 'review', `${out}/review`, { recursive: true });
   console.log(`tree lab staged for Pages in ${out} (${commit}): ${mainName}, ${workerName}`);

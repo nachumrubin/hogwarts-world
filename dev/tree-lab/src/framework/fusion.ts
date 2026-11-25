@@ -8,7 +8,7 @@
 // the implicit surface with a radius ramp, so the two meet without a visible seam.
 import { type V3, add, sub, mul, norm, dot, clamp } from './math.ts';
 import type { Skeleton, TNode, Chain } from './skeleton.ts';
-import { MeshOut, VFLOATS, type BarkFn } from './mesher.ts';
+import { MeshOut, VFLOATS, barkFrames, type BarkFn } from './mesher.ts';
 
 export interface FusionOpts {
   min: V3; max: V3; cell: number; minR: number;
@@ -26,7 +26,7 @@ export interface FusionOpts {
   flare?: { top: number; depth: number; steps: number; slope: number };
 }
 
-interface Cap { a: V3; b: V3; ra: number; rb: number; axis: V3; L: number; node: TNode; lo: V3; hi: V3; chain: number; at: number }
+interface Cap { a: V3; b: V3; ra: number; rb: number; axis: V3; L: number; node: TNode; lo: V3; hi: V3; chain: number; at: number; sg: number; va: number }
 
 function sdCone(p: V3, c: Cap): { d: number; t: number } {
   // round cone approximated: distance to the axis segment minus the interpolated radius
@@ -47,7 +47,8 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
   // ---- capsules
   // branch axis and position along it for every node (same-branch segments blend lightly; see raw())
   const axisOf = new Map<TNode, [number, number]>();
-  for (const ch of sk.chains()) ch.nodes.forEach((n, i) => axisOf.set(n, [ch.id, i]));
+  const allChains = sk.chains(), { sg: signs, V } = barkFrames(allChains);
+  for (const ch of allChains) ch.nodes.forEach((n, i) => axisOf.set(n, [ch.id, i]));
   const caps: Cap[] = [];
   for (const n of sk.nodes) {
     const p = n.parent; if (!p) continue;
@@ -57,7 +58,7 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
     const ax = sub(n.p, p.p), L = Math.sqrt(dot(ax, ax)); if (L < 1e-4) continue;
     const R = Math.max(ra, rb) * 1.15 + 0.1;
     const ci = axisOf.get(n) ?? [-1 - n.id, 0];
-    caps.push({ a: p.p, b: n.p, ra, rb, axis: mul(ax, 1 / L), L, node: n, chain: ci[0], at: ci[1],
+    caps.push({ a: p.p, b: n.p, ra, rb, axis: mul(ax, 1 / L), L, node: n, chain: ci[0], at: ci[1], sg: signs.get(ci[0]) ?? 1, va: V.get(p) ?? 0,
       lo: [Math.min(p.p[0], n.p[0]) - R, Math.min(p.p[1], n.p[1]) - R, Math.min(p.p[2], n.p[2]) - R],
       hi: [Math.max(p.p[0], n.p[0]) + R, Math.max(p.p[1], n.p[1]) + R, Math.max(p.p[2], n.p[2]) + R] });
   }
@@ -70,18 +71,22 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
   const pos = (i: number, j: number, k: number): V3 => [o.min[0] + i * s, o.min[1] + j * s, o.min[2] + k * s];
   let samples = 0;
   // field evaluation with a per-block capsule list
-  const field = (p: V3, list: Cap[]): { d: number; cap: Cap | null; t: number } => {
+  const field = (p: V3, list: Cap[]): { d: number; cap: Cap | null; t: number; bk: number; cavity: boolean } => {
     const f0 = raw(p, list);
     const F = o.flare;
     if (F) {
       const gy = o.ground ? o.ground(p[0], p[2]) : 0, hy = p[1] - gy;
-      if (hy < F.top && hy > -F.depth - 0.3) {
+      // the lifted copies can only lower the field, by at most depth × (1 + slope) (the field is ~1-Lipschitz):
+      // samples deeper inside than two cells or further out than that bound keep their sign whatever the flare does,
+      // and only signs (and values next to a sign change) reach the mesh, so they skip the look-ups
+      if (hy < F.top && hy > -F.depth - 0.3 && f0.d > -2 * s && f0.d < F.depth * (1 + F.slope) + 0.12 + 2 * s) {
         let d = f0.d;
+        const fl = flareCell.get(cellKey(p[0], p[2])) ?? NONE;
         for (let k = 1; k <= F.steps; k++) {
           const h = (F.depth * k) / F.steps, q: V3 = [p[0], p[1] + h, p[2]];
           if (q[1] - gy > F.top + F.depth) break;
           const w = clamp((F.top - hy) / F.top, 0, 1), ws = w * w * (3 - 2 * w); // fades in gradually below the top
-          const dk = raw(q, flareCaps).d - F.slope * h * ws;
+          const dk = raw(q, fl).d - F.slope * h * ws;
           // near-hard minimum: a smooth union would inflate the surface a little at every step (a skirt); the slight
           // smoothing left fades to nothing at the top of the band, where the surface must continue the trunk
           const kb = 0.03 * ws + 1e-4, hh = clamp(0.5 + 0.5 * (dk - d) / kb, 0, 1);
@@ -90,13 +95,20 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
         f0.d = d;
       }
     }
-    if (o.carve) f0.d = Math.max(f0.d, -o.carve(p, f0.d));
+    if (o.carve) { const c = -o.carve(p, f0.d); if (c > f0.d) { f0.d = c; f0.cavity = true; } }
     return f0;
   };
   // capsules near the ground, for the flare's lifted look-ups (they may cross block boundaries)
   const flareCaps = o.flare ? caps.filter((c) => c.lo[1] < (o.flare!.top + o.flare!.depth + 0.5)) : [];
-  const raw = (p: V3, list: Cap[]): { d: number; cap: Cap | null; t: number } => {
-    let d = 1e9, best: Cap | null = null, bt = 0, dPlain = 1e9;
+  // … bucketed on a 0.5 m ground grid (the lifted look-ups keep x and z): each look-up visits only the capsules whose
+  // bounds cover its column, instead of every capsule near the ground (that made meshing 2–3× slower in e4f3010)
+  const CELL = 0.5, NONE: Cap[] = [], flareCell = new Map<number, Cap[]>();
+  const cellKey = (x: number, z: number) => (Math.floor(x / CELL) + 4096) * 8192 + Math.floor(z / CELL) + 4096;
+  for (const c of flareCaps) for (let x = Math.floor(c.lo[0] / CELL); x <= Math.floor(c.hi[0] / CELL); x++) for (let z = Math.floor(c.lo[2] / CELL); z <= Math.floor(c.hi[2] / CELL); z++) {
+    const k = (x + 4096) * 8192 + z + 4096; let l = flareCell.get(k); if (!l) flareCell.set(k, l = []); l.push(c);
+  }
+  const raw = (p: V3, list: Cap[]): { d: number; cap: Cap | null; t: number; bk: number; cavity: boolean } => {
+    let d = 1e9, best: Cap | null = null, bt = 0, dPlain = 1e9, bk = 0;
     for (const c of list) {
       if (p[0] < c.lo[0] || p[1] < c.lo[1] || p[2] < c.lo[2] || p[0] > c.hi[0] || p[1] > c.hi[1] || p[2] > c.hi[2]) continue;
       const q = sdCone(p, c);
@@ -116,7 +128,7 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
     }
     if (best) {
       const rb = best.ra + (best.rb - best.ra) * bt;
-      const bk = o.bark ? o.bark(p, best.axis, rb, best.node) : 0;
+      bk = o.bark ? o.bark(p, best.axis, rb, best.node) : 0;
       d -= bk;
       // towards the region's faces the blended surface relaxes to the bare nearest capsule (what the tube that
       // takes over there follows), so the tube covers the rim and no ledge shows
@@ -130,7 +142,37 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
         d = d * (1 - ws) + bare * ws;
       }
     }
-    return { d, cap: best, t: bt };
+    return { d, cap: best, t: bt, bk, cavity: false };
+  };
+  // bark mapping on the blended surface (see VFLOATS): the nearby capsules' frames, weighted by closeness: axis
+  // (each oriented like its chain), centre point and bark coordinate v, blended, then C = c − v A. The frame turns
+  // smoothly through forks and root crotches and pivots about the branch centres there; towards the region's faces it
+  // becomes the nearest capsule's alone, which is what the tube taking over there starts with.
+  const frameAt = (p: V3, list: Cap[], best: Cap | null): [V3, V3] => {
+    let A: V3 = [0, 0, 0], c: V3 = [0, 0, 0], v = 0, ws = 0, dmin = 1e9;
+    const near: [number, Cap, number][] = [];
+    for (const cp of list) {
+      if (p[0] < cp.lo[0] || p[1] < cp.lo[1] || p[2] < cp.lo[2] || p[0] > cp.hi[0] || p[1] > cp.hi[1] || p[2] > cp.hi[2]) continue;
+      const q = sdCone(p, cp); near.push([q.d, cp, q.t]); dmin = Math.min(dmin, q.d);
+    }
+    const one = (cp: Cap, t: number, w: number) => {
+      A = add(A, mul(cp.axis, w * cp.sg)); c = add(c, mul(add(cp.a, mul(cp.axis, t * cp.L)), w)); v += w * (cp.va + cp.sg * t * cp.L); ws += w;
+    };
+    for (const [dq, cp, t] of near) { const w = Math.exp(-(dq - dmin) / (0.35 * Math.max(cp.ra, cp.rb) + 0.03)); if (w > 1e-3) one(cp, t, w); }
+    if (best) {
+      const m = Math.min(p[0] - o.min[0], o.max[0] - p[0], p[1] - o.min[1], o.max[1] - p[1], p[2] - o.min[2], o.max[2] - p[2]);
+      const w = 1 - clamp((m - 0.15) / 0.85, 0, 1), wb = w * w * (3 - 2 * w);
+      if (wb > 0) {
+        // relax to the nearest capsule alone: scale the blend down and add that capsule with the remaining weight
+        const t = clamp(dot(sub(p, best.a), best.axis) / best.L, 0, 1);
+        A = mul(A, (1 - wb) / Math.max(ws, 1e-9)); c = mul(c, (1 - wb) / Math.max(ws, 1e-9)); v *= (1 - wb) / Math.max(ws, 1e-9); ws = 1 - wb;
+        one(best, t, wb);
+      }
+    }
+    if (ws <= 0) return [[0, 1, 0], [0, 0, 0]];
+    const An: V3 = dot(A, A) > 1e-12 ? norm(A) : [0, 1, 0];
+    const cc = mul(c, 1 / ws), vv = v / ws;
+    return [An, sub(cc, mul(An, vv))];
   };
   const blockCaps: (Cap[] | null)[] = new Array(bx * by * bz).fill(null);
   for (let K = 0; K < bz; K++) for (let J = 0; J < by; J++) for (let I = 0; I < bx; I++) {
@@ -171,8 +213,10 @@ export function fuse(sk: Skeleton, o: FusionOpts, out: MeshOut): { triangles: nu
     const g: V3 = [field([p[0] + e, p[1], p[2]], list).d - field([p[0] - e, p[1], p[2]], list).d, field([p[0], p[1] + e, p[2]], list).d - field([p[0], p[1] - e, p[2]], list).d, field([p[0], p[1], p[2] + e], list).d - field([p[0], p[1], p[2] - e], list).d];
     const fq = field(p, list);
     const node = fq.cap ? fq.cap.node : sk.root;
-    const flags = (node.dead ? 1 : 0) | (node.root ? 4 : 0) | 16;
-    vid[cid(i, j, k)] = out.vert(p, norm(g), node.root ? -1 : node.order, flags, fq.cap ? fq.cap.ra : 1, 0, Math.atan2(p[2], p[0]) / 6.283 + 0.5, p[1]);
+    const flags = (node.dead ? 1 : 0) | (node.root ? 4 : 0) | 16 | (fq.cavity ? 32 : 0);
+    const rr = fq.cap ? fq.cap.ra + (fq.cap.rb - fq.cap.ra) * fq.t : 1;
+    const [FA, FC] = frameAt(p, list, fq.cap);
+    vid[cid(i, j, k)] = out.vert(p, norm(g), node.root ? -1 : node.order, flags, rr, fq.bk, FA, FC);
   }
   // quads across sign-changing grid edges
   for (let k = 1; k < nz - 1; k++) for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++) {

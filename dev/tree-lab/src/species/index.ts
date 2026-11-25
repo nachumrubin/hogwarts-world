@@ -23,11 +23,13 @@ function fusedMesh(bark: BarkFn, region: (lod: number) => FusionOpts | null) {
   };
 }
 
-export interface Poi { trunkY: number; trunkAz: number; trunkDist: number; junction: V3; junctionAz: number; junctionEl: number; junctionDist: number }
+export interface Poi { trunkY: number; trunkAz: number; trunkDist: number; junction: V3; junctionAz: number; junctionEl: number; junctionDist: number; broken?: { p: V3; az: number; el: number; dist: number } }
 export type Status = 'preserved' | 'refined' | 'new' | 'in review';
 export interface SpeciesDef {
   id: string; species: string; latin: string; variant: string; name: string; status: Status; summary: string;
   seed: number; preset: string; params: Record<string, unknown>;
+  /** bark material family (renderer) */
+  material: 'oak' | 'pine' | 'birch';
   crownR: number;
   grow: () => { sk: Skeleton; info: Record<string, unknown> };
   bark: BarkFn;
@@ -76,7 +78,7 @@ const junctionPoi = (sk: Skeleton, trunkY: number, trunkDist: number): Poi => {
 
 export const SPECIES: SpeciesDef[] = [
   {
-    id: 'oak-a', species: 'Pedunculate oak', latin: OAK.latin, variant: 'Survivor', name: 'Oak A — Survivor', status: 'preserved',
+    id: 'oak-a', species: 'Pedunculate oak', latin: OAK.latin, variant: 'Survivor', name: 'Oak A — Survivor', status: 'preserved', material: 'oak',
     summary: 'Open-grown veteran from checkpoint 9c024fe. Storm-lost limb, stag-headed top, basal hollow; the one-sided crown is its history.',
     seed: OAK_A.seed, preset: 'OAK_A (open-grown, storm-damaged)', params: oakParams(OAK_A), crownR: 13,
     grow: () => growOak(OAK_A), bark: oakBark as BarkFn, figure: [4.2, 3.2],
@@ -84,7 +86,7 @@ export const SPECIES: SpeciesDef[] = [
     poi: () => ({ trunkY: 1.6, trunkAz: 0.5, trunkDist: 6.5, junction: [0.3, 4.2, -0.1], junctionAz: 0.7, junctionEl: 0.25, junctionDist: 5.5 }),
   },
   {
-    id: 'oak-b', species: 'Pedunculate oak', latin: OAK.latin, variant: 'Ancient Guardian', name: 'Oak B — Ancient Guardian', status: 'refined',
+    id: 'oak-b', species: 'Pedunculate oak', latin: OAK.latin, variant: 'Ancient Guardian', name: 'Oak B — Ancient Guardian', status: 'refined', material: 'oak',
     summary: 'Parkland oak that lost its leader young and spread instead of climbing: broad, balanced crown of long horizontal limbs.',
     seed: OAK_B.seed, preset: 'OAK_B (open parkland, early crown loss)', params: oakParams(OAK_B), crownR: 14,
     grow: () => growOak(OAK_B), bark: oakBark as BarkFn, figure: [4.6, 3.4],
@@ -92,7 +94,7 @@ export const SPECIES: SpeciesDef[] = [
     poi: (sk) => junctionPoi(sk, 1.6, 7),
   },
   {
-    id: 'oak-c', species: 'Pedunculate oak', latin: OAK.latin, variant: 'Forest Veteran', name: 'Oak C — Forest Veteran', status: 'refined',
+    id: 'oak-c', species: 'Pedunculate oak', latin: OAK.latin, variant: 'Forest Veteran', name: 'Oak C — Forest Veteran', status: 'refined', material: 'oak',
     summary: 'Grew up in closed woodland: tall clear stem, high narrow crown shaped by the race for the canopy gap.',
     seed: OAK_C.seed, preset: 'OAK_C (closed woodland, light from above)', params: oakParams(OAK_C), crownR: 8,
     grow: () => growOak(OAK_C), bark: oakBark as BarkFn, figure: [3.2, 2.4],
@@ -100,7 +102,7 @@ export const SPECIES: SpeciesDef[] = [
     poi: (sk) => junctionPoi(sk, 1.6, 5.5),
   },
   {
-    id: 'pine', species: 'Scots pine', latin: PINE.latin, variant: 'Ancient', name: 'Scots Pine — Ancient', status: 'refined',
+    id: 'pine', species: 'Scots pine', latin: PINE.latin, variant: 'Ancient', name: 'Scots Pine — Ancient', status: 'refined', material: 'pine',
     summary: 'Caledonian-type old pine: long self-pruned stem, flat umbrella crown of a few dominant limbs, deadwood and stubs.',
     seed: PINE.seed, preset: 'growPine (50 periods ≈ 300 years)', crownR: 7,
     params: { 'growth model': 'shoot-level period simulation (whorls, light, self-pruning)', periods: 50, 'dominant limbs': '≤ 6, laid down at periods 14–28', 'whorl skip rate': 0.22, wind: 'from SW', 'girth radius (m)': PINE.baseRadius },
@@ -109,7 +111,7 @@ export const SPECIES: SpeciesDef[] = [
     poi: (sk) => { const j = mainJunction(sk); return { trunkY: 1.5, trunkAz: 0.6, trunkDist: 4.5, junction: j.p, junctionAz: 0.9, junctionEl: 0.15, junctionDist: 3.2 + j.r * 6 }; },
   },
   {
-    id: 'birch', species: 'Silver birch', latin: BIRCH.latin, variant: 'Mature', name: 'Silver Birch — Mature', status: 'refined',
+    id: 'birch', species: 'Silver birch', latin: BIRCH.latin, variant: 'Mature', name: 'Silver Birch — Mature', status: 'refined', material: 'birch',
     summary: 'Mature birch: single stem, arching primaries with a pendulous twig layer, broken lower limbs.',
     seed: BIRCH.seed, preset: 'growBirch (tropism-driven axes)', crownR: 5.2, figure: [2.2, 1.6],
     params: { 'growth model': 'tropism-driven arching primaries + pendulous twig layer', 'crown radius (m)': BIRCH.crownR, 'girth radius (m)': BIRCH.baseRadius },

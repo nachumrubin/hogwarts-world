@@ -1,5 +1,5 @@
 // Tree Lab entry. URL options: ?specimen=oak-a|oak-b|oak-c|pine|birch  ?compare=all|oaks|a-b|b-c|pine-birch
-//   &view=front|side|rear|three|top|trunk|junction  &mode=clay|silhouette|wire|normals|hierarchy|lit
+//   &view=front|side|rear|three|top|trunk|junction  &mode=lit (materials, default)|clay|silhouette|wire|normals|hierarchy
 //   &light=studio|day|overcast|low  &lod=0..2  &live=0  &shadow=4096  &ui=0 (viewport only, for headless capture)
 // window.__lab exposes the controller for the headless capture script (capture.mjs).
 import { Lab, MODES, COMMIT } from './lab/lab.ts';
@@ -26,9 +26,9 @@ async function main() {
   bindUI(lab);
   if (q.get('ui') === '0') document.body.classList.add('bare');
   if (q.get('live') === '0') lab.setLive(false);
-  if (q.get('light')) lab.setLight(q.get('light')!);
+  lab.setLight(q.get('light') || 'day');
   if (q.get('lod')) lab.setLod(+q.get('lod')!);
-  const m = q.get('mode') as Mode | null; lab.setMode(m && MODES.includes(m) ? m : 'clay');
+  const m = q.get('mode') as Mode | null; lab.setMode(m && MODES.includes(m) ? m : 'lit');
   if (q.get('compare')) await lab.compare(q.get('compare')!);
   else await lab.select(q.get('specimen') || 'oak-a', (q.get('view') as any) || 'three');
   if (q.get('view') && q.get('compare')) lab.setView(q.get('view') as any, false);

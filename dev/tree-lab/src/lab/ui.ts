@@ -12,11 +12,11 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const fmt = (x: number | null | undefined, d = 1) => (x === null || x === undefined || !isFinite(x) ? '—' : x.toFixed(d));
 
 const MODE_BTNS: [Mode, string, string][] = [['clay', 'Clay', 'KeyC'], ['silhouette', 'Silhouette', 'KeyS'], ['wire', 'Wireframe', 'KeyW'], ['normals', 'Normals', 'KeyN'], ['hierarchy', 'Hierarchy', 'KeyH'], ['lit', 'Materials', 'KeyM']];
-const VIEW_BTNS: [View, string, string][] = [['front', 'Front', 'Digit1'], ['side', 'Side', 'Digit2'], ['rear', 'Rear', 'Digit3'], ['three', '¾', 'Digit4'], ['top', 'Top', 'Digit5'], ['trunk', 'Trunk', 'Digit6'], ['junction', 'Junction', 'Digit7']];
+const VIEW_BTNS: [View, string, string][] = [['front', 'Front', 'Digit1'], ['side', 'Side', 'Digit2'], ['rear', 'Rear', 'Digit3'], ['three', '¾', 'Digit4'], ['top', 'Top', 'Digit5'], ['trunk', 'Trunk', 'Digit6'], ['junction', 'Junction', 'Digit7'], ['broken', 'Broken', 'Digit8']];
 
 export function bindUI(lab: Lab): void {
   const toast = (msg: string) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout((t as any)._h); (t as any)._h = setTimeout(() => t.classList.remove('show'), 2600); };
-  const busy = (on: boolean, msg = '') => { $('loading').hidden = !on; $('loadingText').textContent = msg; document.querySelector('.dot')!.classList.toggle('busy', on); $('status').textContent = on ? msg : 'Ready · structural review phase (no foliage, no bark materials)'; };
+  const busy = (on: boolean, msg = '') => { $('loading').hidden = !on; $('loadingText').textContent = msg; document.querySelector('.dot')!.classList.toggle('busy', on); $('status').textContent = on ? msg : 'Ready · bark materials phase (no foliage, no wind)'; };
   lab.onStatus = (msg, b) => busy(b, msg);
   const guard = async (fn: () => Promise<unknown>) => { try { await fn(); } catch (e) { console.error(e); const el = $('error'); el.hidden = false; el.textContent = String((e as Error).message || e); busy(false); } };
 
@@ -54,7 +54,7 @@ export function bindUI(lab: Lab): void {
   $('helpBtn').onclick = () => ($('help') as HTMLDialogElement).showModal();
 
   // ---- capture
-  const capButtons = ['sheetBtn', 'cmpBtn', 'zipBtn'].map((id) => $<HTMLButtonElement>(id));
+  const capButtons = ['sheetBtn', 'matBtn', 'cmpBtn', 'zipBtn'].map((id) => $<HTMLButtonElement>(id));
   const capturing = async (label: string, fn: (p: (m: string) => void) => Promise<void>) => {
     capButtons.forEach((b) => (b.disabled = true));
     const keep = { kind: lab.state.kind, specimen: lab.state.specimen, compare: lab.state.compare, view: lab.state.view };
@@ -63,6 +63,9 @@ export function bindUI(lab: Lab): void {
   };
   $('sheetBtn').onclick = () => guard(() => capturing('Review sheet', async (p) => {
     const id = lab.subject().id; const r = await lab.review(id, (k, n) => p(`shot ${Math.min(k + 1, n)} of ${n}`)); download(r.sheet, `treelab-${id}-review.png`);
+  }));
+  $('matBtn').onclick = () => guard(() => capturing('Material sheet', async (p) => {
+    const id = lab.subject().id; const r = await lab.materialReview(id, (k, n) => p(`shot ${Math.min(k + 1, n)} of ${n}`)); download(r.sheet, `treelab-${id}-materials.png`);
   }));
   $('cmpBtn').onclick = () => guard(() => capturing('Oak comparison', async (p) => { p('rendering'); download(await lab.comparisonSheet('oaks'), 'treelab-compare-oaks.png'); }));
   $('zipBtn').onclick = () => guard(() => capturing('Export', async (p) => { download(await lab.exportAll(p), `treelab-review-${new Date().toISOString().slice(0, 10)}.zip`); }));
@@ -127,6 +130,7 @@ export function bindUI(lab: Lab): void {
         ['Mesh memory (LOD0)', `${((L[0].v.byteLength + L[0].i.byteLength) / 1e6).toFixed(1)} MB`],
         ['Growth time', `${d.growMs} ms`], ['Mesh time (LOD0/1/2)', d.meshMs.join(' / ') + ' ms'],
         ['Scene: draws / triangles', `${v.drawCalls} / ${v.tris.toLocaleString()}`], ['GPU geometry resident', `${(v.geometryBytes / 1e6).toFixed(1)} MB`],
+        ['Bark textures', v.tex ? `${v.tex.layers} layers × ${v.tex.size}², ${(v.tex.bytes / 1048576).toFixed(1)} MiB with mips (download ${(v.tex.download / 1048576).toFixed(1)} MiB)` : 'not loaded'],
         ['Frame (mean / p95)', `${fmt(ps.frameMs)} / ${fmt(ps.frameP95)} ms`], ['CPU encode', `${fmt(ps.cpuMs, 2)} ms`], ['GPU pass', v.hasTs ? `${fmt(ps.gpuMs, 2)} ms` : 'not exposed by this browser'],
       ]);
     };

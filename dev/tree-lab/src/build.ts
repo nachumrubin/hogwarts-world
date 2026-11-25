@@ -65,6 +65,19 @@ function diagnose(sk: Skeleton, chains: Chain[], info: Record<string, unknown>, 
   };
 }
 
+/** Close-up of exposed wood: the thickest broken branch end below 12 m (storm breaks, snapped limbs, pine stubs),
+ *  seen from beyond its end and to one side so the broken face and the splinters show. */
+function brokenPoi(sk: Skeleton): Poi['broken'] {
+  let best: TNode | null = null;
+  for (const n of sk.nodes) if (n.broken && !n.root && n.parent && n.p[1] < 12 && n.r > 0.02 && (!best || n.r > best.r)) best = n;
+  if (!best) return undefined;
+  const d = [best.p[0] - best.parent!.p[0], best.p[1] - best.parent!.p[1], best.p[2] - best.parent!.p[2]];
+  // of the two oblique viewpoints, the one on the daylight preset's sun side (so the end is lit, not in its limb's shadow)
+  const b = Math.atan2(d[0], d[2]), sun = Math.atan2(0.55, 0.42), ang = (x: number) => Math.abs(Math.atan2(Math.sin(x - sun), Math.cos(x - sun)));
+  const az = ang(b + 0.8) < ang(b - 0.8) ? b + 0.8 : b - 0.8;
+  return { p: best.p, az, el: 0.15, dist: 0.9 + best.r * 9 };
+}
+
 export function buildSpecimen(id: string, lods: number[] = [0, 1, 2]): BuiltSpecimen {
   const def = specimen(id);
   const t0 = performance.now();
@@ -86,5 +99,5 @@ export function buildSpecimen(id: string, lods: number[] = [0, 1, 2]): BuiltSpec
   const min: V3 = [1e9, 1e9, 1e9], max: V3 = [-1e9, -1e9, -1e9];
   for (const n of sk.nodes) if (!n.root) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], n.p[k] - n.r); max[k] = Math.max(max[k], n.p[k] + n.r); }
   min[1] = Math.min(min[1], 0);
-  return { id, lods: meshes, diag, poi: def.poi(sk), bounds: { min, max } };
+  return { id, lods: meshes, diag, poi: { ...def.poi(sk), broken: brokenPoi(sk) }, bounds: { min, max } };
 }

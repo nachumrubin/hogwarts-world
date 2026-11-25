@@ -5,7 +5,8 @@ import { MeshOut } from '../framework/mesher.ts';
 import { groundAt } from '../framework/math.ts';
 import { SPECIES, type SpeciesDef } from '../species/index.ts';
 import type { BuiltSpecimen } from '../build.ts';
-import { type Viewer, type GpuMesh, type Draw, KIND } from '../render/viewer.ts';
+import { cacheGet, cachePut } from './meshcache.ts';
+import { type Viewer, type GpuMesh, type Draw, KIND, MAT } from '../render/viewer.ts';
 import type { Box, V3 } from './camera.ts';
 
 export interface Comparison { id: string; label: string; members: string[] }
@@ -17,7 +18,7 @@ export const COMPARISONS: Comparison[] = [
   { id: 'pine-birch', label: 'Pine vs birch', members: ['pine', 'birch'] },
 ];
 
-export interface Entry { def: SpeciesDef; built?: BuiltSpecimen; gpu: (GpuMesh | null)[]; pending?: Promise<BuiltSpecimen>; error?: string }
+export interface Entry { def: SpeciesDef; built?: BuiltSpecimen; gpu: (GpuMesh | null)[]; pending?: Promise<BuiltSpecimen>; error?: string; fromCache?: boolean }
 export interface Placed { id: string; offset: V3; box: Box }
 
 /** Spawns generation workers (at most `parallel` at once) and caches results. */
@@ -26,8 +27,9 @@ export class SpecimenStore {
   private queue: (() => void)[] = []; private running = 0; private job = 0;
   onBuilt: (id: string) => void = () => {};
   private workerUrl: string | URL; private parallel: number;
-  constructor(workerUrl: string | URL, parallel = 2) {
-    this.workerUrl = workerUrl; this.parallel = parallel;
+  private commit: string;
+  constructor(workerUrl: string | URL, parallel = 2, commit = 'dev') {
+    this.workerUrl = workerUrl; this.parallel = parallel; this.commit = commit;
     for (const def of SPECIES) this.entries.set(def.id, { def, gpu: [null, null, null] }); }
   get(id: string): Entry { const e = this.entries.get(id); if (!e) throw new Error(`unknown specimen ${id}`); return e; }
   load(id: string): Promise<BuiltSpecimen> {
@@ -37,12 +39,20 @@ export class SpecimenStore {
     e.pending = new Promise<BuiltSpecimen>((resolve, reject) => {
       const run = () => {
         this.running++;
+        // a specimen built earlier by this same build (commit) comes from the persistent cache
+        cacheGet(this.commit, id).then((hit) => {
+          if (hit) { this.running--; this.next(); e.built = hit; e.fromCache = true; resolve(hit); this.onBuilt(id); return; }
+          this.running--; spawn();
+        });
+      };
+      const spawn = () => {
+        this.running++;
         const w = new Worker(this.workerUrl, { type: 'module' });
         const job = ++this.job;
         w.onmessage = (m) => {
           w.terminate(); this.running--; this.next();
           if (m.data.job !== job) return;
-          if (m.data.ok) { e.built = m.data.built; resolve(e.built!); this.onBuilt(id); } else { e.error = m.data.error; reject(new Error(m.data.error)); }
+          if (m.data.ok) { e.built = m.data.built; resolve(e.built!); this.onBuilt(id); cachePut(this.commit, id, m.data.built).catch(() => {}); } else { e.error = m.data.error; reject(new Error(m.data.error)); }
         };
         w.onerror = (err) => { w.terminate(); this.running--; this.next(); e.error = err.message; reject(new Error(err.message || 'worker failed')); };
         w.postMessage({ id, job });
@@ -77,7 +87,7 @@ export function groundMesh(box: Box, trees: Placed[]): { v: Float32Array; i: Uin
   for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
     const x = x0 + i * s, z = z0 + j * s, e = 0.25;
     const y = h(x, z), nxv = h(x - e, z) - h(x + e, z), nzv = h(x, z - e) - h(x, z + e), l = Math.hypot(nxv, 2 * e, nzv);
-    o.vert([x, y, z], [nxv / l, (2 * e) / l, nzv / l], 0, 0, 0, 0, 0, 0);
+    o.vert([x, y, z], [nxv / l, (2 * e) / l, nzv / l], 0, 0, 0, 0);
   }
   for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const a = j * (nx + 1) + i; o.tri(a, a + nx + 1, a + 1); o.tri(a + 1, a + nx + 1, a + nx + 2); }
   return { v: new Float32Array(o.v), i: new Uint32Array(o.i) };
@@ -96,7 +106,7 @@ function capsule(o: MeshOut, a: V3, b: V3, r: number, S = 14, RN = 10): void {
     for (let s = 0; s <= S; s++) {
       const ph = (s / S) * Math.PI * 2, cs = Math.cos(ph), sn = Math.sin(ph);
       const dir: V3 = [(N[0] * cs + B[0] * sn) * Math.sin(th) - ax[0] * Math.cos(th), (N[1] * cs + B[1] * sn) * Math.sin(th) - ax[1] * Math.cos(th), (N[2] * cs + B[2] * sn) * Math.sin(th) - ax[2] * Math.cos(th)];
-      ring.push(o.vert([c[0] + (N[0] * cs + B[0] * sn) * rr, c[1] + (N[1] * cs + B[1] * sn) * rr, c[2] + (N[2] * cs + B[2] * sn) * rr], dir, 0, 0, 0, 0, 0, 0));
+      ring.push(o.vert([c[0] + (N[0] * cs + B[0] * sn) * rr, c[1] + (N[1] * cs + B[1] * sn) * rr, c[2] + (N[2] * cs + B[2] * sn) * rr], dir, 0, 0, 0, 0));
     }
     rings.push(ring);
   }
@@ -150,15 +160,15 @@ export class LabScene {
     const pad = 12;
     const gbox: Box = { min: [this.box.min[0] - pad, 0, this.box.min[2] - pad], max: [this.box.max[0] + pad, 0, this.box.max[2] + pad] };
     if (this.ground) this.viewer.destroy(this.ground);
-    const g = groundMesh(gbox, this.placed); this.ground = this.viewer.upload(g.v, g.i, false);
-    if (!this.figure) { const f = figureMesh(); this.figure = this.viewer.upload(f.v, f.i, false); }
-    if (!this.pole) { const p = poleMesh(); this.pole = this.viewer.upload(p.v, p.i, false); }
+    const g = groundMesh(gbox, this.placed); this.ground = this.viewer.upload(g.v, g.i);
+    if (!this.figure) { const f = figureMesh(); this.figure = this.viewer.upload(f.v, f.i); }
+    if (!this.pole) { const p = poleMesh(); this.pole = this.viewer.upload(p.v, p.i); }
     this.apply(lod);
   }
   apply(lod: number): void {
     const draws: Draw[] = [{ mesh: this.ground!, offset: [0, 0, 0], kind: KIND.ground }];
     for (const p of this.placed) {
-      draws.push({ mesh: this.store.gpu(this.viewer, p.id, lod), offset: p.offset, kind: KIND.tree });
+      draws.push({ mesh: this.store.gpu(this.viewer, p.id, lod), offset: p.offset, kind: KIND.tree, mat: MAT[this.store.get(p.id).def.material] });
       const def = this.store.get(p.id).def, fz = def.figure ?? [def.crownR * 0.25 + 3, 2.5];
       const fx = p.offset[0] + fz[0], fzz = p.offset[2] + fz[1];
       draws.push({ mesh: this.figure!, offset: [fx, groundAt(fz[0], fz[1]), fzz], kind: KIND.figure });

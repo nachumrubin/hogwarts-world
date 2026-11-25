@@ -1,0 +1,162 @@
+{
+  "oak-a": {
+    "full": {
+      "clay": {
+        "wallMs": 17096.400000000063,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 31991.933333333272,
+        "gpuMs": null
+      }
+    },
+    "trunk": {
+      "clay": {
+        "wallMs": 10226.233333333395,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 18248.63333333346,
+        "gpuMs": null
+      }
+    },
+    "textures": {
+      "layers": 4,
+      "size": 1024,
+      "bytes": 44739232,
+      "download": 7714866,
+      "ms": 314.20000000018626
+    },
+    "adapter": "google swiftshader",
+    "timestampQueries": true,
+    "geometryBytesLOD0": 17774892
+  },
+  "oak-b": {
+    "full": {
+      "clay": {
+        "wallMs": 9265.833333333334,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 20084.53333333352,
+        "gpuMs": null
+      }
+    },
+    "trunk": {
+      "clay": {
+        "wallMs": 8577.599999999939,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 14799.53333333352,
+        "gpuMs": null
+      }
+    },
+    "textures": {
+      "layers": 4,
+      "size": 1024,
+      "bytes": 44739232,
+      "download": 7714866,
+      "ms": 314.20000000018626
+    },
+    "adapter": "google swiftshader",
+    "timestampQueries": true,
+    "geometryBytesLOD0": 19959568
+  },
+  "oak-c": {
+    "full": {
+      "clay": {
+        "wallMs": 5211.800000000124,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 10153.866666666852,
+        "gpuMs": null
+      }
+    },
+    "trunk": {
+      "clay": {
+        "wallMs": 7021.633333333458,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 10116.46666666679,
+        "gpuMs": null
+      }
+    },
+    "textures": {
+      "layers": 4,
+      "size": 1024,
+      "bytes": 44739232,
+      "download": 7714866,
+      "ms": 314.20000000018626
+    },
+    "adapter": "google swiftshader",
+    "timestampQueries": true,
+    "geometryBytesLOD0": 9501152
+  },
+  "pine": {
+    "full": {
+      "clay": {
+        "wallMs": 4515.666666666667,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 10111.799999999814,
+        "gpuMs": null
+      }
+    },
+    "trunk": {
+      "clay": {
+        "wallMs": 6943,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 11696.600000000248,
+        "gpuMs": null
+      }
+    },
+    "textures": {
+      "layers": 4,
+      "size": 1024,
+      "bytes": 44739232,
+      "download": 7714866,
+      "ms": 314.20000000018626
+    },
+    "adapter": "google swiftshader",
+    "timestampQueries": true,
+    "geometryBytesLOD0": 11261020
+  },
+  "birch": {
+    "full": {
+      "clay": {
+        "wallMs": 4879.666666666667,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 8695.933333332961,
+        "gpuMs": null
+      }
+    },
+    "trunk": {
+      "clay": {
+        "wallMs": 5988.4000000003725,
+        "gpuMs": null
+      },
+      "lit": {
+        "wallMs": 7767.366666666542,
+        "gpuMs": null
+      }
+    },
+    "textures": {
+      "layers": 4,
+      "size": 1024,
+      "bytes": 44739232,
+      "download": 7714866,
+      "ms": 314.20000000018626
+    },
+    "adapter": "google swiftshader",
+    "timestampQueries": true,
+    "geometryBytesLOD0": 8933376
+  }
+}

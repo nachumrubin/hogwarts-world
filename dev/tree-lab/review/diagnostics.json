@@ -46,11 +46,11 @@
         1
       ],
       "maxOrder": 23,
-      "growMs": 1234,
+      "growMs": 2335,
       "meshMs": [
-        5881,
-        968,
-        17
+        4980,
+        771,
+        14
       ],
       "history": [
         "storm at period 44: limb lost at 5.5 m",
@@ -58,26 +58,26 @@
       ],
       "lods": [
         {
-          "triangles": 354111,
-          "vertices": 204550,
-          "bytes": 14067732,
-          "meshMs": 5881
+          "triangles": 363769,
+          "vertices": 209526,
+          "bytes": 17774892,
+          "meshMs": 4980
         },
         {
-          "triangles": 122464,
-          "vertices": 75413,
-          "bytes": 5089392,
-          "meshMs": 968
+          "triangles": 90970,
+          "vertices": 55426,
+          "bytes": 4638904,
+          "meshMs": 771
         },
         {
-          "triangles": 18501,
-          "vertices": 12433,
-          "bytes": 818796,
-          "meshMs": 17
+          "triangles": 5819,
+          "vertices": 4085,
+          "bytes": 331268,
+          "meshMs": 14
         }
       ],
       "info": {
-        "growMs": 1130,
+        "growMs": 1866,
         "shed": 336,
         "metamers": 8964,
         "events": [
@@ -141,11 +141,11 @@
         6
       ],
       "maxOrder": 26,
-      "growMs": 2630,
+      "growMs": 10784,
       "meshMs": [
-        6753,
-        896,
-        16
+        41288,
+        5933,
+        244
       ],
       "history": [
         "crown loss at period 18: leader broken at 6.5 m",
@@ -153,26 +153,26 @@
       ],
       "lods": [
         {
-          "triangles": 395880,
-          "vertices": 229468,
-          "bytes": 15765024,
-          "meshMs": 6753
+          "triangles": 407516,
+          "vertices": 235459,
+          "bytes": 19959568,
+          "meshMs": 41288
         },
         {
-          "triangles": 138950,
-          "vertices": 85891,
-          "bytes": 5790168,
-          "meshMs": 896
+          "triangles": 102994,
+          "vertices": 63034,
+          "bytes": 5270104,
+          "meshMs": 5933
         },
         {
-          "triangles": 21359,
-          "vertices": 14373,
-          "bytes": 946212,
-          "meshMs": 16
+          "triangles": 6483,
+          "vertices": 4579,
+          "bytes": 370852,
+          "meshMs": 244
         }
       ],
       "info": {
-        "growMs": 2259,
+        "growMs": 9159,
         "shed": 486,
         "metamers": 10507,
         "events": [
@@ -237,11 +237,11 @@
         2
       ],
       "maxOrder": 32,
-      "growMs": 1835,
+      "growMs": 9314,
       "meshMs": [
-        2920,
-        580,
-        13
+        17284,
+        3659,
+        53
       ],
       "history": [
         "storm at period 52: limb lost at 13.4 m",
@@ -250,26 +250,26 @@
       ],
       "lods": [
         {
-          "triangles": 188094,
-          "vertices": 109287,
-          "bytes": 7502904,
-          "meshMs": 2920
+          "triangles": 193624,
+          "vertices": 112151,
+          "bytes": 9501152,
+          "meshMs": 17284
         },
         {
-          "triangles": 62978,
-          "vertices": 38638,
-          "bytes": 2610360,
-          "meshMs": 580
+          "triangles": 49998,
+          "vertices": 30349,
+          "bytes": 2542312,
+          "meshMs": 3659
         },
         {
-          "triangles": 10646,
-          "vertices": 7183,
-          "bytes": 472536,
-          "meshMs": 13
+          "triangles": 4168,
+          "vertices": 2907,
+          "bytes": 236064,
+          "meshMs": 53
         }
       ],
       "info": {
-        "growMs": 1726,
+        "growMs": 8281,
         "shed": 286,
         "metamers": 5254,
         "events": [
@@ -320,11 +320,11 @@
         952
       ],
       "maxOrder": 3,
-      "growMs": 1929,
+      "growMs": 4499,
       "meshMs": [
-        4010,
-        512,
-        6
+        8630,
+        1595,
+        51
       ],
       "history": [
         "6 dominant upper limbs laid down (periods 14–28)",
@@ -334,26 +334,26 @@
       ],
       "lods": [
         {
-          "triangles": 216985,
-          "vertices": 133161,
-          "bytes": 8995548,
-          "meshMs": 4010
+          "triangles": 219981,
+          "vertices": 134707,
+          "bytes": 11261020,
+          "meshMs": 8630
         },
         {
-          "triangles": 68449,
-          "vertices": 43570,
-          "bytes": 2912748,
-          "meshMs": 512
+          "triangles": 48479,
+          "vertices": 31011,
+          "bytes": 2566452,
+          "meshMs": 1595
         },
         {
-          "triangles": 7845,
-          "vertices": 5351,
-          "bytes": 350988,
-          "meshMs": 6
+          "triangles": 2879,
+          "vertices": 2060,
+          "bytes": 166388,
+          "meshMs": 51
         }
       ],
       "info": {
-        "growMs": 1472,
+        "growMs": 2717,
         "periods": 50,
         "leaderLosses": 0,
         "events": [
@@ -403,11 +403,11 @@
         1
       ],
       "maxOrder": 3,
-      "growMs": 392,
+      "growMs": 794,
       "meshMs": [
-        2041,
-        275,
-        11
+        5575,
+        966,
+        72
       ],
       "history": [
         "28 arching primaries",
@@ -415,26 +415,26 @@
       ],
       "lods": [
         {
-          "triangles": 173912,
-          "vertices": 106191,
-          "bytes": 7184112,
-          "meshMs": 2041
+          "triangles": 175024,
+          "vertices": 106767,
+          "bytes": 8933376,
+          "meshMs": 5575
         },
         {
-          "triangles": 37050,
-          "vertices": 23161,
-          "bytes": 1556328,
-          "meshMs": 275
+          "triangles": 25152,
+          "vertices": 15696,
+          "bytes": 1306368,
+          "meshMs": 966
         },
         {
-          "triangles": 4465,
-          "vertices": 3030,
-          "bytes": 199020,
-          "meshMs": 11
+          "triangles": 1483,
+          "vertices": 1043,
+          "bytes": 84548,
+          "meshMs": 72
         }
       ],
       "info": {
-        "growMs": 11,
+        "growMs": 13,
         "primaries": 28,
         "lowLimbsLost": 5,
         "events": [
