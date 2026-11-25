@@ -2,8 +2,11 @@
 // once per selected actor/LOD. Both renderers use the actor's skin palette.
 import * as T from './vendor/three.module.js';
 import {surfaceAttribute} from './hippogriff-surface.js';
+import {studioTile} from './hippogriff-pigment.js';
 import {finishShader} from './hippogriff-finish.js';
 const shader=`
+override plumage:bool=false;
+override finished:bool=false;
 struct Frame { vp:mat4x4f, motion:vec4f, root:vec4f, feet:array<vec4f,4>, eye:vec4f };
 @group(0) @binding(0) var<uniform> f:Frame;
 @group(0) @binding(1) var<storage,read> bone:array<mat4x4f>;
@@ -24,7 +27,7 @@ fn clip(p:vec3f)->vec4f {let q=f.vp*vec4f(p,1.);return vec4f(q.xy,(q.z+q.w)*.5,q
 }
 ${finishShader}
 @fragment fn floorFS(v:Out)->@location(0) vec4f{
- if(f.motion.z>0.){let wood=f.motion.w;let base=mix(vec3f(.38,.39,.39),vec3f(.30,.31,.23)*(.66+.44*canopy(v.world)),wood);
+ if(f.motion.z>0.){let wood=f.motion.w;var base=vec3f(.38,.39,.39);if(wood>.5){base=vec3f(.30,.31,.23)*(.66+.44*canopy(v.world));}
  let delta=v.world.xz-f.root.xz;let shadow=.24*exp(-dot(delta,delta*vec2f(1.4,.50)))*exp(-.7*f.root.y);
  return vec4f(base-shadow,1.);}
  let uv=v.world.xz;let grid=abs(fract(uv+.5)-.5)/max(fwidth(uv),vec2f(.0001));
@@ -45,15 +48,16 @@ ${finishShader}
  let key=max(0.,dot(n,normalize(vec3f(-.46,.78,.55))));
  let rim=max(0.,dot(n,normalize(vec3f(.58,.48,-.72))));
  let clay=vec3f(.79,.774,.744)*v.tint*(.49+.065*n.y+.40*key+.13*rim);
- if(f.motion.z>.5){return vec4f(silver(v,n),1.);}
+ if(finished){var coverage=1.;if(plumage){coverage=marginCoverage(v.rest,v.detail);}
+ return vec4f(silver(v,n),coverage);}
  return vec4f(clay,1.);
 }`;
 function vertices(actor){
  const items=actor.parts.slice().sort((a,b)=>rank(a.mesh)-rank(b.mesh));
- function rank(mesh){return mesh.name==='folded'?1:mesh.name==='wing'?2:0;}
+ function rank(mesh){return mesh.name==='folded'?2:mesh.name==='wing'?3:mesh.geometry.userData.vanes?1:0;}
  const count=items.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0);
  const packed=new Float32Array(count*22),ints=new Uint32Array(packed.buffer);
- const indices=new Uint32Array(items.reduce((n,p)=>n+p.mesh.geometry.index.count,0)),runs=[0,0,0];
+ const indices=new Uint32Array(items.reduce((n,p)=>n+p.mesh.geometry.index.count,0)),runs=[0,0,0,0];
  let v=0,k=0;
  for(const {mesh} of items){
    const g=mesh.geometry,{position,normal,skinIndex,skinWeight}=g.attributes;
@@ -92,10 +96,18 @@ export class MotionStudio {
    const messages=await module.getCompilationInfo();if(messages.messages.some(m=>m.type==='error'))throw Error(messages.messages.map(m=>m.message).join('\n'));
    const depthStencil={format:'depth24plus',depthCompare:'less',depthWriteEnabled:true};
    const attr=['float32x3','float32x3','uint32','float32','float32x3','float32x3','float32x3','float32','float32x4'];
-   this.model=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'vs',buffers:[{arrayStride:88,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68,72][i]}))}]},
-     fragment:{module,entryPoint:'fs',targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'none'},multisample:{count:4},depthStencil});
+   const layout=d.createBindGroupLayout({entries:[
+    {binding:0,visibility:GPUShaderStage.VERTEX|GPUShaderStage.FRAGMENT,buffer:{}},
+    {binding:1,visibility:GPUShaderStage.VERTEX,buffer:{type:'read-only-storage'}},
+    {binding:2,visibility:GPUShaderStage.FRAGMENT,texture:{}},
+    {binding:3,visibility:GPUShaderStage.FRAGMENT,sampler:{}}
+   ]});
+   const modelLayout=d.createPipelineLayout({bindGroupLayouts:[layout]});
+   const pipeline=(finished,plumage)=>d.createRenderPipeline({layout:modelLayout,vertex:{module,entryPoint:'vs',buffers:[{arrayStride:88,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68,72][i]}))}]},
+     fragment:{module,entryPoint:'fs',constants:{finished,plumage},targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'none'},multisample:{count:4,alphaToCoverageEnabled:plumage},depthStencil});
+   this.clay=pipeline(false,false);this.skin=pipeline(true,false);this.feathers=pipeline(true,true);
    this.floor=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'floorVS'},fragment:{module,entryPoint:'floorFS',targets:[{format:'rgba8unorm'}]},multisample:{count:4},depthStencil});
-   this.bind=d.createBindGroup({layout:this.model.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}}]});
+   this.bind=d.createBindGroup({layout,entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}},{binding:2,resource:studioTile(d)},{binding:3,resource:d.createSampler({addressModeU:"repeat",addressModeV:"repeat",minFilter:"linear",magFilter:"linear",mipmapFilter:"linear"})}]});
    this.floorBind=d.createBindGroup({layout:this.floor.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.frame}}]});
    this.initialized=true;
  }
@@ -126,10 +138,13 @@ export class MotionStudio {
    const encoder=d.createCommandEncoder(),pass=encoder.beginRenderPass({colorAttachments:[{view:this.samples.createView(),resolveTarget:this.color.createView(),loadOp:'clear',storeOp:'discard',clearValue:[.21,.23,.24,1]}],
      depthStencilAttachment:{view:this.depth.createView(),depthLoadOp:'clear',depthClearValue:1,depthStoreOp:'discard'}});
    pass.setPipeline(this.floor);pass.setBindGroup(0,this.floorBind);pass.draw(6);
-   pass.setPipeline(this.model);pass.setBindGroup(0,this.bind);pass.setVertexBuffer(0,this.vb);pass.setIndexBuffer(this.ib,'uint32');
-   const [base,closed,open]=this.runs;
-   if(wing.visible){pass.drawIndexed(base);pass.drawIndexed(open,1,base+closed);}else pass.drawIndexed(base+closed);
-   this.triangles=(base+(wing.visible?open:closed))/3;pass.end();
+   const [skin,tract,closed,open]=this.runs;
+   pass.setPipeline(this.finish?this.skin:this.clay);pass.setBindGroup(0,this.bind);pass.setVertexBuffer(0,this.vb);pass.setIndexBuffer(this.ib,'uint32');
+   pass.drawIndexed(skin);
+   if(this.finish)pass.setPipeline(this.feathers);
+   if(wing.visible){pass.drawIndexed(tract,1,skin);pass.drawIndexed(open,1,skin+tract+closed);}
+   else pass.drawIndexed(tract+closed,1,skin);
+   this.triangles=(skin+tract+(wing.visible?open:closed))/3;pass.end();
    encoder.copyTextureToBuffer({texture:this.color},{buffer:this.buffer,bytesPerRow:this.stride},[width,height]);
    d.queue.submit([encoder.finish()]);await this.buffer.mapAsync(GPUMapMode.READ);
    const bytes=new Uint8Array(this.buffer.getMappedRange());

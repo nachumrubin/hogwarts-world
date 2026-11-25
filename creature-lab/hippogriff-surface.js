@@ -1,3 +1,4 @@
+import {surfaceTile,pigmentSource} from './hippogriff-pigment.js';
 import * as T from './vendor/three.module.js';
 
 // xy locates the point on its vane, strand or digit. z identifies the
@@ -15,7 +16,12 @@ export function surfaceAttribute(mesh,level){
        if(vanes[feather+1]?.offset===i)feather++;
        const spread=region==='wing', wing=spread||region==='folded';
        kind=wing?(feather<(spread?15:10)?(spread?3:2):feather<(spread?25:23)?(spread?2:3):4):1;
-       variation=(Math.sin(feather*73.31)*8304)%1*.5+.5;
+       // Pack the fractional margin coordinate with a constant per-vane seed.
+       const {offset,stride}=vanes[feather],column=(i-offset)%stride;
+       const row=i-column,mid=stride/2-1;
+       const width=Math.abs(detail.getX(row+(detail.getX(i)>0?mid:0)));
+       const margin=Math.min(1,Math.abs(detail.getX(i))/Math.max(width,.000001));
+       variation=Math.floor(125+124*Math.sin(feather*73.31))+.02+.94*margin;
      }else if(region==='tail'){kind=5;variation=.5+.5*Math.sin(Math.floor(i/([171,98,60][level]))*3.2);}
      else if(region==='orbit'){kind=mesh.userData.clayTone<.35?8:mesh.userData.clayTone<.69?7:6;}
      else if(region==='lid'){kind=10;}
@@ -31,34 +37,49 @@ export function surfaceAttribute(mesh,level){
 
 // The habitat uses the Lab's existing lit material, including its terrain
 // lights and fog. Supply pigment and roughness before its lighting pass.
+let pattern;
 export function habitatFinish(actor){
  for(const {mesh} of actor.parts)surfaceAttribute(mesh,actor.level);
+ if(!pattern){
+  pattern=new T.DataTexture(surfaceTile(),512,512);
+  pattern.wrapS=pattern.wrapT=T.RepeatWrapping;
+  pattern.minFilter=T.LinearMipmapLinearFilter;
+  pattern.magFilter=T.LinearFilter;pattern.generateMipmaps=true;pattern.needsUpdate=true;
+ }
  for(const material of actor.materials.values()){
+  material.alphaToCoverage=true;
   material.onBeforeCompile=shader=>{
+   shader.uniforms.surfaceTile={value:pattern};
    shader.vertexShader='attribute vec4 surfaceDetail; varying vec4 tissue; varying vec3 restPoint;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n tissue=surfaceDetail;restPoint=position;');
-   shader.fragmentShader='varying vec4 tissue; varying vec3 restPoint;\n'+shader.fragmentShader.replace('#include <color_fragment>',`
-    vec3 p=restPoint;
-    float id=floor(tissue.z+.5),t=tissue.y,u=abs(tissue.x),value=.65;
-    vec3 pigment=vec3(.65);
-    if(id<.5){
-     vec3 q=p*vec3(17.,18.,16.);
-     float dapples=smoothstep(.08,.64,sin(q.x+sin(q.z))*sin(q.y+.7*cos(q.z))+sin(q.z+sin(q.y))*.45);
-     value=mix(.43+.22*dapples,.74,smoothstep(.14,.71,p.z))+.014*sin(p.y*630.+p.z*240.);
-     pigment=vec3(.98,1.,1.02)*value;
-    }else if(id<4.5){
-     value=id==1.?(.54+.27*smoothstep(.5,2.7,p.y)):(id==4.?.53:.32);
-     if(id==2.||id==3.)value-=.09*smoothstep(.24,.84,sin(t*23.+u*11.+tissue.w*.8));
-     value+=.12*(tissue.w-.5)+.085*(1.-smoothstep(.0006,.003,u))+.035*cos(t*1080.-u*760.)*clamp(1.-fwidth(t)*280.,0.,1.);
-     pigment=value*vec3(.99,1.,1.018);
-    }else if(id==5.)pigment=vec3(.98,.97,.95)*(.48+.17*tissue.w+.11*t+.06*cos(u*72.));
-    else if(id==6.||id==10.)pigment=vec3(.14,.12,.095);
-    else if(id==7.)pigment=vec3(.84,.49,.14)*(.84+.16*sin(62.*atan(p.y-2.635,(p.z-1.41)*1.65)));
-    else if(id==8.)pigment=vec3(.025);
-    else if(id==9.)pigment=mix(vec3(.57,.53,.42),vec3(.17,.18,.19),smoothstep(1.48,1.82,p.z));
-    else if(id==11.)pigment=vec3(.46,.42,.32);
-    else pigment=vec3(.25,.25,.23);
-    diffuseColor.rgb=pow(max(pigment,vec3(.001)),vec3(2.2));
-   `).replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n roughnessFactor=(id>=6.&&id<=8.)?.13:id==5.?.48:id>=9.?.60:.80;');
+   shader.fragmentShader=`varying vec4 tissue;
+    varying vec3 restPoint;
+    uniform sampler2D surfaceTile;
+    vec4 tile(vec2 uv,float lod){return textureLod(surfaceTile,uv,max(lod,0.));}
+    ${pigmentSource(false)}
+    `+shader.fragmentShader.replace('#include <color_fragment>',`
+    float pixel=max(length(dFdx(restPoint)),length(dFdy(restPoint)));
+    vec4 biologicalSurface=biological(restPoint,tissue,log2(max(.125,pixel*512.)));
+    diffuseColor.rgb=pow(max(biologicalSurface.rgb,vec3(.001)),vec3(2.2));
+   `).replace('#include <opaque_fragment>','#include <opaque_fragment>\n gl_FragColor.a=marginCoverage(restPoint,tissue);')
+   .replace('#include <lights_fragment_end>',`
+    #include <lights_fragment_end>
+    #if NUM_DIR_LIGHTS > 0
+     float region=floor(tissue.z+.5);
+     bool vane=region>=1.&&region<=4.;
+     float across=vane||region==5.?tissue.x:restPoint.y+.21*sin(2.6*restPoint.z);
+     vec3 along=dFdx(geometryPosition)*dFdy(across)-dFdy(geometryPosition)*dFdx(across);
+     along*=inversesqrt(max(dot(along,along),1e-18));
+     for(int i=0;i<NUM_DIR_LIGHTS;i++){
+      vec3 l=directionalLights[i].direction;
+      float incidence=dot(l,normal);
+      float axial=dot(along,normalize(l+geometryViewDir));
+      if(region<=5.)reflectedLight.directSpecular+=directionalLights[i].color*
+       (.015*(1.-roughnessFactor)*max(incidence,0.)*pow(max(1.-axial*axial,0.),7.));
+      if(vane)reflectedLight.directDiffuse+=directionalLights[i].color*diffuseColor.rgb*
+       (.055*smoothstep(.04,.83,-incidence)*pow(max(dot(-l,geometryViewDir),0.),2.));
+     }
+    #endif
+   `).replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\n roughnessFactor=biologicalSurface.w;');
   };
   material.needsUpdate=true;
  }
