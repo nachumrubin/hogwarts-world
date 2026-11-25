@@ -72,10 +72,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact_id }}
+          ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
         run: |
-          for delay in 1 2 4 8 16; do
-            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+          # deploy-pages looks the artifact up by name; the listing can lag the upload, so wait for that exact query
+          for delay in 1 2 4 8 16 30 30; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=$ARTIFACT_NAME" \
               --jq '.artifacts[].id' | grep -Fxq "$ARTIFACT_ID"; then
+              sleep 5
               exit 0
             fi
             sleep "$delay"
@@ -84,6 +87,16 @@ jobs:
           exit 1
       - name: Deploy
         id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+      - name: Retry deploy after an artifact lookup race
+        id: retry
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+      - name: Deploy (retry)
+        if: steps.deployment.outcome == 'failure'
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
