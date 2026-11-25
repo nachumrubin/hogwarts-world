@@ -131,6 +131,8 @@ darkens the crevices (cavity occlusion), so the large furrows and the texture's 
   * **Implemented:** the lab now keeps every built specimen in IndexedDB, keyed by build commit. On any visit after
     the first to a deployed build, specimens load from the cache with no growth or meshing, only GPU upload.
     Entries from other commits are dropped, and uncommitted dev builds are not cached.
+    Measured on a build of b4fe25e (headless Chrome, two cores): all five specimens were ready 25.9 s after
+    the first visit started, and 3.4 s after the second, all from the cache.
   * **Recommended for the world:** bake LOD1/LOD2 at build time (small), and generate LOD0 on demand in a worker
     with the same persistent cache. Shipping baked LOD0 for every tree would cost more download than it saves on a
     fast connection.
