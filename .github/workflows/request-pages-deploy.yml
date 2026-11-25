@@ -1,0 +1,73 @@
+name: Publish Tree Lab to GitHub Pages
+
+# The public site (Creature Lab at /hogwarts-world/, Tree Lab at /hogwarts-world/dev/tree-lab/) is deployed by a
+# single workflow, deploy-pages.yml on the creature-lab branch, because every Pages deployment replaces the whole
+# site. A Tree Lab change here asks that workflow to redeploy with this commit, waits for it, then checks the live
+# site: version.json reports this commit, every asset resolves, Creature Lab is intact, and the public Tree Lab
+# runs (headless Chrome, WebGPU via SwiftShader). No branches are merged.
+
+on:
+  push:
+    branches: [world-v2-webgpu]
+    paths:
+      - 'dev/tree-lab/**'
+      - '.github/workflows/request-pages-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: tree-lab-pages-request
+  cancel-in-progress: true
+
+env:
+  SITE: https://nachumrubin.github.io/hogwarts-world
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dispatch the combined Pages deploy for this commit
+        id: dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          gh workflow run deploy-pages.yml --repo "$GITHUB_REPOSITORY" --ref creature-lab -f tree_lab_ref="$GITHUB_SHA"
+          for i in $(seq 1 30); do
+            sleep 5
+            id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-pages.yml --event workflow_dispatch --limit 10 \
+              --json databaseId,createdAt --jq "[.[] | select(.createdAt >= \"$since\")] | last | .databaseId // empty")
+            [ -n "$id" ] && break
+          done
+          [ -n "$id" ] || { echo "::error::dispatched deploy run not found"; exit 1; }
+          echo "Deploy run: https://github.com/$GITHUB_REPOSITORY/actions/runs/$id" | tee -a "$GITHUB_STEP_SUMMARY"
+          gh run watch "$id" --repo "$GITHUB_REPOSITORY" --exit-status --interval 10
+      - name: Check the live site
+        run: |
+          short=${GITHUB_SHA::7}
+          for i in $(seq 1 60); do
+            got=$(curl -fsS "$SITE/dev/tree-lab/version.json?nocache=$RANDOM$i" | jq -r .commit || true)
+            [ "${got%+}" = "$short" ] && break
+            echo "live version: ${got:-none}, waiting for $short"; sleep 10
+          done
+          [ "${got%+}" = "$short" ] || { echo "::error::live Tree Lab is $got, expected $short"; exit 1; }
+          v=$(curl -fsS "$SITE/dev/tree-lab/version.json?nocache=$RANDOM")
+          for a in $(echo "$v" | jq -r '.main, .worker, .css'); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE/dev/tree-lab/$a"); echo "$code dev/tree-lab/$a"; [ "$code" = 200 ]
+          done
+          for p in / /review/ /dev/tree-lab/ /dev/tree-lab/review/compare-oaks.png /dev/tree-lab/REPORT.md; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "$SITE$p?nocache=$RANDOM"); echo "$code $p"; [ "$code" = 200 ]
+          done
+          curl -fsS "$SITE/?nocache=$RANDOM" | grep -q '<title>Creature Lab' && echo "Creature Lab intact at the site root"
+          echo "Live: $SITE/dev/tree-lab/ ($short)" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Run the public Tree Lab (headless Chrome, WebGPU)
+        run: |
+          npm install --no-save --no-package-lock puppeteer-core@24
+          node dev/tree-lab/tools/pages-smoke.mjs "$SITE/dev/tree-lab/" "${GITHUB_SHA::7}" | tee -a "$GITHUB_STEP_SUMMARY"
