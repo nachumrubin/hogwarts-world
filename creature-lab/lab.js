@@ -1,3 +1,4 @@
+import {habitatFinish,surfaceAttribute} from './hippogriff-surface.js';
 import {MotionStudio} from './hippogriff-studio.js';
 import {inspectionMaterials,studioLights,background,comparisonPlates} from './inspection.js';
 import {catalog} from './species/catalog.js';
@@ -33,7 +34,7 @@ export class Lab{
   }cam.lookAt(look);if(kind==='squid')cam.rotateZ(-.095);
   const r=this.renderer;r.setPixelRatio(1);r.setSize(460,224,false);r.setClearColor(0,0);r.render(scene,cam);out.width=460;out.height=224;out.getContext('2d').drawImage(this.canvas,0,0,460,224);actor.dispose();r.setPixelRatio(Math.min(devicePixelRatio,1.65));this.resize()
  }
- switchCreature(kind){if(this.actor){this.setCopies(1);this.restoreMaterials(this.actor);this.actor.dispose();this.hab.dispose()}this.kind=kind;this.actor=new species[kind]();if(kind==='hippogriff')this.actor.prepare();this.scene.add(this.actor.root);this.hab=createHabitat(this.scene,kind);this.context={obstacles:this.hab.obstacles,terrainHeight:this.hab.terrainHeight,playerPosition:this.camera.position,habitatRadius:3};
+ switchCreature(kind){if(this.actor){this.setCopies(1);this.restoreMaterials(this.actor);this.actor.dispose();this.hab.dispose()}this.kind=kind;this.actor=new species[kind]();if(kind==='hippogriff'){this.actor.prepare();habitatFinish(this.actor)}this.scene.add(this.actor.root);this.hab=createHabitat(this.scene,kind);this.context={obstacles:this.hab.obstacles,terrainHeight:this.hab.terrainHeight,playerPosition:this.camera.position,habitatRadius:3};
   this.bounds=kind==='hippogriff'?new THREE.Box3(new V(-.67,0,-1.74),new V(.67,2.86,1.85)):catalog[kind]?new THREE.Box3().setFromObject(this.actor.root):null;
   this.clock=0;this.action=catalog[kind]?Object.keys(catalog[kind].actions)[0]:kind==='squid'?'Swim':'Idle';this.level=0;this.angle='three-quarter';this.setAngle(this.angle);this.applyDebug();this.calculateMemory();this.render();
  }
@@ -68,8 +69,8 @@ export class Lab{
   window.addEventListener('keydown',e=>{if(document.activeElement===c)this.keys.add(e.code)});window.addEventListener('keyup',e=>this.keys.delete(e.code));window.addEventListener('blur',()=>this.keys.clear())
  }
  setDistance(d){this.setAngle('three-quarter');this.spherical.radius*=({near:1,medium:2,far:3.7})[d]||1;this.orbit()}
- setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new species[this.kind]();if(this.kind==='hippogriff')this.extra.prepare();this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root);this.applyDebug()}this.calculateMemory()}
- setLOD(l){this.auto=l==='auto';if(this.auto)return;let v=Number(l);if(this.level===v)return;this.actor.setLOD(v);this.extra?.setLOD(v);this.level=v;this.applyDebug();this.calculateMemory()}
+ setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new species[this.kind]();if(this.kind==='hippogriff'){this.extra.prepare();habitatFinish(this.extra)}this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root);this.applyDebug()}this.calculateMemory()}
+ setLOD(l){this.auto=l==='auto';if(this.auto)return;let v=Number(l);if(this.level===v)return;this.actor.setLOD(v);this.extra?.setLOD(v);this.level=v;if(this.kind==='hippogriff')for(const actor of [this.actor,this.extra])if(actor)for(const {mesh} of actor.parts)surfaceAttribute(mesh,v);this.applyDebug();this.calculateMemory()}
  restoreMaterials(actor){actor.root.traverse(o=>{if(this.original.has(o))o.material=this.original.get(o)})}
  applyDebug(){for(const a of [this.actor,this.extra])a?.root.traverse(o=>{if(!o.isMesh)return;if(!this.original.has(o))this.original.set(o,o.material);const m=this.original.get(o);o.material=this.normals?this.normalMat:(this.inspectionMaterials[this.mode]||m);for(const mat of [].concat(o.material))mat.wireframe=this.wire})}
  calculateMemory(){const seen=new Set();let size=0;this.scene.traverse(o=>{for(const a of [o.instanceMatrix,o.instanceColor,o.geometry?.index,...Object.values(o.geometry?.attributes||{})]){const b=a?.array?.buffer;if(b&&!seen.has(b)){size+=b.byteLength;seen.add(b)}}});this.bytes=size}
@@ -81,14 +82,15 @@ this.actor.update(dt,this.clock,this.action,context);this.extra?.update(dt,this.
     for(const actor of [this.actor,this.extra])actor?.contacts.forEach(c=>{c.anchor=null});
   }
   this.mode=mode;
-  if(mode==='motion'&&this.kind==='hippogriff')this.motionStudio??=new MotionStudio(this.canvas);
-  if(this.motionStudio)this.motionStudio.canvas.style.display=mode==='motion'&&this.kind==='hippogriff'?'block':'none';
+  if(['motion','silver','woodland'].includes(mode)&&this.kind==='hippogriff')this.motionStudio??=new MotionStudio(this.canvas);
+  if(this.motionStudio)this.motionStudio.canvas.style.display=['motion','silver','woodland'].includes(mode)&&this.kind==='hippogriff'?'block':'none';
   this.applyDebug()
  }
- get nativeMotion(){return this.mode==='motion'&&this.kind==='hippogriff'&&!this.extra&&!this.wire&&!this.normals&&this.motionStudio&&!this.motionStudio.error}
+ get nativeMotion(){return ['motion','silver','woodland'].includes(this.mode)&&this.kind==='hippogriff'&&!this.extra&&!this.wire&&!this.normals&&this.motionStudio&&!this.motionStudio.error}
  get captureCanvas(){return this.nativeMotion?this.motionStudio.canvas:this.canvas}
  renderMotion(width=this.canvas.width,height=this.canvas.height){
    if(this.motionFrame)return this.motionFrame;
+   this.motionStudio.finish=this.mode!=='motion';this.motionStudio.woodland=this.mode==='woodland';
    this.motionFrame=this.motionStudio.draw(this.actor,this.camera,width,height).finally(()=>this.motionFrame=null);
    return this.motionFrame;
  }

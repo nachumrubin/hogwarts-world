@@ -1,26 +1,32 @@
 // Live motion-inspection renderer. The C.4 vertex/index streams are uploaded
 // once per selected actor/LOD. Both renderers use the actor's skin palette.
 import * as T from './vendor/three.module.js';
+import {surfaceAttribute} from './hippogriff-surface.js';
+import {finishShader} from './hippogriff-finish.js';
 const shader=`
 struct Frame { vp:mat4x4f, motion:vec4f, root:vec4f, feet:array<vec4f,4>, eye:vec4f };
 @group(0) @binding(0) var<uniform> f:Frame;
 @group(0) @binding(1) var<storage,read> bone:array<mat4x4f>;
 struct In { @location(0) p:vec3f,@location(1) n:vec3f,@location(2) ids:u32,@location(3) w:f32,
- @location(4) fold:vec3f,@location(5) fnorm:vec3f,@location(6) lift:vec3f,@location(7) tint:f32 };
-struct Out { @builtin(position) pos:vec4f,@location(0) n:vec3f,@location(1) world:vec3f,@location(2) tint:f32 };
+ @location(4) fold:vec3f,@location(5) fnorm:vec3f,@location(6) lift:vec3f,@location(7) tint:f32,@location(8) detail:vec4f };
+struct Out { @builtin(position) pos:vec4f,@location(0) n:vec3f,@location(1) world:vec3f,@location(2) tint:f32,@location(3) rest:vec3f,@location(4) detail:vec4f };
 fn clip(p:vec3f)->vec4f {let q=f.vp*vec4f(p,1.);return vec4f(q.xy,(q.z+q.w)*.5,q.w);}
 @vertex fn vs(v:In)->Out{
  let skin=bone[v.ids&255u]*v.w+bone[(v.ids>>8u)&255u]*(1.-v.w);
  let p=(skin*vec4f(v.p+f.motion.x*v.fold+f.motion.y*v.lift,1.)).xyz;
  let n=(skin*vec4f(v.n+f.motion.x*v.fnorm,0.)).xyz;
- return Out(clip(p),n,p,v.tint);
+ return Out(clip(p),n,p,v.tint,v.p,v.detail);
 }
 @vertex fn floorVS(@builtin(vertex_index) i:u32)->Out{
  let corners=array<vec2f,6>(vec2f(-1,-1),vec2f(1,1),vec2f(1,-1),vec2f(-1,-1),vec2f(-1,1),vec2f(1,1));
  let p=vec3f(f.root.x,0.,f.root.z)+vec3f(corners[i].x,0.,corners[i].y)*70.;
- return Out(clip(p),vec3f(0,1,0),p,1.);
+ return Out(clip(p),vec3f(0,1,0),p,1.,p,vec4f(0));
 }
+${finishShader}
 @fragment fn floorFS(v:Out)->@location(0) vec4f{
+ if(f.motion.z>0.){let wood=f.motion.w;let base=mix(vec3f(.38,.39,.39),vec3f(.30,.31,.23)*(.66+.44*canopy(v.world)),wood);
+ let delta=v.world.xz-f.root.xz;let shadow=.24*exp(-dot(delta,delta*vec2f(1.4,.50)))*exp(-.7*f.root.y);
+ return vec4f(base-shadow,1.);}
  let uv=v.world.xz;let grid=abs(fract(uv+.5)-.5)/max(fwidth(uv),vec2f(.0001));
  let lines=1.-smoothstep(.2,1.3,min(grid.x,grid.y));
  let delta=uv-f.root.xz;
@@ -39,24 +45,27 @@ fn clip(p:vec3f)->vec4f {let q=f.vp*vec4f(p,1.);return vec4f(q.xy,(q.z+q.w)*.5,q
  let key=max(0.,dot(n,normalize(vec3f(-.46,.78,.55))));
  let rim=max(0.,dot(n,normalize(vec3f(.58,.48,-.72))));
  let clay=vec3f(.79,.774,.744)*v.tint*(.49+.065*n.y+.40*key+.13*rim);
+ if(f.motion.z>.5){return vec4f(silver(v,n),1.);}
  return vec4f(clay,1.);
 }`;
 function vertices(actor){
  const items=actor.parts.slice().sort((a,b)=>rank(a.mesh)-rank(b.mesh));
  function rank(mesh){return mesh.name==='folded'?1:mesh.name==='wing'?2:0;}
  const count=items.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0);
- const packed=new Float32Array(count*18),ints=new Uint32Array(packed.buffer);
+ const packed=new Float32Array(count*22),ints=new Uint32Array(packed.buffer);
  const indices=new Uint32Array(items.reduce((n,p)=>n+p.mesh.geometry.index.count,0)),runs=[0,0,0];
  let v=0,k=0;
  for(const {mesh} of items){
    const g=mesh.geometry,{position,normal,skinIndex,skinWeight}=g.attributes;
    const fold=g.morphAttributes.position?.[0],lift=g.morphAttributes.position?.[1],fn=g.morphAttributes.normal?.[0];
+   const surface=surfaceAttribute(mesh,actor.level).array;
    for(let i=0;i<position.count;i++){
-     const o=(v+i)*18;
+     const o=(v+i)*22;
      for(let j=0;j<3;j++){
        packed[o+j]=position.array[i*3+j];packed[o+3+j]=normal.array[i*3+j];
        if(fold){packed[o+8+j]=fold.array[i*3+j];packed[o+11+j]=fn.array[i*3+j];packed[o+14+j]=lift.array[i*3+j];}
      }
+     packed.set(surface.subarray(i*4,i*4+4),o+18);
      ints[o+6]=skinIndex.getX(i)|(skinIndex.getY(i)<<8);packed[o+7]=skinWeight.getX(i);
      packed[o+17]=mesh.userData.clayTone??1;
    }
@@ -82,8 +91,8 @@ export class MotionStudio {
    const module=d.createShaderModule({code:shader});
    const messages=await module.getCompilationInfo();if(messages.messages.some(m=>m.type==='error'))throw Error(messages.messages.map(m=>m.message).join('\n'));
    const depthStencil={format:'depth24plus',depthCompare:'less',depthWriteEnabled:true};
-   const attr=['float32x3','float32x3','uint32','float32','float32x3','float32x3','float32x3','float32'];
-   this.model=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'vs',buffers:[{arrayStride:72,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68][i]}))}]},
+   const attr=['float32x3','float32x3','uint32','float32','float32x3','float32x3','float32x3','float32','float32x4'];
+   this.model=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'vs',buffers:[{arrayStride:88,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68,72][i]}))}]},
      fragment:{module,entryPoint:'fs',targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'none'},multisample:{count:4},depthStencil});
    this.floor=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'floorVS'},fragment:{module,entryPoint:'floorFS',targets:[{format:'rgba8unorm'}]},multisample:{count:4},depthStencil});
    this.bind=d.createBindGroup({layout:this.model.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}}]});
@@ -111,7 +120,7 @@ export class MotionStudio {
    const data=new Float32Array(44);
    data.set(new T.Matrix4().multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse).elements);
    const wing=actor.rig.groups.wing[0].mesh;
-   data.set(camera.position.toArray(),40);data.set(wing.morphTargetInfluences,16);data.set(actor.root.position.toArray(),20);
+   data.set(camera.position.toArray(),40);data.set(wing.morphTargetInfluences,16);data.set(actor.root.position.toArray(),20);data[18]=Number(this.finish);data[19]=Number(this.woodland);
    actor.contacts.forEach((c,i)=>data.set(c.footWorld.toArray(),24+i*4));
    d.queue.writeBuffer(this.frame,0,data);d.queue.writeBuffer(this.palette,0,actor.rig.skeleton.boneMatrices);
    const encoder=d.createCommandEncoder(),pass=encoder.beginRenderPass({colorAttachments:[{view:this.samples.createView(),resolveTarget:this.color.createView(),loadOp:'clear',storeOp:'discard',clearValue:[.21,.23,.24,1]}],

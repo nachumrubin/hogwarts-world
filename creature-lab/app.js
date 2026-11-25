@@ -23,7 +23,11 @@ function metric(m,ms){$('#fps').textContent=(1000/ms).toFixed(ms>150?1:0);$('#fr
 function setRunning(v){lab.running=v;prefs[kind].running=v;$('#play').innerHTML=svg(v?'pause':'play');$('#play').setAttribute('aria-label',v?'Pause animation':'Resume animation');$('#play').title=v?'Pause (Space)':'Resume (Space)';$('#viewState').textContent=v?'LIVE':'PAUSED'}
 function setAction(v){lab.setAction(v);prefs[kind].action=v;$('#action').value=v;$('#motionname').textContent=spec[kind].actions[v]}
 function showControls(){const p=prefs[kind];
- const motion=$('#inspection option[value="motion"]');if(kind==='hippogriff'&&!motion)$('#inspection').add(new Option('Motion study · WebGPU','motion'));if(kind!=='hippogriff')motion?.remove();
+ for(const [value,label] of [['motion','Motion study · WebGPU'],['silver','Silver-grey · studio'],['woodland','Silver-grey · woodland']]){
+   const option=$('#inspection option[value="'+value+'"]');
+   if(kind==='hippogriff'&&!option)$('#inspection').add(new Option(label,value));
+   if(kind!=='hippogriff')option?.remove();
+ }
  $('#action').innerHTML=Object.entries(spec[kind].actions).map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('');setAction(p.action);
  for(const [id,out,format] of [['speed','speedV',v=>v.toFixed(1)+'×'],['light','lightV',v=>v+'%']]){const inp=$('#'+id);inp.value=p[id];$('#'+out).textContent=format(p[id]);inp.style.setProperty('--p',((inp.value-inp.min)/(inp.max-inp.min)*100)+'%')}
  all('[data-night]').forEach(b=>b.classList.toggle('chosen',!!Number(b.dataset.night)===p.night));$('#lod').value=p.lod;$('#wire').checked=p.wire;$('#normals').checked=p.normals;$('#view').dataset.inspection=p.mode;$('#inspection').value=p.mode;lab.setInspection(p.mode);lab.wire=p.wire;lab.normals=p.normals;lab.applyDebug();lab.speed=p.speed;lab.hab.setLighting(p.light/80,p.night);lab.setLOD(p.lod);setRunning(p.running)
