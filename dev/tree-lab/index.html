@@ -1,5 +1,82 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Tree lab — procedural ancient trees</title>
-<style>html,body{margin:0;height:100%;background:#111;overflow:hidden;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
-#view{width:100%;height:100%;display:block}#hud{position:fixed;left:8px;top:8px;color:#e8e8e8;background:#0009;padding:6px 8px;white-space:pre;max-width:96vw;overflow:hidden;pointer-events:none}</style>
-</head><body><canvas id="view"></canvas><div id="hud">growing trees…</div><script type="module" src="./dist/main.js"></script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1311">
+<title>Tree Lab · Structural development</title>
+<link rel="stylesheet" href="./style.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M20 36V20"/><path d="M20 26c-4-1-7-4-8-8M20 22c4-1 7-3 8-7M20 30c3 0 6-2 7-4"/><circle cx="20" cy="14" r="10"/></g></svg>
+    <div><b>Tree Lab</b><small>Procedural arboretum · structural phase</small></div>
+  </div>
+  <div class="phase"><span class="dot"></span><span id="status">Starting…</span></div>
+  <button class="icon" id="helpBtn" title="Controls" aria-label="Controls">?</button>
+</header>
+
+<main class="layout">
+  <aside class="panel library" data-tab="library">
+    <div class="ptitle"><span>Specimen library</span><span class="count">05</span></div>
+    <div id="cards" class="cards"></div>
+    <div class="ptitle sub"><span>Comparison</span></div>
+    <div id="sets" class="sets"></div>
+    <p class="note">Comparisons keep true relative scale on a common ground level. Tap a name in the viewport bar to inspect one specimen in place.</p>
+  </aside>
+
+  <section class="stage">
+    <div class="viewport">
+      <canvas id="view" tabindex="0" aria-label="Interactive 3D tree viewer"></canvas>
+      <div class="caption"><small id="capKicker">SPECIMEN</small><h1 id="capName">—</h1><em id="capLatin"></em></div>
+      <div class="modes" id="modes" role="tablist" aria-label="Display mode"></div>
+      <div class="focusbar" id="focusbar" hidden></div>
+      <div class="loading" id="loading" hidden><div class="spinner"></div><span id="loadingText">Growing…</span></div>
+      <div class="error" id="error" hidden></div>
+    </div>
+    <div class="viewbar">
+      <div class="views" id="views"></div>
+      <div class="viewtools">
+        <button id="flyBtn" class="chip" title="Free-fly camera (F)">Fly</button>
+        <button id="resetBtn" class="chip" title="Reset camera (R)">Reset</button>
+        <button id="shotBtn" class="chip accent" title="Screenshot of the viewport (P)">Screenshot</button>
+      </div>
+    </div>
+    <div class="telemetry" id="telemetry"></div>
+  </section>
+
+  <aside class="panel inspector" data-tab="inspect">
+    <section><h2>Specimen</h2><dl id="specData" class="data"></dl><p id="specSummary" class="note"></p></section>
+    <section><h2>Environment</h2><div class="seg" id="lights"></div></section>
+    <section><h2>Rendering</h2>
+      <div class="row"><label for="lod">Level of detail</label><select id="lod"><option value="0">LOD 0 · hero</option><option value="1">LOD 1 · mid</option><option value="2">LOD 2 · far</option></select></div>
+      <label class="toggle"><span>Live rendering (continuous frames, real FPS)</span><input type="checkbox" id="live" checked><i></i></label>
+      <p class="note">Materials mode is reserved for the bark and foliage phase: it shows a neutral placeholder tone.</p>
+    </section>
+    <section><h2>Geometry &amp; performance</h2><dl id="geoData" class="data"></dl></section>
+    <section><h2>Growth</h2><dl id="growData" class="data"></dl><div id="hier" class="hier"></div><ol id="history" class="history"></ol></section>
+    <section class="capture"><h2>Evidence capture</h2>
+      <button id="sheetBtn" class="wide">Review sheet · this specimen</button>
+      <button id="cmpBtn" class="wide">Comparison sheet · three oaks</button>
+      <button id="zipBtn" class="wide accent">Export everything (ZIP)</button>
+      <p class="note" id="capNote">Standard set: front, side, three-quarter (clay), front &amp; side silhouettes, trunk and junction close-ups — 1200×900, neutral studio light, LOD 0, common scale.</p>
+    </section>
+  </aside>
+</main>
+<nav class="tabs" id="tabs" aria-label="Panels"><button data-tab="library" class="on">Specimens</button><button data-tab="inspect">Inspect</button></nav>
+<footer class="foot"><span>Drag orbit · right-drag/shift-drag pan · wheel zoom · touch: one finger orbit, two fingers pinch &amp; pan</span><span id="adapter"></span></footer>
+
+<dialog id="help"><form method="dialog"><h2>Controls</h2>
+<table>
+<tr><td>Orbit</td><td>drag · one finger</td></tr><tr><td>Pan</td><td>right/middle drag · shift-drag · two fingers</td></tr>
+<tr><td>Zoom</td><td>wheel · pinch</td></tr><tr><td>Free-fly</td><td>F to toggle · WASD move · Q/E down/up · Shift fast · drag to look</td></tr>
+<tr><td>Views</td><td>1 front · 2 side · 3 rear · 4 three-quarter · 5 top · 6 trunk · 7 junction · R reset</td></tr>
+<tr><td>Modes</td><td>C clay · S silhouette · W wireframe · N normals · H hierarchy · M materials</td></tr>
+<tr><td>Capture</td><td>P screenshot</td></tr>
+</table><button>Close</button></form></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="./dist/main.js"></script>
+</body>
+</html>

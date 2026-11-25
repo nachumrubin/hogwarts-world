@@ -1,5 +1,8 @@
-// Headless captures of the tree lab. node dev/tree-lab/capture.mjs <outDir>
-//   TREES=pine,oak,birch VIEWS=front,side,... MODE (optional override) SIZE=WxH SOFTWARE=1 LOD=0 LIGHT=day
+// Headless evidence capture: drives the lab's own one-click review pipeline (window.__lab.review / comparisonSheet),
+// so these files are exactly what the in-browser buttons export.
+//   node dev/tree-lab/capture.mjs <outDir>
+//   SPECIMENS=oak-a,oak-b,oak-c,pine,birch  COMPARE=oaks,all  SOFTWARE=1 (SwiftShader)  SHADOW=2048  UI=1 (also grab the
+//   interface: lab-ui.png)  SHOT=1200x900 (review shot size)
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -7,35 +10,72 @@ import { fileURLToPath } from 'node:url';
 const req = createRequire('/opt/npm-tools/node_modules/');
 let puppeteer; try { puppeteer = (await import('puppeteer-core')).default; } catch { puppeteer = req('puppeteer-core'); }
 const out = process.argv[2] || 'out-treelab'; mkdirSync(out, { recursive: true });
-const [W, H] = (process.env.SIZE || '960x720').split('x').map(Number);
 const PORT = +(process.env.PORT || 8797);
 const srv = spawn(process.execPath, [fileURLToPath(new URL('../../tools/serve.mjs', import.meta.url)), String(PORT)], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 400));
-const args = ['--no-sandbox', '--enable-unsafe-webgpu', '--enable-features=Vulkan', '--disable-vulkan-surface', `--window-size=${W},${H}`];
+const args = ['--no-sandbox', '--enable-unsafe-webgpu', '--enable-features=Vulkan', '--disable-vulkan-surface', '--window-size=1440,900'];
 if (process.env.SOFTWARE === '1') args.push('--use-angle=swiftshader', '--use-webgpu-adapter=swiftshader');
-const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome', headless: 'new', args, protocolTimeout: 1800000 });
-const report = [];
+const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome', headless: 'new', args, protocolTimeout: 7200000 });
 const log = [];
-for (const tree of (process.env.TREES || 'pine,oak,birch').split(',')) {
-  const page = await browser.newPage();
-  await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });
-  page.on('console', (m) => log.push(`[${tree}] ${m.text()}`)); page.on('pageerror', (e) => log.push(`[${tree}] pageerror ${e.message}`));
-  const q = new URLSearchParams({ tree, view: 'three', hud: '0', lod: process.env.LOD || '0', light: process.env.LIGHT || 'day', shadow: process.env.SHADOW || '4096' });
-  await page.goto(`http://127.0.0.1:${PORT}/dev/tree-lab/?${q}`, { waitUntil: 'load' });
-  await page.waitForFunction('(window.__lab && window.__lab.frames > 1) || window.__labError', { timeout: 900000, polling: 500 });
-  const err = await page.evaluate('window.__labError || null'); if (err) { log.push(err); await page.close(); continue; }
-  for (const view of (process.env.VIEWS || 'three').split(',')) {
-    // a view may carry its display mode: front:silhouette
-    const [vname, vmode] = view.split(':');
-    await page.evaluate((v, m) => window.__lab.setView(v, m), vname, vmode || process.env.MODE || 'lit');
-    await page.evaluate(() => new Promise((r) => { const f0 = window.__lab.frames; const t = () => (window.__lab.frames > f0 + 1 ? r(0) : setTimeout(t, 200)); t(); }));
-    const url = await page.evaluate(() => window.__lab.viewer.capture());
-    const file = `${out}/${tree}-${vname}-${vmode || process.env.MODE || 'lit'}.png`;
-    writeFileSync(file, Buffer.from(url.split(',')[1], 'base64'));
-    const info = await page.evaluate(() => ({ built: window.__lab.built, genMs: window.__lab.genMs, errors: window.__errors || [] }));
-    report.push({ tree, view, file, ...info }); console.log(file);
-  }
-  await page.close();
+const page = await browser.newPage();
+await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
+page.on('console', (m) => log.push(m.text())); page.on('pageerror', (e) => log.push(`pageerror ${e.message}`));
+const q = new URLSearchParams({ specimen: 'oak-a', view: 'three', live: '0', shadow: process.env.SHADOW || '2048' });
+const t0 = Date.now();
+await page.goto(`http://127.0.0.1:${PORT}/dev/tree-lab/?${q}`, { waitUntil: 'load' });
+await page.waitForFunction('window.__labReady || window.__labError', { timeout: 1800000, polling: 500 });
+const err = await page.evaluate('window.__labError || null');
+const save = (name, dataUrl) => { writeFileSync(`${out}/${name}`, Buffer.from(dataUrl.split(',')[1], 'base64')); console.log(`${out}/${name}`); };
+if (err) { console.error(err); writeFileSync(`${out}/log.txt`, log.join('\n') + '\n' + err); process.exit(1); }
+console.log(`lab ready in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+const save0 = (name, dataUrl) => { writeFileSync(`${out}/${name}`, Buffer.from(dataUrl.split(',')[1], 'base64')); console.log(`${out}/${name}`); };
+await page.evaluate(() => { window.__b64 = (b) => new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); }); });
+if (process.env.UI === '1') {
+  await page.evaluate(() => new Promise((r) => { const f0 = window.__lab.frames; const t = () => (window.__lab.frames > f0 && !document.querySelector('.thumb.wait') ? setTimeout(r, 1500) : setTimeout(t, 300)); window.__lab.invalidate(); t(); }));
+  writeFileSync(`${out}/lab-ui.png`, await page.screenshot()); console.log(`${out}/lab-ui.png`);
+  // the frame actually presented to the canvas (headless compositing of WebGPU canvases is unreliable)
+  save('lab-viewport.png', await page.evaluate(() => new Promise((r) => { window.__lab.viewer.readback = (b) => window.__b64(b).then(r); window.__lab.invalidate(); })));
 }
-writeFileSync(`${out}/report.json`, JSON.stringify({ report, log: log.slice(-40) }, null, 2));
+// DEBUG=id:view:mode,... renders individual shots only (e.g. DEBUG=pine:trunk:normals)
+if (process.env.DEBUG) {
+  for (const spec of process.env.DEBUG.split(',')) {
+    const [id, view, mode] = spec.split(':');
+    save(`dbg-${id}-${view}-${mode}.png`, await page.evaluate(async (id, view, mode) => { await window.__lab.select(id); return window.__b64(await window.__lab.shoot(view, mode, { width: 800, height: 600 })); }, id, view, mode));
+  }
+  await browser.close(); srv.kill(); process.exit(0);
+}
+if (process.env.MOBILE === '1') {
+  // phone-sized interface check (touch, narrow layout)
+  await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  // (switching to a mobile viewport reloads the page)
+  await page.waitForFunction('window.__labReady || window.__labError', { timeout: 1800000, polling: 500 });
+  await page.evaluate(() => { window.__b64 = (b) => new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); }); });
+  await page.evaluate(() => new Promise((r) => { const t = () => (!document.querySelector('.thumb.wait') ? setTimeout(r, 1500) : setTimeout(t, 300)); t(); }));
+  writeFileSync(`${out}/lab-mobile.png`, await page.screenshot()); console.log(`${out}/lab-mobile.png`);
+  save('lab-mobile-viewport.png', await page.evaluate(() => new Promise((r) => { window.__lab.viewer.readback = (b) => window.__b64(b).then(r); window.__lab.invalidate(); })));
+  await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
+  await page.waitForFunction('window.__labReady || window.__labError', { timeout: 1800000, polling: 500 });
+  await page.evaluate(() => { window.__b64 = (b) => new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); }); });
+}
+const [sw, sh] = (process.env.SHOT || '1200x900').split('x').map(Number);
+await page.evaluate((w, h) => { const P = window.__labProtocol; if (P) { P.width = w; P.height = h; } }, sw, sh);
+const diag = {};
+for (const id of (process.env.SPECIMENS ?? 'oak-a,oak-b,oak-c,pine,birch').split(',').filter(Boolean)) {
+  const t = Date.now();
+  const r = await page.evaluate(async (id) => {
+    const res = await window.__lab.review(id);
+    return { shots: await Promise.all(res.shots.map(async (s) => ({ file: s.spec.file, url: await window.__b64(s.blob) }))), sheet: await window.__b64(res.sheet), diag: window.__lab.diagnostics(id) };
+  }, id);
+  mkdirSync(`${out}/${id}`, { recursive: true });
+  for (const s of r.shots) save(`${id}/${id}-${s.file}.png`, s.url);
+  save(`${id}-review-sheet.png`, r.sheet);
+  diag[id] = r.diag; console.log(`  ${id}: ${((Date.now() - t) / 1000).toFixed(0)} s`);
+}
+for (const c of (process.env.COMPARE ?? 'oaks,all,a-b,b-c,pine-birch').split(',').filter(Boolean)) {
+  const url = await page.evaluate(async (c) => window.__b64(await window.__lab.comparisonSheet(c)), c);
+  save(`compare-${c}.png`, url);
+}
+const meta = await page.evaluate(() => ({ adapter: window.__lab.viewer.adapterName, hasTimestamps: window.__lab.viewer.hasTs }));
+writeFileSync(`${out}/diagnostics.json`, JSON.stringify({ ...meta, specimens: diag }, null, 2));
+writeFileSync(`${out}/log.txt`, log.join('\n'));
 await browser.close(); srv.kill();

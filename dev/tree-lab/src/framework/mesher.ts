@@ -47,7 +47,6 @@ export type BarkFn = (p: V3, axis: V3, r: number, node: TNode) => number;
 
 /** Flags packed in attr.y: 1 dead, 2 broken end region, 4 root, 8 collar. */
 export function meshChains(sk: Skeleton, chains: Chain[], lod: LodSpec, bark: BarkFn | null, out: MeshOut, opts: { skip?: (c: Chain) => boolean; startCut?: (c: Chain) => number } = {}): void {
-  const from = out.count, fromIdx = out.i.length;
   for (const ch of chains) {
     if (opts.skip && opts.skip(ch)) continue;
     const n0 = ch.nodes[0];
@@ -56,7 +55,6 @@ export function meshChains(sk: Skeleton, chains: Chain[], lod: LodSpec, bark: Ba
     if (cut === Infinity) continue;
     tube(ch, lod, bark, out, cut);
   }
-  out.normals(from, fromIdx);
 }
 
 interface Sample { p: V3; r: number; node: TNode; t: number; collar: number }
@@ -100,11 +98,13 @@ function samples(ch: Chain, lod: LodSpec, noCollar = false): Sample[] {
     const cd = norm(sub(out[Math.min(2, out.length - 1)].p, out[0].p));
     const sinA = Math.sqrt(Math.max(0, 1 - dot(pd, cd) ** 2));
     const e = parentR / Math.max(sinA, 0.3);
-    const widest = Math.min(parentR * 0.85, r0 * 1.45);
-    const L2 = r0 * 3 + 0.05;
+    // a modest swell that peaks just inside the parent's surface and dies away over several branch radii: the
+    // branch flares into the stem instead of showing a ball joint where it leaves it
+    const widest = Math.min(parentR * 0.75, r0 * 1.22);
+    const L2 = r0 * 5 + 0.08, e0 = e * 0.82;
     for (const s of out) {
-      if (s.t > e + L2) break;
-      const k = smoothstep(e * 0.4, e, s.t) * (1 - smoothstep(e, e + L2, s.t));
+      if (s.t > e0 + L2) break;
+      const k = smoothstep(e * 0.3, e0, s.t) * (1 - smoothstep(e0, e0 + L2, s.t));
       if (k > 0) { s.collar = k; s.r = s.r + Math.max(0, widest - s.r) * k; }
     }
   }
@@ -144,10 +144,18 @@ function tube(ch: Chain, lod: LodSpec, bark: BarkFn | null, out: MeshOut, startC
       for (let q = 0; q <= n; q++) {
         const a = (q / n) * Math.PI * 2;
         const d = add(mul(Nf, Math.cos(a)), mul(B, Math.sin(a)));
-        let rr = s.r;
+        let rr = s.r, nrm = d;
         const base = add(s.p, mul(d, rr));
-        if (bark && lod.displace > 0 && rr > 0.03) rr += bark(base, Ta, s.r, node) * lod.displace;
-        idx.push(out.vert(add(s.p, mul(d, rr)), d, order, flags, s.r, flex, q / n, s.t));
+        if (bark && lod.displace > 0 && rr > 0.03) {
+          const b0 = bark(base, Ta, s.r, node);
+          rr += b0 * lod.displace;
+          // shading normal of the displaced surface (finite differences of the bark field around and along the
+          // axis), so tube bark shades exactly like the fused surface's gradient normals — no seam at a takeover
+          const t1 = cross(Ta, d), e = 0.008;
+          const g1 = (bark(add(base, mul(t1, e)), Ta, s.r, node) - b0) / e, g2 = (bark(add(base, mul(Ta, e)), Ta, s.r, node) - b0) / e;
+          nrm = norm(sub(d, mul(add(mul(t1, g1), mul(Ta, g2)), lod.displace)));
+        }
+        idx.push(out.vert(add(s.p, mul(d, rr)), nrm, order, flags, s.r, flex, q / n, s.t));
       }
     }
     if (prev) stitch(out, prev.idx, idx);
@@ -156,16 +164,18 @@ function tube(ch: Chain, lod: LodSpec, bark: BarkFn | null, out: MeshOut, startC
   }
 }
 
-/** Stitch two rings (each closed: last vertex duplicates the first in angle) with possibly different counts. */
+/** Stitch two rings (each closed: last vertex duplicates the first in angle) with possibly different counts.
+ *  Rings run counter-clockwise about the axis (d = N cos + B sin, B = T × N), `b` further along it; triangles are
+ *  wound counter-clockwise seen from outside, like the fused surface and the ground, so front faces face out. */
 function stitch(out: MeshOut, a: number[], b: number[]): void {
-  if (b.length === 1) { for (let q = 0; q < a.length - 1; q++) out.tri(a[q], b[0], a[q + 1]); return; }
+  if (b.length === 1) { for (let q = 0; q < a.length - 1; q++) out.tri(a[q], a[q + 1], b[0]); return; }
   const na = a.length - 1, nb = b.length - 1;
   let i = 0, j = 0;
   while (i < na || j < nb) {
     // advance the ring whose next vertex has the smaller angle
     const ta = (i + 1) / na, tb = (j + 1) / nb;
-    if (j >= nb || (i < na && ta <= tb)) { out.tri(a[i], b[j], a[i + 1]); i++; }
-    else { out.tri(a[i], b[j], b[j + 1]); j++; }
+    if (j >= nb || (i < na && ta <= tb)) { out.tri(a[i], a[i + 1], b[j]); i++; }
+    else { out.tri(a[i], b[j + 1], b[j]); j++; }
   }
 }
 
@@ -183,7 +193,7 @@ function brokenCap(out: MeshOut, ring: number[], s: Sample, T: V3, order: number
   }
   stitch(out, ring, tip);
   const c = out.vert(add(s.p, mul(T, s.r * 0.4)), T, order, flags, s.r, flex, 0.5, s.t);
-  for (let q = 0; q < n; q++) out.tri(tip[q], c, tip[q + 1]);
+  for (let q = 0; q < n; q++) out.tri(tip[q], tip[q + 1], c);
 }
 
 export { lerp };

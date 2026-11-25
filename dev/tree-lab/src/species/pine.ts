@@ -128,7 +128,7 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
     const h = p.p[1];
     // the lowest few metres were cleared long ago (occluded knots); higher up: a mix of long dead branches still
     // carrying their twigs, snapped stubs of every length, and bare knots
-    if (h < 4 || r() < (h < 8 ? 0.6 : 0.35)) { shed.push(p); continue; }
+    if (h < 4 || r() < (h < 8 ? 0.72 : 0.4)) { shed.push(p); continue; }
     const q = r();
     let m: TNode = p;
     let L = 0; for (let m2: TNode | undefined = p; m2; m2 = m2.children.find((c) => c.order === 1)) L += m2.parent ? len(sub(m2.p, m2.parent.p)) : 0;
@@ -146,12 +146,18 @@ export function growPine(seed = PINE.seed): { sk: Skeleton; info: Record<string,
   sk.rootRadii(0.3, 0.02);
   sk.root.r = PINE.baseRadius * 1.1;
   // snapped stubs: the dead wood shrinks and splinters towards the break, and old stubs sag out of line
+  // stubs differ in length (snapped anywhere along the last internode: from a flush knot to a long spike), in droop
+  // (dead branches sink as the stem grows around them) and in how far the wood has shrunk towards the break
   for (const n of sk.nodes) if (n.broken && n.parent && n.order >= 1) {
-    n.r *= 0.5 + 0.25 * r();
     const d = sub(n.p, n.parent.p), L = len(d);
-    n.p = add(n.p, [(r() - 0.5) * 0.3 * L, -(0.05 + 0.3 * r()) * L, (r() - 0.5) * 0.3 * L]);
+    const q = r(), keepFrac = q < 0.35 ? 0.12 + 0.2 * r() : q < 0.8 ? 0.35 + 0.4 * r() : 0.8 + 0.2 * r();
+    const droop = (0.1 + 0.55 * r()) * L, swing = (r() - 0.5) * 0.5 * L;
+    const side = norm([-d[2], 0, d[0]]);
+    n.p = add(n.parent.p, add(mul(d, keepFrac), [side[0] * swing * keepFrac, -droop * keepFrac, side[2] * swing * keepFrac]));
+    n.r *= keepFrac < 0.35 ? 0.85 : 0.45 + 0.3 * r();
   }
-  return { sk, info: { growMs: Math.round(growMs), periods: PERIODS, leaderLosses, ...sk.stats() } };
+  const events = [`${domCount} dominant upper limbs laid down (periods 14–28)`, `${leaderLosses} leader losses`, `${shed.length} dead primaries shed or snapped (self-pruning)`, 'leader died back in old age (flat crown)'];
+  return { sk, info: { growMs: Math.round(growMs), periods: PERIODS, leaderLosses, events, ...sk.stats() } };
 }
 
 /** Scots pine bark: deep fissures between thick plates at the base, thin papery flakes up the stem. */

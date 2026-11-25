@@ -89,6 +89,25 @@ export class Skeleton {
    * most. Applied from the root outwards so deflections accumulate like a real cantilever. `upturn` lets shoot
    * tips recover upwards (phototropism of live shoots).
    */
+  /** Structural fairing of woody axes thicker than `minR`: the short-period meander a growth simulation leaves in
+   *  a limb (direction reversals within a metre or two — loops, hooks) is relaxed by Laplacian smoothing along each
+   *  axis, while the axis' overall course and every branching point's position along it are kept. The main stem is
+   *  left alone below `stemAbove` (default: entirely). Each node moves
+   *  with its whole subtree, so attached branches keep their shape. Deterministic. */
+  fair(minR: number, iterations = 4, k = 0.5, stemAbove = Infinity): void {
+    for (let it = 0; it < iterations; it++) {
+      for (const ch of this.chains()) {
+        const ns = ch.attach ? [ch.attach, ...ch.nodes] : ch.nodes;
+        for (let i = 1; i < ns.length - 1; i++) {
+          const n = ns[i]; if (n.root || n.r < minR || (n.order === 0 && n.p[1] < stemAbove)) continue;
+          const a = ns[i - 1].p, b = ns[i + 1].p;
+          const d: V3 = [((a[0] + b[0]) / 2 - n.p[0]) * k, ((a[1] + b[1]) / 2 - n.p[1]) * k, ((a[2] + b[2]) / 2 - n.p[2]) * k];
+          n.p = [n.p[0] + d[0], n.p[1] + d[1], n.p[2] + d[2]];
+          for (const c of n.children) if (c !== ns[i + 1]) for (const m of [c, ...this.descendants(c)]) m.p = [m.p[0] + d[0], m.p[1] + d[1], m.p[2] + d[2]];
+        }
+      }
+    }
+  }
   sag(o: { stiffness: number; maxAngle: number; minOrder?: number; upturn?: number }): void {
     // supported mass and its centroid per node
     const post = this.postorder();
@@ -195,11 +214,11 @@ export function growRoots(sk: Skeleton, o: { count: number; length: [number, num
       dx += (r() - 0.5) * 0.35; dz += (r() - 0.5) * 0.35; const l = Math.hypot(dx, dz); dx /= l; dz /= l;
       const step = L / segs;
       x += dx * step; z += dz * step;
-      // radius falls quickly; the root rides at the surface (half buried), then dives
-      // the root rides half-exposed near the trunk and sinks steadily: its upper surface stays at or below ground
       const rr = o.startR * Math.pow(1 - s, 1.6);
-      const hump = o.exposure * Math.sin(Math.PI * Math.min(1, s * 1.6)) * rr * 0.35;
-      const y = o.ground(x, z) + hump - rr * (0.45 + 0.9 * s) - 0.03 - s * 0.15;
+      // buttress: a ridge that leaves the trunk at the surface and is gone below ground within the first third —
+      // no long shallow roots grazing the surface (they mesh as thin flaps where the ground cuts them)
+      const hump = o.exposure * Math.max(0, 1 - s / 0.33) * rr * 0.4;
+      const y = o.ground(x, z) + hump - rr * (0.55 + 1.6 * s) - 0.05 - s * 0.3;
       const n = sk.add(m, [x, y, z], -1); n.root = true; m = n;
     }
   }

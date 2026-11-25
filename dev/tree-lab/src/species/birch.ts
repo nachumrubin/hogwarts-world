@@ -109,7 +109,8 @@ export function growBirch(seed = BIRCH.seed): { sk: Skeleton; info: Record<strin
   sk.computeRadii({ tipR: 0.0035, n: 2.2, taper: 0.012, targetBase: BIRCH.baseRadius });
   sk.rootRadii(0.13, 0.015);
   sk.root.r = BIRCH.baseRadius * 1.25;
-  return { sk, info: { growMs: Math.round(growMs), primaries: prims.length, lowLimbsLost: lostLow, ...sk.stats() } };
+  const events = [`${prims.length} arching primaries`, `${lostLow} low limbs lost (broken stubs)`];
+  return { sk, info: { growMs: Math.round(growMs), primaries: prims.length, lowLimbsLost: lostLow, events, ...sk.stats() } };
 }
 
 /** Birch bark: smooth papery upper stem with horizontal lenticel grooves; rough, dark fissured base. */
