@@ -74,4 +74,9 @@ jobs:
         run: |
           set -eo pipefail
           npm install --no-save --no-package-lock puppeteer-core@24
+          # pinned Chrome for Testing (the build the lab's software-WebGPU evidence is produced with); the runner's
+          # preinstalled Chrome loses its WebGPU instance under SwiftShader
+          out=$(npx --yes @puppeteer/browsers@2 install chrome@153.0.8010.12 --path "$RUNNER_TEMP/cft")
+          export CHROME_PATH=$(echo "$out" | tail -1 | awk '{print $2}')
+          "$CHROME_PATH" --version
           node dev/tree-lab/tools/pages-smoke.mjs "$SITE/dev/tree-lab/" "${GITHUB_SHA::7}" | tee -a "$GITHUB_STEP_SUMMARY"
