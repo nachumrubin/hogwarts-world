@@ -1,15 +1,27 @@
-name: Deploy Creature Lab to GitHub Pages
+name: Deploy Creature Lab and Tree Lab to GitHub Pages
+
+# GitHub Pages serves one artifact per deployment, and each deployment replaces the whole site, so both labs are
+# built here into a single site:
+#   /hogwarts-world/              Creature Lab (this branch)
+#   /hogwarts-world/dev/tree-lab/ Tree Lab (world-v2-webgpu, dev/tree-lab)
+# A push to creature-lab redeploys both. Tree Lab updates on world-v2-webgpu dispatch this workflow (from
+# request-pages-deploy.yml on that branch) with the commit to publish. Neither lab overwrites the other.
 
 on:
   push:
     branches: [creature-lab]
     paths:
       - 'creature-lab/**'
-      - '.github/workflows/deploy-creature-lab.yml'
+      - '.github/workflows/deploy-pages.yml'
       - 'tools/build-creature-lab.mjs'
       - 'package.json'
       - 'package-lock.json'
   workflow_dispatch:
+    inputs:
+      tree_lab_ref:
+        description: 'Tree Lab source (branch or commit on world-v2-webgpu)'
+        required: false
+        default: 'world-v2-webgpu'
 
 permissions:
   actions: read
@@ -18,7 +30,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: creature-lab-pages
+  group: hogwarts-pages
   cancel-in-progress: true
 
 jobs:
@@ -30,16 +42,27 @@ jobs:
     steps:
       - name: Checkout creature-lab branch
         uses: actions/checkout@v4
+      - name: Checkout Tree Lab source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tree_lab_ref || 'world-v2-webgpu' }}
+          path: tree-lab-src
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: npm ci
       - run: node tools/build-creature-lab.mjs --pages
+      - name: Build Tree Lab into dev/tree-lab/
+        working-directory: tree-lab-src
+        run: |
+          npm ci
+          node dev/tree-lab/build.mjs --pages "$GITHUB_WORKSPACE/dist/creature-lab-pages/dev/tree-lab"
+          echo "Tree Lab $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Upload Creature Lab site
+      - name: Upload site
         id: upload
         uses: actions/upload-pages-artifact@v3
         with:
