@@ -19,7 +19,7 @@ const foreProfile=[
   [.31,.592,.039,.051,0],[.245,.589,.045,.060,0],[.204,.582,.058,.071,0],
   [.17,.611,.052,.061,0],[.125,.65,.047,.056,0],[.094,.669,.054,.063,0]
 ];
-const hindProfile=[
+export const hindProfile=[
   [1.84,-.72,.038,.095,-.12],[1.76,-.74,.117,.195,-.072],[1.62,-.71,.166,.222,-.026],
   [1.50,-.68,.161,.217,0],[1.36,-.622,.148,.203,0],[1.235,-.54,.127,.161,0],
   [1.12,-.458,.106,.123,0],[1.055,-.454,.107,.12,0],[.97,-.53,.105,.133,0],
@@ -91,6 +91,21 @@ function groundNormal(height,x,z){
   const d=.045;
   return vec(height(x-d,z)-height(x+d,z),2*d,height(x,z-d)-height(x,z+d)).normalize();
 }
+
+export function hindAngles(a,b,c,distance,axis){
+    const ratio=.68;
+    let low=0,high=2.85;
+    for(let i=0;i<45;i++){
+      const k=(low+high)*.5;
+      const reach2=a*a+b*b+c*c+2*(a*b*Math.cos(k)+b*c*Math.cos(ratio*k)+a*c*Math.cos((1-ratio)*k));
+      if(reach2>distance*distance)low=k;else high=k;
+    }
+    const k=(low+high)*.5;
+    const upperAngle=axis-Math.atan2(-b*Math.sin(k)-c*Math.sin((1-ratio)*k),
+      a+b*Math.cos(k)+c*Math.cos((1-ratio)*k));
+    return [upperAngle,upperAngle-k];
+}
+
 
 function poseLeg(leg,rig,terrain,weight,checkReach=false){
   const {fore,ref,offsets,lengths,bones}=leg;
