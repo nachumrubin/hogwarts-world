@@ -52,12 +52,12 @@ ${finishShader}
  return vec4f(silver(v,n),coverage);}
  return vec4f(clay,1.);
 }`;
-function vertices(actor){
- const items=actor.parts.slice().sort((a,b)=>rank(a.mesh)-rank(b.mesh));
- function rank(mesh){return mesh.name==='folded'?2:mesh.name==='wing'?3:mesh.geometry.userData.vanes?1:0;}
+function vertices(actor,parts=actor.parts){
+ const items=parts.slice().sort((a,b)=>rank(a.mesh)-rank(b.mesh));
+ function rank(mesh){return mesh.userData.study?4:mesh.name==='folded'?2:mesh.name==='wing'?3:mesh.geometry.userData.vanes?1:0;}
  const count=items.reduce((n,p)=>n+p.mesh.geometry.attributes.position.count,0);
  const packed=new Float32Array(count*22),ints=new Uint32Array(packed.buffer);
- const indices=new Uint32Array(items.reduce((n,p)=>n+p.mesh.geometry.index.count,0)),runs=[0,0,0,0];
+ const indices=new Uint32Array(items.reduce((n,p)=>n+p.mesh.geometry.index.count,0)),runs=[0,0,0,0,0];
  let v=0,k=0;
  for(const {mesh} of items){
    const g=mesh.geometry,{position,normal,skinIndex,skinWeight}=g.attributes;
@@ -79,7 +79,8 @@ function vertices(actor){
  return {packed,indices,runs};
 }
 export class MotionStudio {
- constructor(parent){
+ constructor(parent,study=null){
+   this.study=study;
    this.canvas=document.createElement('canvas');this.canvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none';
    parent.insertAdjacentElement('afterend',this.canvas);this.cpuCanvas=this.canvas.getContext('2d');
    this.ready=this.init();this.ready.catch(e=>{this.error=e;console.error(e);});
@@ -87,12 +88,12 @@ export class MotionStudio {
  async init(){
    const adapter=await navigator.gpu?.requestAdapter();
    if(!adapter)throw Error('WebGPU adapter unavailable for motion inspection.');
-   this.device=await adapter.requestDevice();const d=this.device;
+   this.device=await adapter.requestDevice({requiredFeatures:this.study&&adapter.features.has('timestamp-query')?['timestamp-query']:[]});const d=this.device;
    this.adapter=adapter.info?.description||adapter.info?.architecture||adapter.info?.vendor||'WebGPU';
    d.addEventListener('uncapturederror',e=>{this.error=e.error;console.error(e.error);});
    this.frame=d.createBuffer({size:176,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
    this.palette=d.createBuffer({size:128*64,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});
-   const module=d.createShaderModule({code:shader});
+   const module=d.createShaderModule({code:shader+(this.study?.shader??'')});
    const messages=await module.getCompilationInfo();if(messages.messages.some(m=>m.type==='error'))throw Error(messages.messages.map(m=>m.message).join('\n'));
    const depthStencil={format:'depth24plus',depthCompare:'less',depthWriteEnabled:true};
    const attr=['float32x3','float32x3','uint32','float32','float32x3','float32x3','float32x3','float32','float32x4'];
@@ -100,14 +101,16 @@ export class MotionStudio {
     {binding:0,visibility:GPUShaderStage.VERTEX|GPUShaderStage.FRAGMENT,buffer:{}},
     {binding:1,visibility:GPUShaderStage.VERTEX,buffer:{type:'read-only-storage'}},
     {binding:2,visibility:GPUShaderStage.FRAGMENT,texture:{}},
-    {binding:3,visibility:GPUShaderStage.FRAGMENT,sampler:{}}
+    {binding:3,visibility:GPUShaderStage.FRAGMENT,sampler:{}},...(this.study?.layout??[])
    ]});
    const modelLayout=d.createPipelineLayout({bindGroupLayouts:[layout]});
-   const pipeline=(finished,plumage)=>d.createRenderPipeline({layout:modelLayout,vertex:{module,entryPoint:'vs',buffers:[{arrayStride:88,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68,72][i]}))}]},
-     fragment:{module,entryPoint:'fs',constants:{finished,plumage},targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'none'},multisample:{count:4,alphaToCoverageEnabled:plumage},depthStencil});
+   const vertex={module,entryPoint:'vs',buffers:[{arrayStride:88,attributes:attr.map((format,i)=>({shaderLocation:i,format,offset:[0,12,24,28,32,44,56,68,72][i]}))}]};
+   const pipeline=(finished,plumage,entryPoint='fs')=>d.createRenderPipeline({layout:modelLayout,vertex,
+     fragment:{module,entryPoint,constants:entryPoint==='fs'?{finished,plumage}:{},targets:[{format:'rgba8unorm'}]},primitive:{cullMode:'none'},multisample:{count:4,alphaToCoverageEnabled:plumage},depthStencil});
    this.clay=pipeline(false,false);this.skin=pipeline(true,false);this.feathers=pipeline(true,true);
+   if(this.study)await this.study.init(d,pipeline,modelLayout,vertex);
    this.floor=d.createRenderPipeline({layout:'auto',vertex:{module,entryPoint:'floorVS'},fragment:{module,entryPoint:'floorFS',targets:[{format:'rgba8unorm'}]},multisample:{count:4},depthStencil});
-   this.bind=d.createBindGroup({layout,entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}},{binding:2,resource:studioTile(d)},{binding:3,resource:d.createSampler({addressModeU:"repeat",addressModeV:"repeat",minFilter:"linear",magFilter:"linear",mipmapFilter:"linear"})}]});
+   this.bind=d.createBindGroup({layout,entries:[{binding:0,resource:{buffer:this.frame}},{binding:1,resource:{buffer:this.palette}},{binding:2,resource:studioTile(d)},{binding:3,resource:d.createSampler({addressModeU:"repeat",addressModeV:"repeat",minFilter:"linear",magFilter:"linear",mipmapFilter:"linear"})},...(this.study?.bindings??[])]});
    this.floorBind=d.createBindGroup({layout:this.floor.getBindGroupLayout(0),entries:[{binding:0,resource:{buffer:this.frame}}]});
    this.initialized=true;
  }
@@ -115,7 +118,7 @@ export class MotionStudio {
    await this.ready;if(this.error)throw this.error;
    const d=this.device;
    if(this.actor!==actor||this.lod!==actor.level){
-     this.vb?.destroy();this.ib?.destroy();const {packed,indices,runs}=vertices(actor);this.runs=runs;
+     this.vb?.destroy();this.ib?.destroy();const {packed,indices,runs}=vertices(actor,this.study?.parts(actor));this.runs=runs;
      const upload=(data,usage)=>{const b=d.createBuffer({size:data.byteLength,usage:usage|GPUBufferUsage.COPY_DST});d.queue.writeBuffer(b,0,data);return b;};
      this.vb=upload(packed,GPUBufferUsage.VERTEX);this.ib=upload(indices,GPUBufferUsage.INDEX);this.actor=actor;this.lod=actor.level;
    }
@@ -135,7 +138,7 @@ export class MotionStudio {
    data.set(camera.position.toArray(),40);data.set(wing.morphTargetInfluences,16);data.set(actor.root.position.toArray(),20);data[18]=Number(this.finish);data[19]=Number(this.woodland);
    actor.contacts.forEach((c,i)=>data.set(c.footWorld.toArray(),24+i*4));
    d.queue.writeBuffer(this.frame,0,data);d.queue.writeBuffer(this.palette,0,actor.rig.skeleton.boneMatrices);
-   const encoder=d.createCommandEncoder(),pass=encoder.beginRenderPass({colorAttachments:[{view:this.samples.createView(),resolveTarget:this.color.createView(),loadOp:'clear',storeOp:'discard',clearValue:[.21,.23,.24,1]}],
+   const encoder=d.createCommandEncoder(),pass=encoder.beginRenderPass({...this.study?.passDescriptor,colorAttachments:[{view:this.samples.createView(),resolveTarget:this.color.createView(),loadOp:'clear',storeOp:'discard',clearValue:[.21,.23,.24,1]}],
      depthStencilAttachment:{view:this.depth.createView(),depthLoadOp:'clear',depthClearValue:1,depthStoreOp:'discard'}});
    pass.setPipeline(this.floor);pass.setBindGroup(0,this.floorBind);pass.draw(6);
    const [skin,tract,closed,open]=this.runs;
@@ -144,11 +147,15 @@ export class MotionStudio {
    if(this.finish)pass.setPipeline(this.feathers);
    if(wing.visible){pass.drawIndexed(tract,1,skin);pass.drawIndexed(open,1,skin+tract+closed);}
    else pass.drawIndexed(tract+closed,1,skin);
-   this.triangles=(skin+tract+(wing.visible?open:closed))/3;pass.end();
-   encoder.copyTextureToBuffer({texture:this.color},{buffer:this.buffer,bytesPerRow:this.stride},[width,height]);
-   d.queue.submit([encoder.finish()]);await this.buffer.mapAsync(GPUMapMode.READ);
+   const studyCount=this.runs[4];
+   if(studyCount){pass.setPipeline(this.study.pipeline);pass.drawIndexed(studyCount,1,skin+tract+closed+open);}
+   this.triangles=(skin+tract+(wing.visible?open:closed)+studyCount)/3;pass.end();
+   const copy=this.study?.profile?await this.study.finishPass(d,encoder):encoder;
+   copy.copyTextureToBuffer({texture:this.color},{buffer:this.buffer,bytesPerRow:this.stride},[width,height]);
+   d.queue.submit([copy.finish()]);await this.buffer.mapAsync(GPUMapMode.READ);
+   this.study?.mapped();
    const bytes=new Uint8Array(this.buffer.getMappedRange());
    if(this.stride===width*4)this.image.data.set(bytes);else for(let i=0;i<height;i++)this.image.data.set(bytes.subarray(i*this.stride,i*this.stride+width*4),i*width*4);
-   this.buffer.unmap();this.cpuCanvas.putImageData(this.image,0,0);
+   this.buffer.unmap();this.cpuCanvas.putImageData(this.image,0,0);await this.study?.presented();
  }
 }
