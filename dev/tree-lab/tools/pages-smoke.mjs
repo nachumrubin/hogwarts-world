@@ -27,6 +27,9 @@ async function open(extra) {
   await page.waitForFunction('window.__labReady || window.__labError', { timeout: 900000, polling: 500 });
   const err = await page.evaluate('window.__labError || null');
   if (err) throw new Error(`lab error: ${err}`);
+  // report a lost GPU device with its reason (the promise resolves even if the loss already happened)
+  const info = await page.evaluate(() => { const v = window.__lab.viewer; v.device.lost.then((i) => console.error(`device lost: ${i.reason} ${i.message}`)); return `${v.adapterName}, timestamp-query ${v.hasTs}`; });
+  if (!adapter) console.log(`adapter: ${info}`);
   return page;
 }
 try {
@@ -38,7 +41,7 @@ try {
       const b = lab.store.get(id).built;
       return { height: b.diag.height, crown: b.diag.crownWidth, tris: b.lods[0].tris, png: blob.size, adapter: lab.viewer.adapterName, gpuErrors: window.__errors || [] };
     }, id);
-    adapter = r.adapter; for (const e of r.gpuErrors) problems.push(`WebGPU (${id}): ${e}`);
+    adapter = adapter || r.adapter; for (const e of r.gpuErrors) problems.push(`WebGPU (${id}): ${e}`);
     if (!(r.height > 5 && r.tris > 1000 && r.png > 5000)) problems.push(`${id}: implausible build ${JSON.stringify(r)}`);
     results[id] = r; console.log(`${id}: ${r.height} m tall, ${r.crown} m crown, ${r.tris} LOD0 triangles, render ${r.png} B`);
     await page.close();
@@ -51,7 +54,6 @@ try {
 const assets = requests.filter((r) => /\/assets\//.test(r));
 console.log(`Tested ${url} in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 console.log([...new Set(assets)].join('\n'));
-console.log(`adapter: ${adapter}`);
 await browser.close();
 if (problems.length) { console.error('FAILED\n' + problems.join('\n') + '\n--- console ---\n' + consoleLog.slice(-30).join('\n')); process.exit(1); }
 console.log(`Tree Lab smoke test passed${expect ? ` (expected commit ${expect})` : ''}`);

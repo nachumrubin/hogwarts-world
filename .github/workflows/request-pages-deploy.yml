@@ -79,4 +79,10 @@ jobs:
           out=$(npx --yes @puppeteer/browsers@2 install chrome@153.0.8010.12 --path "$RUNNER_TEMP/cft")
           export CHROME_PATH=$(echo "$out" | tail -1 | awk '{print $2}')
           "$CHROME_PATH" --version
+          # control: the same build staged and served on this runner (separates runner problems from the deployment)
+          npm ci --no-audit --no-fund
+          node dev/tree-lab/build.mjs --pages "$RUNNER_TEMP/site/hogwarts-world/dev/tree-lab"
+          (cd "$RUNNER_TEMP/site" && python3 -m http.server 8000 >/dev/null 2>&1 &)
+          sleep 1
+          node dev/tree-lab/tools/pages-smoke.mjs "http://127.0.0.1:8000/hogwarts-world/dev/tree-lab/" || echo "::warning::control run on the runner failed too"
           node dev/tree-lab/tools/pages-smoke.mjs "$SITE/dev/tree-lab/" "${GITHUB_SHA::7}" | tee -a "$GITHUB_STEP_SUMMARY"
