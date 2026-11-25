@@ -70,6 +70,24 @@ DEBUG=oak-b:junction:normals,pine:trunk:clay node dev/tree-lab/capture.mjs out/d
 
 The checked-in sheets are in `review/`.
 
+## Public build (GitHub Pages)
+
+Published at **https://nachumrubin.github.io/hogwarts-world/dev/tree-lab/**, next to the Creature Lab at the site
+root (`/hogwarts-world/`).
+
+GitHub Pages serves one artifact per deployment, and each deployment replaces the whole site. So both labs are built
+by a single workflow, `.github/workflows/deploy-pages.yml` on the `creature-lab` branch:
+* Creature Lab is built from its own branch and goes at the root.
+* Tree Lab is built from `world-v2-webgpu` with `node dev/tree-lab/build.mjs --pages <dir>` and goes under
+  `dev/tree-lab/`.
+
+A push to `creature-lab` redeploys both. A push touching `dev/tree-lab/` on `world-v2-webgpu` runs
+`.github/workflows/request-pages-deploy.yml`, which dispatches that same deploy for the pushed commit. Neither
+lab can overwrite the other, and no branches are merged.
+
+The staged site uses only relative URLs, so it works under any base path. Assets get content-hashed names
+(Pages caches for 10 minutes), and `version.json` records the deployed commit.
+
 ## Layout
 
 ```
