@@ -54,7 +54,7 @@ export function atlasUV(geometry,kind,sides,vertex,level){
 export function owlFinish(material,kind,scale){
   material.name='owl-'+kind;
   material.defines={...material.defines,OWL_FINISH_DETAIL:1};
-  material.customProgramCacheKey=()=>`owl-a8-${kind}-${scale}`;
+  material.customProgramCacheKey=()=>`owl-a81-${kind}-${scale}`;
   material.onBeforeCompile=shader=>{
     if(kind==='wing'){
       shader.vertexShader=`#if OWL_FINISH_DETAIL
@@ -77,11 +77,10 @@ export function owlFinish(material,kind,scale){
       vec4 owlSample=texture2D(map,wingUV);
       if(gl_FrontFacing){
         #if OWL_FINISH_DETAIL
-          float pigment=owlVentralMark;
+          owlSample.rgb=mix(vec3(.95,.93,.87),owlSample.rgb,.52*owlVentralMark);
         #else
-          float pigment=.57;
+          owlSample.rgb=mix(vec3(.83,.79,.71),owlSample.rgb,.57);
         #endif
-        owlSample.rgb=mix(vec3(.83,.79,.71),owlSample.rgb,pigment);
       }
     `:`vec4 owlSample=texture2D(map,vMapUv);`;
     const finish=kind==='lid'?'':kind==='detail'||kind==='bill'?
@@ -116,23 +115,14 @@ export function owlFinish(material,kind,scale){
         #endif
       `);
     if(kind==='wing'){
-      shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>',`
-        #if OWL_FINISH_DETAIL
-          vec2 vaneUV=fract(vMapUv*4.0);
-          float margin=abs(vaneUV.x*2.0-1.0);
-          float edgeWidth=fwidth(margin);
-          float fringe=.934+.062*(owlSample.a-.50)+.011*sin(184.0*vaneUV.y+12.0*owlVentralMark);
-          if(owlVentralMark>.08&&vaneUV.y>.25&&edgeWidth<.065&&margin>fringe)discard;
-        #endif
-        #include <opaque_fragment>
-      `).replace('#include <lights_fragment_end>',`
+      shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>',`
         #include <lights_fragment_end>
         #if OWL_FINISH_DETAIL && !defined(OWL_SKIP_TRANSMISSION)
           // Thicker root and rachis transmit less than the distal webs.
           float shaft=1.0-smoothstep(.035,.13,abs(fract(vMapUv.x*4.0)-.5));
           float distal=smoothstep(.05,.87,fract(vMapUv.y*4.0));
-          float throughput=(.075+.20*distal)*(1.0-.72*shaft);
-          throughput *= gl_FrontFacing ? 1.0 : .58;
+          float throughput=(.36+.23*distal)*(1.0-.65*shaft);
+          throughput *= gl_FrontFacing ? 1.0 : .22;
           throughput *= smoothstep(.005,.20,owlVentralMark);
           vec3 backLight=vec3(0.0);
           #if NUM_DIR_LIGHTS > 0
@@ -149,7 +139,7 @@ export function owlFinish(material,kind,scale){
               backLight+=back*behind.color;
             }
           #endif
-          reflectedLight.indirectDiffuse+=backLight*diffuseColor.rgb*vec3(1.0,.86,.65)*throughput*RECIPROCAL_PI;
+          reflectedLight.indirectDiffuse+=backLight*diffuseColor.rgb*vec3(1.0,.96,.87)*throughput*RECIPROCAL_PI;
         #endif
       `);
     }

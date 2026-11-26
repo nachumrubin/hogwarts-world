@@ -1,0 +1,44 @@
+{
+  "face": {
+    "A8 without fringe": {
+      "percentOwlPixelsOver8of255": 0.026338563419498064,
+      "meanMaxChannelChange": 0.04729115938055999
+    },
+    "A8 without relief": {
+      "percentOwlPixelsOver8of255": 0.3182128478437317,
+      "meanMaxChannelChange": 1.4807432850101323
+    },
+    "A8 without transmission": {
+      "percentOwlPixelsOver8of255": 0.18598250904380265,
+      "meanMaxChannelChange": 0.247738377436989
+    }
+  },
+  "spread": {
+    "A8 without fringe": {
+      "percentOwlPixelsOver8of255": 0.13208780434664197,
+      "meanMaxChannelChange": 0.20182199466201864
+    },
+    "A8 without relief": {
+      "percentOwlPixelsOver8of255": 0.0,
+      "meanMaxChannelChange": 0.8396426820632932
+    },
+    "A8 without transmission": {
+      "percentOwlPixelsOver8of255": 0.002723459883435917,
+      "meanMaxChannelChange": 0.18052453837354976
+    }
+  },
+  "ventral": {
+    "A8 without fringe": {
+      "percentOwlPixelsOver8of255": 0.2906895880274834,
+      "meanMaxChannelChange": 0.5603772010347993
+    },
+    "A8 without relief": {
+      "percentOwlPixelsOver8of255": 0.0027817185457175444,
+      "meanMaxChannelChange": 0.7096998525689171
+    },
+    "A8 without transmission": {
+      "percentOwlPixelsOver8of255": 77.8491752204512,
+      "meanMaxChannelChange": 28.631130212245125
+    }
+  }
+}

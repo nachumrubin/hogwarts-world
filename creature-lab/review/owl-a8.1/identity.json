@@ -1,0 +1,20 @@
+[
+  {
+    "lod": 0,
+    "exactPositionIndexAndMorphBuffers": true,
+    "matchedPoseMatricesAndMorphWeights": true,
+    "matchedFootPositionsAndClearance": true
+  },
+  {
+    "lod": 1,
+    "exactPositionIndexAndMorphBuffers": true,
+    "matchedPoseMatricesAndMorphWeights": true,
+    "matchedFootPositionsAndClearance": true
+  },
+  {
+    "lod": 2,
+    "exactPositionIndexAndMorphBuffers": true,
+    "matchedPoseMatricesAndMorphWeights": true,
+    "matchedFootPositionsAndClearance": true
+  }
+]

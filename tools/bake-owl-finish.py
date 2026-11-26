@@ -71,6 +71,7 @@ def head():
     ruff *= .56+.33*np.sin(41*sweep+210*r+asym)**2+.12*velvet
     low = .65*np.sin(9*a+110*r+asym)+.35*np.sin(21*a-120*r)
     filaments = 11*fine + 4.8*tine + 2.4*np.sin(72*sweep+193*r+asym)*np.sin(89*r+1.4*a)
+    filaments += ramp(r, .006, .019)*(9*filament + 12*(tine-.16))
     face = np.array([231.,220.,201.]) + (4.4*low+filaments)[...,None]
     socket = np.exp(-(r/.010)**2) * (1 + .40*np.sin(a+.55*asym))
     face -= socket[...,None]*[24,24,22]

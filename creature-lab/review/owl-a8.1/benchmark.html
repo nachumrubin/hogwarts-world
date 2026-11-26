@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Barn owl hardware benchmark</title>
+<style>body{font:16px system-ui;margin:2rem auto;max-width:68rem;background:#f4f1e8;color:#292e29}button,select{font:inherit;margin:.4rem}canvas{display:block;max-width:100%;height:auto}pre{white-space:pre-wrap}</style>
+<h1>Barn owl hardware benchmark</h1><p>Powered flight at 1280 × 720. Each run measures 1, 5, 10, 25 and 50 visible owls. Keep this tab in the foreground.</p>
+<label>Detail <select id="lod"><option value="0">LOD0</option><option value="1">LOD1</option><option value="2">LOD2</option></select></label>
+<button id="run">Run hardware benchmark</button><a id="save" hidden download="barn-owl-hardware.json">Download measurements</a>
+<pre id="status" role="status">Ready</pre><canvas id="view"></canvas><script type="module" src="./benchmark.js"></script></html>
