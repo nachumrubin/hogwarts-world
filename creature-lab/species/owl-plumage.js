@@ -41,7 +41,7 @@ export function breastPlumage(lod){
     const col=Math.round(tex[2*i]*g.parameters.widthSegments);
     const row=Math.round((1-tex[2*i+1])*g.parameters.heightSegments);
     const n=3*(row*(g.parameters.widthSegments+1)+(col%g.parameters.widthSegments+g.parameters.widthSegments)%g.parameters.widthSegments);
-    const hem=.36;
+    const hem=lod===2?.36:.23;
     vane.fromBufferAttribute(normal,i);underlying.fromArray(base,n);
     if(vane.dot(underlying)<0)vane.negate();
     vane.multiplyScalar(hem).addScaledVector(underlying,1-hem).normalize();

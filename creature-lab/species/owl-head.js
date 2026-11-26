@@ -1,34 +1,9 @@
 import * as T from '../vendor/three.module.js';
-import {unzlibSync} from '../vendor/fflate.js';
-import {bodyRGB} from './owl-body-albedo.js';
-import {wingRGB} from './owl-wing-albedo.js';
-import {headRGB} from './owl-head-albedo.js';
+import {atlasUV,owlFinish,owlCornea} from './owl-finish.js';
 
 const clamp=T.MathUtils.clamp;
 const gauss=(x,y)=>Math.exp(-x*x-y*y);
 const eyeX=.0235,eyeY=.002;
-const pixelCache=new Map();
-const sharedTextures=new Map();
-export function guideMap(kind){
-  const existing=sharedTextures.get(kind);
-  if(existing){existing.users++;return existing.map}
-  const width=kind==='head'?1024:512,height=kind==='body'?384:512;
-  if(!pixelCache.has(kind)){
-    const rgb=unzlibSync(Uint8Array.from(atob({head:headRGB,body:bodyRGB,wing:wingRGB}[kind]),c=>c.charCodeAt(0)));
-    const rgba=new Uint8Array(width*height*4);
-    for(let i=0,j=0;i<rgb.length;i+=3,j+=4){rgba[j]=rgb[i];rgba[j+1]=rgb[i+1];rgba[j+2]=rgb[i+2];rgba[j+3]=255}
-    pixelCache.set(kind,rgba);
-  }
-  const map=new T.DataTexture(pixelCache.get(kind),width,height);map.colorSpace=T.SRGBColorSpace;
-  map.generateMipmaps=true;map.minFilter=T.LinearMipmapLinearFilter;map.magFilter=T.LinearFilter;
-  map.name=kind;map.wrapS=T.RepeatWrapping;map.needsUpdate=true;
-  sharedTextures.set(kind,{map,users:1});return map;
-}
-
-export function releaseGuideMap(map){
-  const entry=sharedTextures.get(map.name);
-  if(entry&&entry.map===map&&--entry.users===0){sharedTextures.delete(map.name);map.dispose()}
-}
 
 // The orbital fossae and tapering median feather ridge belong to one
 // continuous cranium. Its UV seam lies on the back of the head.
@@ -95,7 +70,22 @@ function cranium(l){
   }
   g.setAttribute('position',new T.Float32BufferAttribute(points,3));
   g.setAttribute('uv',new T.Float32BufferAttribute(tex,2));g.setIndex(index);g.deleteAttribute('normal');
-  g.computeVertexNormals();return g;
+  g.computeVertexNormals();
+  if(l<2){
+    // Soft underfeathers share the local follicle bed normal.
+    const normals=g.attributes.normal,columns=g.parameters.widthSegments,rows=g.parameters.heightSegments;
+    const tip=new T.Vector3(),surface=new T.Vector3();
+    for(let i=pos.count;i<normals.count;i++){
+      const azimuth=((tex[i*2]-.25)%1+1)%1;
+      const col=Math.round(azimuth*columns),row=Math.round((1-tex[i*2+1])*rows);
+      tip.fromBufferAttribute(normals,i);
+      surface.fromBufferAttribute(normals,row*(columns+1)+col);
+      if(tip.dot(surface)<0)tip.negate();
+      tip.lerp(surface,.78).normalize();
+      normals.setXYZ(i,tip.x,tip.y,tip.z);
+    }
+  }
+  return g;
 }
 function geometry(p,indices,colors,closed){
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(p,3));
@@ -104,8 +94,8 @@ function geometry(p,indices,colors,closed){
     g.morphAttributes.position=[end.attributes.position];g.morphAttributes.normal=[end.attributes.normal]}
   return g;
 }
-function orbit(l,s,lids){
-  const p=[],idx=[],colors=[],closed=[],n=[48,32,20][l],color=new T.Color();
+function orbit(l,s,lids,map){
+  const p=[],idx=[],colors=[],closed=[],uv=[],n=[48,32,20][l],color=new T.Color();
   const rings=lids?[1,1.065,1.17,1.31]:[.001,.29,.43,.51,.59,.67,.81,1.025];
   rings.forEach((r,j)=>{
     for(let i=0;i<=n;i++){
@@ -122,30 +112,49 @@ function orbit(l,s,lids){
         closed.push(x*faceWidth(endY),faceHeight(x,endY)-.007*mantle,frontDepth(x,endY)-.005*mantle+.0006+.0034*cover);
         const phi=Math.atan2(x/.0595,Math.sqrt(Math.max(0,1-(x/.0595)**2-(y/.057)**2)));
         const texel=4*(Math.floor((.5+phi/(2*Math.PI))*1024)+1024*Math.min(511,Math.floor((1-Math.acos(y/.057)/Math.PI)*512)));
-        const pixels=pixelCache.get('head');
+        const pixels=map.image.data;
+        uv.push(.5+phi/(2*Math.PI),1-Math.acos(y/.057)/Math.PI);
         const nearby=new T.Color().setRGB(pixels[texel]/255,pixels[texel+1]/255,pixels[texel+2]/255,T.SRGBColorSpace);
-        color.setHex([0x48332b,0x644d41,0x997f6c,0xd8cbbd][j]).lerp(nearby,[0,.15,.68,1][j]);
+        const fringe=.035*Math.sin(17*a+s)+.026*Math.sin(31*a+j);
+        color.setHex([0x423830,0x655346,0xa0927e,0xd8cbbd][j])
+          .lerp(nearby,clamp([.06,.31,.78,1][j]+fringe,0,1));
       }else{
-        color.setHex([0x111319,0x161519,0x1d1b20,0x352e2b,0x3e322e,0x372e2b,0x302725,0x201b1b][j]);
-        const reflection=gauss((s*r*cs+.29)/.105,(r*sn-.46)/.105);
-        color.lerp(new T.Color(0xb3b1a6),reflection*.68);
+        uv.push(s*r*cs,r*sn);
+        color.setHex([0x080b10,0x0a0b0e,0x111013,0x211a18,0x2c211a,0x2b211b,0x231b18,0x181416][j]);
+        const stroma=.73+.27*Math.sin(27*a+5*Math.sin(6*a+s));
+        if(j>2)color.multiplyScalar(stroma);
       }
       colors.push(color.r,color.g,color.b);
       if(i&&j){const k=j*(n+1)+i;idx.push(k-n-2,k-1,k,k-n-2,k,k-n-1)}
     }
   });
-  return geometry(p,idx,colors,lids?closed:null);
+  const g=geometry(p,idx,colors,lids?closed:null);
+  g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+  return g;
 }
 export function owlFace(owl){
   const crown=owl.mesh(owl.head,0xfffefd,cranium);
-  crown.material.map=owl.maps[1];crown.material.roughness=.96;
+  crown.material.map=owl.maps[1];crown.material.roughness=.95;owlFinish(crown.material,'face',.000115);
   const lids=[];
   for(const s of [-1,1]){
-    const eye=owl.mesh(owl.head,0xffffff,l=>orbit(l,s,false));eye.material.vertexColors=true;eye.material.roughness=.22;
-    const lid=owl.mesh(owl.head,0xfffffc,l=>orbit(l,s,true));lid.material.vertexColors=true;lids.push(lid);
+    const eye=owl.mesh(owl.head,0xffffff,l=>orbit(l,s,false,owl.maps[1]));eye.material.vertexColors=true;eye.material.roughness=.19;owlCornea(eye.material);
+    const lid=owl.mesh(owl.head,0xfffffc,l=>orbit(l,s,true,owl.maps[1]));
+    lid.material.vertexColors=true;lid.material.map=owl.maps[1];lid.material.roughness=.88;
+    owlFinish(lid.material,'lid',.00007);lids.push(lid);
   }
   const bill=[[-.013,-.0014,.0035,.0027],[-.021,.0007,.0034,.0029],
     [-.026,.0024,.0024,.0024],[-.030,.0020,.0011,.0015],[-.032,.0003,.0003,.0004]];
-  owl.loft(owl.head,0xaa907d,bill.map(([y,lift,w,h])=>[0,faceHeight(0,y),frontDepth(0,y)+lift,w,h]));
+  const beak=owl.loft(owl.head,0xb29d86,bill.map(([y,lift,w,h])=>[0,faceHeight(0,y),frontDepth(0,y)+lift,w,h]));
+  beak.material.map=owl.maps[3];beak.material.roughness=.66;
+  const part=owl.parts.at(-1),make=part.make;
+  const surface=(g,l)=>{
+    if(l===2)return g;
+    const uv=[];
+    for(let i=0;i<g.attributes.position.count;i++)uv.push(...atlasUV(g,'bill',[20,12,7][l],i,l));
+    g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+    return g;
+  };
+  surface(beak.geometry,0);part.make=l=>surface(make(l),l);
+  owlFinish(beak.material,'bill',.000042);
   return (left,right=left)=>{lids[0].morphTargetInfluences[0]=left;lids[1].morphTargetInfluences[0]=right};
 }

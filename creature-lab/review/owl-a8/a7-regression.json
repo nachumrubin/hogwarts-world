@@ -1,0 +1,23 @@
+{
+  "baselineCommit": "2e36fdfde1a0ca0f2403c2649d2c1fa774b82232",
+  "levels": [
+    {
+      "lod": 0,
+      "exactPositionIndexAndMorphBuffers": true,
+      "matchedPoseMatricesAndMorphWeights": true,
+      "matchedFootPositionsAndClearance": true
+    },
+    {
+      "lod": 1,
+      "exactPositionIndexAndMorphBuffers": true,
+      "matchedPoseMatricesAndMorphWeights": true,
+      "matchedFootPositionsAndClearance": true
+    },
+    {
+      "lod": 2,
+      "exactPositionIndexAndMorphBuffers": true,
+      "matchedPoseMatricesAndMorphWeights": true,
+      "matchedFootPositionsAndClearance": true
+    }
+  ]
+}

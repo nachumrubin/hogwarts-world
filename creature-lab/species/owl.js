@@ -2,7 +2,8 @@ import * as T from '../vendor/three.module.js';
 import {Specimen,joint,sweep} from './form.js';
 import {feather,plumage} from './avian.js';
 import {owlWing} from './owl-wing.js';
-import {guideMap,releaseGuideMap,owlFace} from './owl-head.js';
+import {owlFace} from './owl-head.js';
+import {guideMap,releaseGuideMap,owlFinish} from './owl-finish.js';
 import {batchArticulatedParts} from './owl-batch.js';
 import {breastPlumage} from './owl-plumage.js';
 
@@ -15,7 +16,8 @@ export const actions={Perch:'Perched idle',Look:'Track target',Unfold:'Unfold wi
 function foot(owl,s){
   const carrier=joint(owl.root),ankle=joint(carrier,s*.021,.0795,-.001);
   const mark=(region,index)=>{owl.parts[index].mesh.userData.owlContact={region,side:s<0?0:1}};
-  owl.loft(ankle,cream,[[0,.049,-.017,.015,.019],[0,.010,-.022,.020,.024],[0,-.015,-.021,.016,.019],[0,-.033,-.007,.012,.014],[0,-.049,.004,.007,.009],[0,-.064,.012,.0045,.005]]);
+  const hock=owl.loft(ankle,cream,[[0,.049,-.017,.015,.019],[0,.010,-.022,.020,.024],[0,-.015,-.021,.016,.019],[0,-.033,-.007,.012,.014],[0,-.049,.004,.007,.009],[0,-.064,.012,.0045,.005]]);
+  hock.userData.owlFinish='hock';
   const legPlumes=[];
   for(let i=0;i<16;i++){
     const a=i*Math.PI/8,x=Math.cos(a),z=Math.sin(a);
@@ -28,7 +30,7 @@ function foot(owl,s){
     const end=upper?[x*.015,-.039+.005*Math.cos(i),-.007+z*.017]:[x*r,-.052-.012*(.5+.5*Math.sin(i*9)),.007+z*r];
     legPlumes.push([start,end,upper?.0056:.0037,[x,0,z]]);
   }
-  plumage(owl,ankle,0xe7dbca,legPlumes);
+  plumage(owl,ankle,0xe7dbca,legPlumes).userData.owlFinish='leg';
   const digit=(parent,color,rows)=>owl.mesh(parent,color,l=>sweep(rows,[14,10,7][l]));
   const pad=joint(ankle,0,-.064,.012),toes=[];
   owl.oval(pad,0xbba89c,0,0,0,.007,.004,.009);mark('pad',owl.parts.length-1);
@@ -109,7 +111,7 @@ function foot(owl,s){
 
 export class Owl extends Specimen{
   constructor(){
-    super();this.maps=[guideMap('body'),guideMap('head'),guideMap('wing')];
+    super();this.maps=[guideMap('body'),guideMap('head'),guideMap('wing'),guideMap('detail')];
     // The rump lies aft of the hock and the breast projects ahead of it.
     // The narrowed upper pole continues inside the cervical plumage.
     // Pitch the pectoral girdle about the hip; feet keep their perch frame.
@@ -117,6 +119,7 @@ export class Owl extends Specimen{
     this.trunk.rotation.x=.16;
     this.breast=this.mesh(this.trunk,0xfffffe,breastPlumage);
     this.breast.material.map=this.maps[0];this.breast.material.roughness=.96;
+    owlFinish(this.breast.material,'body',.000145);
     const articulated=[];
     let start=this.parts.length;
     this.tail=joint(this.trunk,0,.103,-.081);this.rectrices=[];
@@ -183,6 +186,15 @@ export class Owl extends Specimen{
     this.tail.rotation.set(-.15*air+.39*brake+.050*p.bounce,bank*.54+.20*trim*air,-.35*bank+.04*shift);
     for(const {shaft,t:spread} of this.rectrices)shaft.rotation.y=-spread*(.16+.23*air+.34*brake+.21*Math.abs(bank));
     this.feet.forEach(foot=>foot.pose(p));
+  }
+  setLOD(level){
+    super.setLOD(level);
+    const detail=Number(level<2);
+    for(const material of this.materials.values()){
+      if(material.defines?.OWL_FINISH_DETAIL===undefined||material.defines.OWL_FINISH_DETAIL===detail)continue;
+      material.defines.OWL_FINISH_DETAIL=detail;
+      material.needsUpdate=true;
+    }
   }
   dispose(){this.maps.splice(0).forEach(releaseGuideMap);super.dispose()}
 }

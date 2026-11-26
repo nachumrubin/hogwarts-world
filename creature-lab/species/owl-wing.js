@@ -2,6 +2,7 @@
 // Rest coordinates run along the back (q) and down the flank (v).
 import * as T from '../vendor/three.module.js';
 import {joint} from './form.js';
+import {owlFinish} from './owl-finish.js';
 const V=(...p)=>new T.Vector3(...p);
 const clamp=T.MathUtils.clamp;
 function basis(span,chord){
@@ -100,7 +101,8 @@ function wingSurface(lod,seg){
       const root=V(length*(t+.015*jitter),depth+.002*(1-t),.007-.011*t+.003*row);
       const base=p.length/3;
       color.setHex(0xfffcf5);
-      color.multiplyScalar(.94+.06*Math.sin(i*2.2+seg));
+      const streak=Math.sin(i*2.2+seg*.7+row*2.4);
+      color.setRGB(.94+.056*streak,.92+.061*streak,.89+.079*streak);
       const mark=.22+.60*(.5+.5*Math.sin(i*2.71+seg*1.96+row*4.37));
       const tilt=primary&&!covert?(t-.44)*.031:0;
       const tileColumn=(i*3+Math.floor(i/3)+seg+row)%4,tileRow=seg===0?2:Math.min(2,row);
@@ -156,32 +158,9 @@ export function owlWing(owl,s,map){
   for(let i=0;i<3;i++){
     const bone=joint(i?joints[i-1]:mount,i?bones[i-1][0].length():0);
     const mesh=owl.mesh(bone,0xfffffa,l=>wingSurface(l,i));mesh.material.vertexColors=true;mesh.material.map=map;mesh.material.roughness=.91;
-    // Index winding points towards the ventral web. THREE accounts for
-    // the mirrored mount when choosing the GL front face.
-    mesh.material.onBeforeCompile=shader=>{
-      // The fourth row of the shared atlas carries the ventral pigmentation.
-      shader.vertexShader='attribute float ventralMark; varying float owlVentralMark;\n'+shader.vertexShader
-        .replace('#include <begin_vertex>','#include <begin_vertex>\nowlVentralMark = ventralMark;');
-      shader.fragmentShader='varying float owlVentralMark;\n'+shader.fragmentShader
-        .replace('#include <map_fragment>', `
-          #ifdef USE_MAP
-            vec2 atlasUV=gl_FrontFacing ? vec2(vMapUv.x,0.75+0.25*fract(vMapUv.y*4.0)) : vMapUv;
-            vec4 vane=texture2D(map,atlasUV);
-            if(gl_FrontFacing)vane.rgb=mix(vec3(0.84,0.79,0.69),vane.rgb,owlVentralMark);
-            diffuseColor*=vane;
-          #endif`);
-      // Thin pale vanes transmit some dorsal illumination. The contribution
-      // follows the actual incident lights and vanishes in an unlit scene.
-      shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
-        #if NUM_DIR_LIGHTS > 0
-        if(gl_FrontFacing){
-          for(int i=0;i<NUM_DIR_LIGHTS;i++){
-            float backLight=max(0.0,-dot(normal,directionalLights[i].direction));
-            reflectedLight.indirectDiffuse+=0.72*RECIPROCAL_PI*backLight*directionalLights[i].color*diffuseColor.rgb;
-          }
-        }
-        #endif`);
-    };
+    // Index winding points to the ventral web; Three accounts for the
+    // mirrored mount when selecting GL front-facing fragments.
+    owlFinish(mesh.material,'wing',.000215);
     joints.push(bone);layers.push(mesh);
   }
   const q=new T.Quaternion(),previous=new T.Quaternion(),base=new T.Quaternion(),e=new T.Euler();
