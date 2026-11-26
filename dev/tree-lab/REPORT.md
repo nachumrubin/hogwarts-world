@@ -1,9 +1,12 @@
-# Tree Lab: technical report (foliage phase)
+# Tree Lab: technical report (crown phase 4.1)
 
 Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`; structural finishing pass `e4f3010`; bark phase `b4fe25e`
 (`review/CHANGES-bark-phase.md`); phase 4, summer foliage, on top of `c78db29` (`review/CHANGES-foliage-phase.md`:
 sources, growth model, the three-way proof of concept, rendering, LOD and the stress test, evidence, deficiencies).
-The specimens, their growth, bark meshes and bark materials are unchanged. No wind, no seasons.
+Phase 4.1, crown realism and foliage scalability, on top of `72e8685` (`review/CHANGES-crown-phase.md`: recursive
+sprays, lighting calibration, density experiments, rendering efficiency, LOD2 and impostors, the hardware benchmark,
+evidence, deficiencies). The specimens, their growth, bark meshes and bark materials are unchanged (leafless renders
+pixel-identical to Phase 4). No wind, no seasons.
 
 Public build: https://nachumrubin.github.io/hogwarts-world/dev/tree-lab/ (deployed with the Creature Lab;
 see "Public build" in README.md).
@@ -101,22 +104,29 @@ buffer (64 B/vertex) plus the index buffer.
 
 * **Bark textures:** 53.4 MiB on the GPU with the woodland floor layer.
 * **Foliage textures:** 64 MiB on the GPU from a 2.4 MiB download, shared by all trees.
-* **Foliage instances per tree (LOD0 / LOD1 / LOD2):**
-  * Oak A 194k / 42k / 2.3k
-  * Oak B 273k / 64k / 2.5k
-  * Oak C 124k / 24k / 1.3k
-  * pine 503k / 40k / 0.8k
-  * birch 98k / 31k / 1.4k
-* **Foliage triangles at LOD0:** 0.78–2.19M.
+* **Foliage instances per tree (LOD0 / LOD1 / LOD2), 20 bytes each (Phase 4: 64):**
+  * Oak A 220k / 28k / 8.2k
+  * Oak B 240k / 38k / 9.1k
+  * Oak C 134k / 17k / 4.2k
+  * pine 621k / 37k / 1.5k
+  * birch 196k / 43k / 3.1k
+* **Foliage instance memory at LOD0:** 2.6–11.8 MB per specimen (Phase 4: 6.0–30.7 MB).
+* **Foliage triangles at LOD0:** 1.07–1.90M.
+* **Impostor atlases:** 51.7 MiB on the GPU for the five specimens, 5.8 MB download, loaded only for stands.
 * **Foliage generation:** 0.3–0.7 s per tree.
-* **Draw calls:** 1 bark + 2 foliage per tree at LOD0, and 1 + 1 at LOD1 and LOD2.
+* **Draw calls:** 1 bark + 3 foliage per tree at LOD0 (twiglets, leaves, interior spray cards), 1 + 1 at LOD1 and
+  LOD2, and one draw for all impostors.
 * **Meshing:** 20–35% faster than e4f3010 (bark phase); unchanged since.
 * **Caching:** built specimens, foliage included, are cached in IndexedDB per deployed build.
 * **Measured foliage overdraw** (no depth rejection): mean 1.4–2.4 for a full tree at LOD0.
-* **Woodland stand** (12 trees, LOD by distance): 4.55M foliage + 1.22M bark triangles and 30 draw calls at ground
-  level; see the foliage report, section 5.
+* **Woodland stands** (projected-size LOD, impostors): 12 trees from the Phase 4 ground camera 3.24M foliage + 0.72M
+  bark triangles (Phase 4: 4.55M + 1.22M); 200 trees from the ground 16.0M triangles in 285 draw calls (3 / 27 / 108 /
+  26 trees at LOD0 / 1 / 2 / impostor, 36 culled), from 80 m 2.1M in 130 calls. Crown report, section 6.
 
 Details: `review/CHANGES-foliage-phase.md` section 5; offline-baking analysis: `review/CHANGES-bark-phase.md` section 5.
+
+**Hardware benchmark:** Inspect panel → "Hardware benchmark", or `?bench=suite&res=1920x1080&shadow=2048&frames=120`;
+downloads JSON with adapter, GPU timestamps, frame-time median and p95, draw calls, triangles, memory and LOD mix.
 
 **Frame time, FPS, GPU time:** the lab measures these live (frame cadence, CPU encode time, and the GPU pass
 time from timestamp queries where the browser exposes them). The material sheets also carry clay versus materials
@@ -126,7 +136,8 @@ about GPU performance, so I haven't quoted them. Real figures need a run in Chro
 
 ## Outstanding defects
 
-Foliage phase: section 8 of `review/CHANGES-foliage-phase.md`. Bark phase: section 7 of `review/CHANGES-bark-phase.md`.
+Crown phase 4.1: section 8 of `review/CHANGES-crown-phase.md` (chiefly the LOD0 → LOD1 luminance step and the
+impostors' slightly brighter colour). Foliage phase: section 8 of `review/CHANGES-foliage-phase.md`. Bark phase: section 7 of `review/CHANGES-bark-phase.md`.
 
 Structural, from section 4 of `review/CHANGES-finishing-pass.md`:
 * faint rings where the flare band fades on the pine and birch stems;
@@ -143,4 +154,4 @@ Interface screenshots: `review/lab-ui.png` (desktop) and `review/lab-mobile.png`
 the frame actually presented to the canvas, read back from the GPU, because headless page screenshots of
 WebGPU canvases are unreliable.
 
-Stopped here, before wind and seasons, for your foliage review.
+Stopped here, before wind and seasons, for your review of Phase 4.1.

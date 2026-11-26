@@ -1,0 +1,102 @@
+{
+ "oak-a/full-day": [
+  0.291,
+  0.33
+ ],
+ "oak-a/up": [
+  0.166,
+  0.245
+ ],
+ "oak-a/interior": [
+  0.161,
+  0.248
+ ],
+ "oak-a/macro": [
+  0.152,
+  0.199
+ ],
+ "oak-a/elevated": [
+  0.313,
+  0.355
+ ],
+ "oak-b/full-day": [
+  0.276,
+  0.309
+ ],
+ "oak-b/up": [
+  0.141,
+  0.202
+ ],
+ "oak-b/interior": [
+  0.139,
+  0.232
+ ],
+ "oak-b/macro": [
+  0.158,
+  0.194
+ ],
+ "oak-b/elevated": [
+  0.276,
+  0.314
+ ],
+ "oak-c/full-day": [
+  0.281,
+  0.333
+ ],
+ "oak-c/up": [
+  0.194,
+  0.27
+ ],
+ "oak-c/interior": [
+  0.131,
+  0.224
+ ],
+ "oak-c/macro": [
+  0.129,
+  0.231
+ ],
+ "oak-c/elevated": [
+  0.298,
+  0.357
+ ],
+ "pine/full-day": [
+  0.332,
+  0.394
+ ],
+ "pine/up": [
+  0.15,
+  0.216
+ ],
+ "pine/interior": [
+  0.162,
+  0.209
+ ],
+ "pine/macro": [
+  0.142,
+  0.187
+ ],
+ "pine/elevated": [
+  0.309,
+  0.388
+ ],
+ "birch/full-day": [
+  0.372,
+  0.354
+ ],
+ "birch/up": [
+  0.207,
+  0.248
+ ],
+ "birch/interior": [
+  0.127,
+  0.2
+ ],
+ "birch/macro": [
+  0.21,
+  0.228
+ ],
+ "birch/elevated": [
+  0.342,
+  0.337
+ ]
+}

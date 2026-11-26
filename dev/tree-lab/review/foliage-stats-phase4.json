@@ -1,0 +1,252 @@
+{
+  "oak-a": {
+    "foliage": {
+      "shoots": 41699,
+      "shed": 19180,
+      "leaves": 152314,
+      "leafArea": 517.5,
+      "bearingLength": 1164.4,
+      "ms": 522
+    },
+    "lods": [
+      {
+        "instances": 194013,
+        "triangles": 1552104,
+        "bytes": 12416832
+      },
+      {
+        "instances": 41699,
+        "triangles": 166796,
+        "bytes": 2668736
+      },
+      {
+        "instances": 2339,
+        "triangles": 9356,
+        "bytes": 149696
+      }
+    ],
+    "overdrawFullTreeLOD0": {
+      "coverage": 0.08548796296296296,
+      "foliageCoverage": 0.04729537037037037,
+      "meanFoliage": 2.1682296051214784,
+      "p95Foliage": 5,
+      "maxFoliage": 20,
+      "meanAll": 2.964853184875497
+    },
+    "foliageTextures": {
+      "layers": 6,
+      "size": 1024,
+      "bytes": 67108848,
+      "download": 2502078,
+      "ms": 392
+    },
+    "barkTextures": {
+      "layers": 5,
+      "size": 1024,
+      "bytes": 55924040,
+      "download": 10009394,
+      "ms": 593.2999999998137
+    },
+    "adapter": "google swiftshader"
+  },
+  "oak-b": {
+    "foliage": {
+      "shoots": 64008,
+      "shed": 37571,
+      "leaves": 209367,
+      "leafArea": 747.5,
+      "bearingLength": 1288.4,
+      "ms": 2670
+    },
+    "lods": [
+      {
+        "instances": 273375,
+        "triangles": 2187000,
+        "bytes": 17496000
+      },
+      {
+        "instances": 64008,
+        "triangles": 256032,
+        "bytes": 4096512
+      },
+      {
+        "instances": 2522,
+        "triangles": 10088,
+        "bytes": 161408
+      }
+    ],
+    "overdrawFullTreeLOD0": {
+      "coverage": 0.11137685185185185,
+      "foliageCoverage": 0.06482870370370371,
+      "meanFoliage": 2.373619938584589,
+      "p95Foliage": 6,
+      "maxFoliage": 21,
+      "meanAll": 3.036055434086809
+    },
+    "foliageTextures": {
+      "layers": 6,
+      "size": 1024,
+      "bytes": 67108848,
+      "download": 2502078,
+      "ms": 392
+    },
+    "barkTextures": {
+      "layers": 5,
+      "size": 1024,
+      "bytes": 55924040,
+      "download": 10009394,
+      "ms": 593.2999999998137
+    },
+    "adapter": "google swiftshader"
+  },
+  "oak-c": {
+    "foliage": {
+      "shoots": 23755,
+      "shed": 35143,
+      "leaves": 99810,
+      "leafArea": 306.3,
+      "bearingLength": 803.9,
+      "ms": 1398
+    },
+    "lods": [
+      {
+        "instances": 123565,
+        "triangles": 988520,
+        "bytes": 7908160
+      },
+      {
+        "instances": 23755,
+        "triangles": 95020,
+        "bytes": 1520320
+      },
+      {
+        "instances": 1339,
+        "triangles": 5356,
+        "bytes": 85696
+      }
+    ],
+    "overdrawFullTreeLOD0": {
+      "coverage": 0.055342592592592596,
+      "foliageCoverage": 0.027060185185185184,
+      "meanFoliage": 2.3746107784431136,
+      "p95Foliage": 6,
+      "maxFoliage": 23,
+      "meanAll": 2.689677095532876
+    },
+    "foliageTextures": {
+      "layers": 6,
+      "size": 1024,
+      "bytes": 67108848,
+      "download": 2502078,
+      "ms": 392
+    },
+    "barkTextures": {
+      "layers": 5,
+      "size": 1024,
+      "bytes": 55924040,
+      "download": 10009394,
+      "ms": 593.2999999998137
+    },
+    "adapter": "google swiftshader"
+  },
+  "pine": {
+    "foliage": {
+      "shoots": 20183,
+      "shed": 508,
+      "leaves": 502515,
+      "leafArea": 128.5,
+      "bearingLength": 869,
+      "ms": 585
+    },
+    "lods": [
+      {
+        "instances": 502515,
+        "triangles": 1005030,
+        "bytes": 32160960
+      },
+      {
+        "instances": 40366,
+        "triangles": 161464,
+        "bytes": 2583424
+      },
+      {
+        "instances": 785,
+        "triangles": 3140,
+        "bytes": 50240
+      }
+    ],
+    "overdrawFullTreeLOD0": {
+      "coverage": 0.026428703703703704,
+      "foliageCoverage": 0.007253703703703704,
+      "meanFoliage": 1.7291294357926985,
+      "p95Foliage": 4,
+      "maxFoliage": 14,
+      "meanAll": 2.816172091230775
+    },
+    "foliageTextures": {
+      "layers": 6,
+      "size": 1024,
+      "bytes": 67108848,
+      "download": 2502078,
+      "ms": 392
+    },
+    "barkTextures": {
+      "layers": 5,
+      "size": 1024,
+      "bytes": 55924040,
+      "download": 10009394,
+      "ms": 593.2999999998137
+    },
+    "adapter": "google swiftshader"
+  },
+  "birch": {
+    "foliage": {
+      "shoots": 31218,
+      "shed": 137,
+      "leaves": 66562,
+      "leafArea": 80,
+      "bearingLength": 1724.9,
+      "ms": 232
+    },
+    "lods": [
+      {
+        "instances": 97780,
+        "triangles": 782240,
+        "bytes": 6257920
+      },
+      {
+        "instances": 31218,
+        "triangles": 124872,
+        "bytes": 1997952
+      },
+      {
+        "instances": 1360,
+        "triangles": 5440,
+        "bytes": 87040
+      }
+    ],
+    "overdrawFullTreeLOD0": {
+      "coverage": 0.02390648148148148,
+      "foliageCoverage": 0.011974074074074074,
+      "meanFoliage": 1.425765542839468,
+      "p95Foliage": 3,
+      "maxFoliage": 8,
+      "meanAll": 2.3570238971300204
+    },
+    "foliageTextures": {
+      "layers": 6,
+      "size": 1024,
+      "bytes": 67108848,
+      "download": 2502078,
+      "ms": 392
+    },
+    "barkTextures": {
+      "layers": 5,
+      "size": 1024,
+      "bytes": 55924040,
+      "download": 10009394,
+      "ms": 593.2999999998137
+    },
+    "adapter": "google swiftshader"
+  }
+}

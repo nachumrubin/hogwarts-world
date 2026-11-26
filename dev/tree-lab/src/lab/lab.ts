@@ -1,9 +1,11 @@
 // Lab controller: state (specimen or comparison, view, display mode, lighting, LOD), render loop (on demand, or
 // continuous in live mode), camera presets, standardized shots and review-sheet export. UI-agnostic: ui.ts binds the
 // DOM to it, and the headless capture script drives the same API through window.__lab.
-import { Viewer, viewProj, LIGHTS, MODES, type Mode, type FoliageRep } from '../render/viewer.ts';
+import { Viewer, viewProj, LIGHTS, MODES, KIND, MAT, type Mode, type FoliageRep, type Draw } from '../render/viewer.ts';
+import { Impostors } from '../render/impostor.ts';
+import { unpackPos } from '../framework/foliage.ts';
 import { CameraController, FOV, type Box, type Preset, type V3 } from './camera.ts';
-import { SpecimenStore, LabScene, COMPARISONS, STAND } from './scene.ts';
+import { SpecimenStore, LabScene, COMPARISONS, STAND, standTrees } from './scene.ts';
 import { PerfMonitor } from './perf.ts';
 import { REVIEW_SET, MATERIAL_SET, FOLIAGE_SET, PROTOCOL, composeSheet, composeRows, zip, type ShotSpec, type ShotView } from './capture.ts';
 import { SPECIES } from '../species/index.ts';
@@ -47,6 +49,7 @@ export class Lab {
     try { await this.viewer.loadBark('textures/', COMMIT); } catch (e) { console.error('bark textures', e); }
     try { await this.viewer.loadFoliage('textures/', COMMIT); } catch (e) { console.error('foliage textures', e); }
     this.scene = new LabScene(this.viewer, this.store);
+    this.impostors = new Impostors(this.viewer, SPECIES.length); this.scene.impostors = this.impostors;
     this.cam.attach(this.canvas);
     this.cam.onChange = () => this.invalidate();
     new ResizeObserver(() => this.resize()).observe(this.canvas);
@@ -67,11 +70,165 @@ export class Lab {
     const moved = this.cam.update(dt);
     if ((this.dirty || moved || this.state.live) && this.viewer.draws.length && !this.hold) {
       const { eye, target } = this.cam.view();
-      this.viewer.render(viewProj(eye, target, FOV, this.canvas.width / this.canvas.height, 0.05, 3000), eye);
+      const vp = viewProj(eye, target, FOV, this.canvas.width / this.canvas.height, 0.05, 3000);
+      if (this.scene.stand && !this.scene.pinned) this.standLod(eye, vp, t);
+      this.viewer.render(vp, eye);
       this.perf.frame(t, this.viewer.cpuMs, this.viewer.hasTs ? this.viewer.gpuMs : null, this.state.live);
       this.frames++; this.dirty = false; this.onFrame();
     }
     requestAnimationFrame((tt) => this.tick(tt));
+  }
+
+  /** stand mode, live: projected-size LOD, culling and LOD0 residency follow the camera (re-assigned when the camera
+   *  has moved, at most 4 times a second, so the shadow map is not redrawn every frame) */
+  private lastLod = { t: 0, eye: [1e9, 0, 0] as number[], vp: '' };
+  private standLod(eye: V3, vp: Float32Array, t: number): void {
+    const moved = Math.hypot(eye[0] - this.lastLod.eye[0], eye[1] - this.lastLod.eye[1], eye[2] - this.lastLod.eye[2]) > 1 || this.lastLod.vp !== vp.slice(0, 3).join();
+    if (!moved || t - this.lastLod.t < 250) return;
+    this.lastLod = { t, eye: [...eye], vp: vp.slice(0, 3).join() };
+    this.scene.eye = eye; this.scene.cullVP = vp; this.scene.lodPolicy.screenH = this.canvas.height;
+    this.scene.apply(0);
+    this.store.evictLod0(this.viewer, performance.now());
+  }
+
+  // ---------------------------------------------------------------- impostors, benchmark
+  impostors!: Impostors;
+  /** Bake the impostors of these specimens (once each; from LOD1 bark and spray cards). */
+  async ensureImpostors(ids: string[]): Promise<void> {
+    await this.ensure(ids);
+    for (const id of ids) {
+      if (this.impostors.has(id)) continue;
+      const e = this.store.get(id), b = e.built!.bounds;
+      // bounding sphere of what is baked (LOD1 bark vertices, spray-card bases plus a card's reach)
+      const center: V3 = [(b.min[0] + b.max[0]) / 2, (Math.max(b.min[1], 0) + b.max[1]) / 2, (b.min[2] + b.max[2]) / 2];
+      let r2 = 0; const v = e.built!.lods[1].v;
+      for (let k = 0; k < v.length; k += 16) if (v[k + 1] > -0.5) r2 = Math.max(r2, (v[k] - center[0]) ** 2 + (v[k + 1] - center[1]) ** 2 + (v[k + 2] - center[2]) ** 2);
+      for (const set of e.built!.foliage.lods[1].sets) for (let k = 0; k < set.count; k++) { const p = unpackPos(set.data, k).p; r2 = Math.max(r2, (p[0] - center[0]) ** 2 + (p[1] - center[1]) ** 2 + (p[2] - center[2]) ** 2); }
+      const radius = Math.sqrt(r2) + 0.8;
+      // a pre-baked atlas made from this very generation (fingerprint) and these textures loads in milliseconds
+      const pre = (await this.impostorManifest())[id];
+      if (pre && pre.fingerprint === this.fingerprint(id) && this.store.density === 1) {
+        try { await this.impostors.load(id, SPECIES.findIndex((d) => d.id === id), `textures/${pre.albedo}`, `textures/${pre.normal}`, pre.center, pre.radius); continue; } catch (err) { console.warn('impostor atlas', err); }
+      }
+      this.onStatus(`Baking impostor: ${this.store.get(id).def.name}…`, true);
+      await this.exclusive(async () => {
+        const draws: Draw[] = [{ mesh: this.store.gpu(this.viewer, id, 1), offset: [0, 0, 0], kind: KIND.tree, mat: MAT[e.def.material], foliage: this.store.foliage(this.viewer, id, 1, 'hybrid'), yaw: 0 }];
+        const saved = this.viewer.mode; this.viewer.mode = 'lit';
+        this.impostors.bake(id, SPECIES.findIndex((d) => d.id === id), draws, center, radius);
+        this.viewer.mode = saved;
+        await this.viewer.device.queue.onSubmittedWorkDone();
+      });
+    }
+    this.onStatus('', false);
+  }
+  /** Density experiments: rebuild the collection at a crown-density scale (fullness × d; 1 = as defined). */
+  async setDensity(d: number): Promise<void> {
+    if (d === this.store.density) return;
+    this.hold++;
+    try {
+      await this.exclusive(async () => { this.store.density = d; this.viewer.setDraws([]); this.store.reset(this.viewer); this.impostors.specs.clear(); });
+      await this.reloadAfterReset();
+    } finally { this.hold--; this.invalidate(); }
+  }
+  private async reloadAfterReset(): Promise<void> {
+    const ids = this.members(); await this.ensure(ids); await this.reloadSubject();
+  }
+  private impMan: Record<string, { fingerprint: string; albedo: string; normal: string; center: V3; radius: number }> | null = null;
+  private async impostorManifest(): Promise<NonNullable<Lab['impMan']>> {
+    if (!this.impMan) { try { this.impMan = await (await fetch(`textures/impostors.json?v=${COMMIT}`)).json(); } catch { this.impMan = {}; } }
+    return this.impMan!;
+  }
+  /** What an impostor atlas depends on: the specimen's generated foliage and skeleton, and the foliage textures. */
+  fingerprint(id: string): string {
+    const b = this.store.get(id).built!, f = b.foliage;
+    return [f.stats.leaves, f.stats.shoots, f.lods[1].instances, f.lods[1].triangles, b.lods[1].i.length, ...b.bounds.min.map((x) => x.toFixed(3)), ...b.bounds.max.map((x) => x.toFixed(3)), this.viewer.folTexKey].join(':');
+  }
+  /** The woodland stand of n trees (12: the review stand; 50 and 200: generated, for the benchmark). */
+  async standOf(n: number): Promise<void> {
+    this.state.kind = 'compare'; this.state.compare = 'stand'; this.state.focus = null;
+    const ids = [...new Set(standTrees(n).map((t) => t.id))];
+    await this.ensure(ids);
+    if (n > 12) await this.ensureImpostors(ids);
+    this.scene.standN = n; this.scene.custom = null;
+    this.scene.set([], this.state.lod, true);
+    this.lastLod.t = 0; this.lastLod.eye = [1e9, 0, 0];
+    this.setView('three', false); this.onState();
+  }
+  /** Benchmark cameras: ground level (1.7 m, walking) and aerial (broom flight, 80 m), per scene. */
+  benchCamera(scene: string, camera: 'ground' | 'aerial'): { eye: V3; target: V3 } {
+    const single = SPECIES.find((d) => d.id === scene);
+    if (single) {
+      const H = this.store.get(scene).built!.bounds.max[1];
+      return camera === 'ground' ? { eye: [0, 1.7, H * 1.6], target: [0, H * 0.45, 0] } : { eye: [-H * 1.4, H * 2.4, H * 1.4], target: [0, H * 0.35, 0] };
+    }
+    const n = +scene.replace('stand', ''), side = n <= 12 ? 80 : Math.sqrt(n) * 12.5;
+    if (camera === 'ground') return n <= 12 ? { eye: [-14, 1.7, 46], target: [6, 9, 0] } : { eye: [side * 0.12, 1.7, side * 0.5 + 6], target: [0, 9, 0] };
+    return { eye: [-side * 0.55, 80, side * 0.75], target: [0, 0, -side * 0.05] };
+  }
+  /** Run one benchmark configuration: scene ('oak-a' … 'birch', 'stand12', 'stand50', 'stand200'), camera, resolution,
+   *  shadow-map size (0 = off), frames. Returns a JSON-ready record. On a software adapter (SwiftShader) the timings
+   *  are CPU-rasterizer timings and say nothing about GPU performance. */
+  async bench(o: { scene: string; camera: 'ground' | 'aerial'; width: number; height: number; shadow: number; frames: number }): Promise<Record<string, unknown>> {
+    const single = SPECIES.find((d) => d.id === o.scene);
+    const ids = single ? [o.scene] : [...new Set(standTrees(+o.scene.replace('stand', '')).map((t) => t.id))];
+    await this.ensure(ids); await this.ensureImpostors(ids);
+    return this.exclusive(async () => {
+      this.hold++;
+      const v = this.viewer, keepShadow = v.shadowSize, keepEnv = v.woodland;
+      try {
+        v.setShadowSize(o.shadow); v.woodland = true; v.mode = 'lit'; v.light = LIGHTS.find((l) => l.id === 'day')!;
+        this.scene.pinned = true;
+        this.scene.custom = single ? [{ id: o.scene, x: 0, z: 0, yaw: 0 }] : null;
+        this.scene.standN = single ? 1 : +o.scene.replace('stand', '');
+        this.scene.set([], 0, true);
+        const { eye, target } = this.benchCamera(o.scene, o.camera);
+        const vp = viewProj(eye, target, FOV, o.width / o.height, 0.05, 3000);
+        this.scene.eye = eye; this.scene.cullVP = vp; this.scene.lodPolicy.screenH = o.height;
+        const t0 = performance.now();
+        this.scene.apply(0);
+        const freed = this.store.evictLod0(v, t0, 0); // LOD0 resident only for the trees that use it now
+        const draws = v.draws;
+        const r = await v.benchFrames(o.width, o.height, vp, eye, o.frames);
+        const med = (a: number[]) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
+        const p95 = (a: number[]) => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.ceil(b.length * 0.95) - 1)]; };
+        const mean = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+        const foliageInstances = draws.reduce((a, x) => a + (x.foliage?.instances ?? 0), 0) + this.impostors.count;
+        const tex = (v.tex?.bytes ?? 0) + (v.folTex?.bytes ?? 0);
+        const targets = o.width * o.height * (4 * 4 + 4 * 4 + 4);
+        const sw = /swiftshader|software|llvmpipe/i.test(v.adapterName);
+        return {
+          tool: 'Tree Lab benchmark', commit: COMMIT, date: new Date().toISOString(), userAgent: navigator.userAgent,
+          adapter: { name: v.adapterName, software: sw, timestampQueries: v.hasTs },
+          settings: o,
+          camera: { eye, target, fovDeg: 45 },
+          frameMs: { median: med(r.wall), p95: p95(r.wall), mean: mean(r.wall), note: 'wall time submit → GPU done, one frame at a time (latency, includes the shadow pass)' },
+          gpuMs: r.gpu.length ? { median: med(r.gpu), p95: p95(r.gpu), mean: mean(r.gpu), note: 'timestamp queries, main pass' } : null,
+          drawCalls: r.calls, triangles: r.tris, foliageInstances,
+          trees: this.scene.placed.length, lod: { lod0: this.scene.lodCounts[0], lod1: this.scene.lodCounts[1], lod2: this.scene.lodCounts[2], impostor: this.scene.lodCounts[3], culled: this.scene.lodCounts[4] },
+          memory: { geometryBytes: v.geometryBytes, foliageInstanceBytes: v.foliageBytes, textureBytes: tex, impostorAtlasBytes: this.impostors.bytes, shadowMapBytes: o.shadow > 0 ? v.shadowSize ** 2 * 4 : 0, renderTargetBytes: targets, lod0Released: freed,
+            total: v.geometryBytes + v.foliageBytes + tex + this.impostors.bytes + (o.shadow > 0 ? v.shadowSize ** 2 * 4 : 0) + targets },
+          warning: sw ? 'Software adapter: these timings are CPU-rasterizer timings, not GPU performance.' : undefined,
+        };
+      } finally {
+        v.setShadowSize(keepShadow); v.woodland = keepEnv; this.scene.custom = null; this.scene.pinned = false; this.scene.eye = null; this.scene.cullVP = null;
+        this.restoreLook(); this.hold--;
+        await this.reloadSubject();
+      }
+    });
+  }
+  /** Every scene × camera at one resolution and shadow setting. */
+  async benchSuite(o: { width: number; height: number; shadow: number; frames: number; scenes?: string[] }, onEach?: (r: Record<string, unknown>) => void): Promise<Record<string, unknown>[]> {
+    const out: Record<string, unknown>[] = [];
+    for (const scene of o.scenes ?? ['oak-b', 'pine', 'birch', 'stand12', 'stand50', 'stand200']) for (const camera of ['ground', 'aerial'] as const) {
+      const r = await this.bench({ scene, camera, width: o.width, height: o.height, shadow: o.shadow, frames: o.frames }); out.push(r); onEach?.(r);
+    }
+    return out;
+  }
+  private async reloadSubject(): Promise<void> {
+    if (this.state.kind === 'specimen') { this.scene.set([this.state.specimen], this.state.lod); }
+    else if (this.state.compare === 'stand') { this.scene.set([], this.state.lod, true); }
+    else { const set = COMPARISONS.find((c) => c.id === this.state.compare)!; this.scene.set(set.members, this.state.lod); }
+    this.invalidate();
   }
 
   // ---------------------------------------------------------------- state changes
@@ -98,12 +255,7 @@ export class Lab {
     this.setView(CLOSE.includes(this.state.view) ? 'front' : this.state.view, false); this.onState();
   }
   /** The woodland stand (stress test): twelve trees, per-tree LOD by distance, on the woodland floor. */
-  async stand(): Promise<void> {
-    this.state.kind = 'compare'; this.state.compare = 'stand'; this.state.focus = null;
-    await this.ensure([...new Set(STAND.map((t) => t.id))]);
-    this.scene.set([], this.state.lod, true);
-    this.setView('three', false); this.onState();
-  }
+  async stand(): Promise<void> { await this.standOf(12); }
   setEnv(woodland: boolean): void { this.viewer.woodland = woodland; this.invalidate(); this.onState(); }
   /** Stress test: the stand from a ground-level walk position and from an elevated overview; per view the image,
    *  measured overdraw, instances and triangles drawn, draw calls, LOD mix, GPU-resident bytes and frame time. */

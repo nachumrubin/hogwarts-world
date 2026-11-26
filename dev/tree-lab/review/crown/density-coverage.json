@@ -1,0 +1,632 @@
+{
+ "phase4/oak-a": {
+  "level": "phase4",
+  "density": 1,
+  "id": "oak-a",
+  "instances": 194013,
+  "triangles": 1552104,
+  "instanceBytes": 12416832,
+  "lod1": {
+   "instances": 41699,
+   "triangles": 166796
+  },
+  "leaves": 152314,
+  "shoots": 41699,
+  "overdrawEye": {
+   "coverage": 0.09348765432098766,
+   "foliageCoverage": 0.04780349794238683,
+   "meanFoliage": 2.0907134402238245,
+   "p95Foliage": 5,
+   "maxFoliage": 15,
+   "meanAll": 2.81539562011665
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.574,
+    "envelope": 0.173
+   },
+   "eye": {
+    "fill": 0.541,
+    "envelope": 0.191
+   },
+   "elevated": {
+    "fill": 0.519,
+    "envelope": 0.186
+   },
+   "above": {
+    "fill": 0.586,
+    "envelope": 0.211
+   }
+  }
+ },
+ "moderate/oak-a": {
+  "level": "moderate",
+  "density": 0.55,
+  "id": "oak-a",
+  "instances": 197805,
+  "triangles": 1579208,
+  "instanceBytes": 3956100,
+  "lod1": {
+   "instances": 20462,
+   "triangles": 81848
+  },
+  "leaves": 174663,
+  "shoots": 61638,
+  "overdrawEye": {
+   "coverage": 0.11189300411522633,
+   "foliageCoverage": 0.07004115226337448,
+   "meanFoliage": 1.800418625146886,
+   "p95Foliage": 4,
+   "maxFoliage": 13,
+   "meanAll": 2.586084038249356,
+   "rasterized": 4.388256462984724,
+   "shadedFraction": 0.4102810855139288,
+   "fragments": 119501
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.646,
+    "envelope": 0.192
+   },
+   "eye": {
+    "fill": 0.61,
+    "envelope": 0.212
+   },
+   "elevated": {
+    "fill": 0.595,
+    "envelope": 0.208
+   },
+   "above": {
+    "fill": 0.649,
+    "envelope": 0.251
+   }
+  }
+ },
+ "full/oak-a": {
+  "level": "full",
+  "density": 1,
+  "id": "oak-a",
+  "instances": 220418,
+  "triangles": 1758928,
+  "instanceBytes": 4408360,
+  "lod1": {
+   "instances": 27932,
+   "triangles": 111728
+  },
+  "leaves": 193996,
+  "shoots": 70731,
+  "overdrawEye": {
+   "coverage": 0.11503343621399177,
+   "foliageCoverage": 0.07344135802469136,
+   "meanFoliage": 1.9566085312040344,
+   "p95Foliage": 5,
+   "maxFoliage": 13,
+   "meanAll": 2.6684181106763556,
+   "rasterized": 4.801533935700777,
+   "shadedFraction": 0.407496553685915,
+   "fragments": 137103
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.657,
+    "envelope": 0.192
+   },
+   "eye": {
+    "fill": 0.618,
+    "envelope": 0.212
+   },
+   "elevated": {
+    "fill": 0.601,
+    "envelope": 0.209
+   },
+   "above": {
+    "fill": 0.672,
+    "envelope": 0.252
+   }
+  }
+ },
+ "phase4/oak-b": {
+  "level": "phase4",
+  "density": 1,
+  "id": "oak-b",
+  "instances": 273375,
+  "triangles": 2187000,
+  "instanceBytes": 17496000,
+  "lod1": {
+   "instances": 64008,
+   "triangles": 256032
+  },
+  "leaves": 209367,
+  "shoots": 64008,
+  "overdrawEye": {
+   "coverage": 0.16433127572016462,
+   "foliageCoverage": 0.09387088477366255,
+   "meanFoliage": 2.3787708578787297,
+   "p95Foliage": 6,
+   "maxFoliage": 23,
+   "meanAll": 3.025104864458774
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.61,
+    "envelope": 0.31
+   },
+   "eye": {
+    "fill": 0.607,
+    "envelope": 0.298
+   },
+   "elevated": {
+    "fill": 0.641,
+    "envelope": 0.252
+   },
+   "above": {
+    "fill": 0.657,
+    "envelope": 0.347
+   }
+  }
+ },
+ "moderate/oak-b": {
+  "level": "moderate",
+  "density": 0.55,
+  "id": "oak-b",
+  "instances": 227937,
+  "triangles": 1809800,
+  "instanceBytes": 4558740,
+  "lod1": {
+   "instances": 34502,
+   "triangles": 138008
+  },
+  "leaves": 197701,
+  "shoots": 86881,
+  "overdrawEye": {
+   "coverage": 0.20587191358024692,
+   "foliageCoverage": 0.14532150205761316,
+   "meanFoliage": 2.1203695509813985,
+   "p95Foliage": 5,
+   "maxFoliage": 18,
+   "meanAll": 2.8267930987094436,
+   "rasterized": 5.693474451779615,
+   "shadedFraction": 0.37242101794601584,
+   "fragments": 321687
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.676,
+    "envelope": 0.352
+   },
+   "eye": {
+    "fill": 0.675,
+    "envelope": 0.341
+   },
+   "elevated": {
+    "fill": 0.7,
+    "envelope": 0.288
+   },
+   "above": {
+    "fill": 0.708,
+    "envelope": 0.421
+   }
+  }
+ },
+ "full/oak-b": {
+  "level": "full",
+  "density": 1,
+  "id": "oak-b",
+  "instances": 239765,
+  "triangles": 1904392,
+  "instanceBytes": 4795300,
+  "lod1": {
+   "instances": 37748,
+   "triangles": 150992
+  },
+  "leaves": 207821,
+  "shoots": 90941,
+  "overdrawEye": {
+   "coverage": 0.20496656378600822,
+   "foliageCoverage": 0.14303755144032923,
+   "meanFoliage": 2.177926024490677,
+   "p95Foliage": 5,
+   "maxFoliage": 18,
+   "meanAll": 2.855818097401212,
+   "rasterized": 5.810278172369769,
+   "shadedFraction": 0.37484023309720327,
+   "fragments": 323127
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.671,
+    "envelope": 0.352
+   },
+   "eye": {
+    "fill": 0.673,
+    "envelope": 0.339
+   },
+   "elevated": {
+    "fill": 0.7,
+    "envelope": 0.288
+   },
+   "above": {
+    "fill": 0.71,
+    "envelope": 0.422
+   }
+  }
+ },
+ "phase4/oak-c": {
+  "level": "phase4",
+  "density": 1,
+  "id": "oak-c",
+  "instances": 123565,
+  "triangles": 988520,
+  "instanceBytes": 7908160,
+  "lod1": {
+   "instances": 23755,
+   "triangles": 95020
+  },
+  "leaves": 99810,
+  "shoots": 23755,
+  "overdrawEye": {
+   "coverage": 0.08464763374485597,
+   "foliageCoverage": 0.04239197530864198,
+   "meanFoliage": 2.33739837398374,
+   "p95Foliage": 6,
+   "maxFoliage": 18,
+   "meanAll": 2.721916684391237
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.466,
+    "envelope": 0.203
+   },
+   "eye": {
+    "fill": 0.496,
+    "envelope": 0.185
+   },
+   "elevated": {
+    "fill": 0.523,
+    "envelope": 0.165
+   },
+   "above": {
+    "fill": 0.589,
+    "envelope": 0.273
+   }
+  }
+ },
+ "moderate/oak-c": {
+  "level": "moderate",
+  "density": 0.55,
+  "id": "oak-c",
+  "instances": 122562,
+  "triangles": 979456,
+  "instanceBytes": 2451240,
+  "lod1": {
+   "instances": 15430,
+   "triangles": 61720
+  },
+  "leaves": 108944,
+  "shoots": 35777,
+  "overdrawEye": {
+   "coverage": 0.10004115226337448,
+   "foliageCoverage": 0.05870884773662551,
+   "meanFoliage": 1.9257863839481293,
+   "p95Foliage": 5,
+   "maxFoliage": 16,
+   "meanAll": 2.4427704648292883,
+   "rasterized": 4.616577586962236,
+   "shadedFraction": 0.41714589382983164,
+   "fragments": 105378
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.524,
+    "envelope": 0.227
+   },
+   "eye": {
+    "fill": 0.538,
+    "envelope": 0.21
+   },
+   "elevated": {
+    "fill": 0.553,
+    "envelope": 0.198
+   },
+   "above": {
+    "fill": 0.661,
+    "envelope": 0.324
+   }
+  }
+ },
+ "full/oak-c": {
+  "level": "full",
+  "density": 1,
+  "id": "oak-c",
+  "instances": 134210,
+  "triangles": 1072432,
+  "instanceBytes": 2684200,
+  "lod1": {
+   "instances": 16982,
+   "triangles": 67928
+  },
+  "leaves": 119374,
+  "shoots": 39265,
+  "overdrawEye": {
+   "coverage": 0.10159465020576132,
+   "foliageCoverage": 0.061198559670781895,
+   "meanFoliage": 2.042573758090275,
+   "p95Foliage": 5,
+   "maxFoliage": 16,
+   "meanAll": 2.5229620253164557,
+   "rasterized": 4.906825250063041,
+   "shadedFraction": 0.4162719587505246,
+   "fragments": 116753
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.533,
+    "envelope": 0.227
+   },
+   "eye": {
+    "fill": 0.555,
+    "envelope": 0.207
+   },
+   "elevated": {
+    "fill": 0.558,
+    "envelope": 0.198
+   },
+   "above": {
+    "fill": 0.67,
+    "envelope": 0.328
+   }
+  }
+ },
+ "phase4/pine": {
+  "level": "phase4",
+  "density": 1,
+  "id": "pine",
+  "instances": 502515,
+  "triangles": 1005030,
+  "instanceBytes": 32160960,
+  "lod1": {
+   "instances": 40366,
+   "triangles": 161464
+  },
+  "leaves": 502515,
+  "shoots": 20183,
+  "overdrawEye": {
+   "coverage": 0.0540380658436214,
+   "foliageCoverage": 0.015028292181069958,
+   "meanFoliage": 1.6222830737634777,
+   "p95Foliage": 4,
+   "maxFoliage": 13,
+   "meanAll": 2.7060447405997143
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.615,
+    "envelope": 0.109
+   },
+   "eye": {
+    "fill": 0.581,
+    "envelope": 0.111
+   },
+   "elevated": {
+    "fill": 0.618,
+    "envelope": 0.09
+   },
+   "above": {
+    "fill": 0.622,
+    "envelope": 0.176
+   }
+  }
+ },
+ "moderate/pine": {
+  "level": "moderate",
+  "density": 0.55,
+  "id": "pine",
+  "instances": 533654,
+  "triangles": 1069476,
+  "instanceBytes": 10673080,
+  "lod1": {
+   "instances": 31252,
+   "triangles": 125008
+  },
+  "leaves": 532570,
+  "shoots": 30497,
+  "overdrawEye": {
+   "coverage": 0.05606738683127572,
+   "foliageCoverage": 0.01751028806584362,
+   "meanFoliage": 1.724294947121034,
+   "p95Foliage": 4,
+   "maxFoliage": 12,
+   "meanAll": 2.7117757695307123,
+   "rasterized": 40.97767332549941,
+   "shadedFraction": 0.042078888506538195,
+   "fragments": 278976
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.644,
+    "envelope": 0.111
+   },
+   "eye": {
+    "fill": 0.606,
+    "envelope": 0.113
+   },
+   "elevated": {
+    "fill": 0.591,
+    "envelope": 0.1
+   },
+   "above": {
+    "fill": 0.671,
+    "envelope": 0.179
+   }
+  }
+ },
+ "full/pine": {
+  "level": "full",
+  "density": 1,
+  "id": "pine",
+  "instances": 620986,
+  "triangles": 1245016,
+  "instanceBytes": 12419720,
+  "lod1": {
+   "instances": 37114,
+   "triangles": 148456
+  },
+  "leaves": 619464,
+  "shoots": 36009,
+  "overdrawEye": {
+   "coverage": 0.056782407407407406,
+   "foliageCoverage": 0.018819444444444444,
+   "meanFoliage": 1.8411917452507858,
+   "p95Foliage": 4,
+   "maxFoliage": 12,
+   "meanAll": 2.7561262852742674,
+   "rasterized": 44.50498838321717,
+   "shadedFraction": 0.041370457832657234,
+   "fragments": 325643
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.648,
+    "envelope": 0.111
+   },
+   "eye": {
+    "fill": 0.611,
+    "envelope": 0.113
+   },
+   "elevated": {
+    "fill": 0.589,
+    "envelope": 0.1
+   },
+   "above": {
+    "fill": 0.676,
+    "envelope": 0.179
+   }
+  }
+ },
+ "phase4/birch": {
+  "level": "phase4",
+  "density": 1,
+  "id": "birch",
+  "instances": 97780,
+  "triangles": 782240,
+  "instanceBytes": 6257920,
+  "lod1": {
+   "instances": 31218,
+   "triangles": 124872
+  },
+  "leaves": 66562,
+  "shoots": 31218,
+  "overdrawEye": {
+   "coverage": 0.04730195473251029,
+   "foliageCoverage": 0.023125,
+   "meanFoliage": 1.4151929707485262,
+   "p95Foliage": 3,
+   "maxFoliage": 8,
+   "meanAll": 2.406557555325975
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.472,
+    "envelope": 0.121
+   },
+   "eye": {
+    "fill": 0.447,
+    "envelope": 0.129
+   },
+   "elevated": {
+    "fill": 0.423,
+    "envelope": 0.112
+   },
+   "above": {
+    "fill": 0.452,
+    "envelope": 0.068
+   }
+  }
+ },
+ "moderate/birch": {
+  "level": "moderate",
+  "density": 0.55,
+  "id": "birch",
+  "instances": 175650,
+  "triangles": 1398128,
+  "instanceBytes": 3513000,
+  "lod1": {
+   "instances": 35146,
+   "triangles": 140584
+  },
+  "leaves": 131866,
+  "shoots": 76380,
+  "overdrawEye": {
+   "coverage": 0.06708333333333333,
+   "foliageCoverage": 0.04723251028806584,
+   "meanFoliage": 1.758876061860161,
+   "p95Foliage": 4,
+   "maxFoliage": 10,
+   "meanAll": 2.4474733532704547,
+   "rasterized": 6.091646700065345,
+   "shadedFraction": 0.2887357308232097,
+   "fragments": 111867
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.646,
+    "envelope": 0.131
+   },
+   "eye": {
+    "fill": 0.616,
+    "envelope": 0.141
+   },
+   "elevated": {
+    "fill": 0.598,
+    "envelope": 0.123
+   },
+   "above": {
+    "fill": 0.703,
+    "envelope": 0.078
+   }
+  }
+ },
+ "full/birch": {
+  "level": "full",
+  "density": 1,
+  "id": "birch",
+  "instances": 196108,
+  "triangles": 1559112,
+  "instanceBytes": 3922160,
+  "lod1": {
+   "instances": 43066,
+   "triangles": 172264
+  },
+  "leaves": 146369,
+  "shoots": 86580,
+  "overdrawEye": {
+   "coverage": 0.07026491769547324,
+   "foliageCoverage": 0.05116769547325103,
+   "meanFoliage": 1.8474917060420226,
+   "p95Foliage": 4,
+   "maxFoliage": 11,
+   "meanAll": 2.4996888612321095,
+   "rasterized": 6.510907811400422,
+   "shadedFraction": 0.28375331974553764,
+   "fragments": 129528
+  },
+  "coverage": {
+   "ground": {
+    "fill": 0.663,
+    "envelope": 0.132
+   },
+   "eye": {
+    "fill": 0.641,
+    "envelope": 0.14
+   },
+   "elevated": {
+    "fill": 0.62,
+    "envelope": 0.123
+   },
+   "above": {
+    "fill": 0.726,
+    "envelope": 0.08
+   }
+  }
+ }
+}

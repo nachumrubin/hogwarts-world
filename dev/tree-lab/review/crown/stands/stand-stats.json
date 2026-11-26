@@ -1,0 +1,176 @@
+[
+  {
+    "stand": 12,
+    "camera": "ground",
+    "eye": [
+      -14,
+      1.7,
+      46
+    ],
+    "lod": {
+      "lod0": 1,
+      "lod1": 9,
+      "lod2": 2,
+      "impostor": 0
+    },
+    "foliageInstances": 498408,
+    "foliageTriangles": 3240396,
+    "barkTriangles": 723602,
+    "overdraw": {
+      "coverage": 0.313025,
+      "foliageCoverage": 0.24630208333333334,
+      "meanFoliage": 3.0489490378515542,
+      "p95Foliage": 8,
+      "maxFoliage": 25,
+      "meanAll": 3.7209987221467933,
+      "rasterized": 11.097834637344047,
+      "shadedFraction": 0.2747336879206946,
+      "fragments": 2624083
+    }
+  },
+  {
+    "stand": 12,
+    "camera": "aerial",
+    "eye": [
+      -44,
+      80,
+      60
+    ],
+    "lod": {
+      "lod0": 0,
+      "lod1": 0,
+      "lod2": 12,
+      "impostor": 0
+    },
+    "foliageInstances": 51464,
+    "foliageTriangles": 308784,
+    "barkTriangles": 41690,
+    "overdraw": {
+      "coverage": 0.20955729166666667,
+      "foliageCoverage": 0.19599375,
+      "meanFoliage": 2.230167841236434,
+      "p95Foliage": 5,
+      "maxFoliage": 14,
+      "meanAll": 2.667065987324469,
+      "rasterized": 4.193251272893481,
+      "shadedFraction": 0.5318469359689826,
+      "fragments": 788977
+    }
+  },
+  {
+    "stand": 50,
+    "camera": "ground",
+    "eye": [
+      10.606601717798213,
+      1.7,
+      50.19417382415922
+    ],
+    "lod": {
+      "lod0": 6,
+      "lod1": 32,
+      "lod2": 12,
+      "impostor": 0
+    },
+    "foliageInstances": 3183020,
+    "foliageTriangles": 15349408,
+    "barkTriangles": 3151137,
+    "overdraw": {
+      "coverage": 0.663975,
+      "foliageCoverage": 0.5092229166666666,
+      "meanFoliage": 4.47119180777901,
+      "p95Foliage": 11,
+      "maxFoliage": 33,
+      "meanAll": 6.207145725868193,
+      "rasterized": 15.186286703187454,
+      "shadedFraction": 0.29442298141523626,
+      "fragments": 7423877
+    }
+  },
+  {
+    "stand": 50,
+    "camera": "aerial",
+    "eye": [
+      -48.61359120657515,
+      80,
+      66.29126073623883
+    ],
+    "lod": {
+      "lod0": 0,
+      "lod1": 0,
+      "lod2": 1,
+      "impostor": 49
+    },
+    "foliageInstances": 4245,
+    "foliageTriangles": 25274,
+    "barkTriangles": 4168,
+    "overdraw": {
+      "coverage": 0.485609375,
+      "foliageCoverage": 0.4611572916666667,
+      "meanFoliage": 3.1557720499377697,
+      "p95Foliage": 7,
+      "maxFoliage": 20,
+      "meanAll": 3.9215804884327037,
+      "rasterized": 6.199213482384671,
+      "shadedFraction": 0.5090600701048658,
+      "fragments": 2744460
+    }
+  },
+  {
+    "stand": 200,
+    "camera": "ground",
+    "eye": [
+      21.213203435596427,
+      1.7,
+      94.38834764831844
+    ],
+    "lod": {
+      "lod0": 0,
+      "lod1": 0,
+      "lod2": 0,
+      "impostor": 200
+    },
+    "foliageInstances": 200,
+    "foliageTriangles": 400,
+    "barkTriangles": 0,
+    "overdraw": {
+      "coverage": 0.6479260416666667,
+      "foliageCoverage": 0.5138927083333333,
+      "meanFoliage": 5.720825723592595,
+      "p95Foliage": 15,
+      "maxFoliage": 40,
+      "meanAll": 7.912843704833853,
+      "rasterized": 18.997995285170177,
+      "shadedFraction": 0.3011278631097602,
+      "fragments": 9372414
+    }
+  },
+  {
+    "stand": 200,
+    "camera": "aerial",
+    "eye": [
+      -97.2271824131503,
+      80,
+      132.58252147247765
+    ],
+    "lod": {
+      "lod0": 0,
+      "lod1": 2,
+      "lod2": 86,
+      "impostor": 112
+    },
+    "foliageInstances": 373132,
+    "foliageTriangles": 2204380,
+    "barkTriangles": 369060,
+    "overdraw": {
+      "coverage": 0.42383645833333333,
+      "foliageCoverage": 0.40105416666666666,
+      "meanFoliage": 3.5015661849500797,
+      "p95Foliage": 8,
+      "maxFoliage": 23,
+      "meanAll": 4.311072224693585,
+      "rasterized": 7.110271887629477,
+      "shadedFraction": 0.4924658635124966,
+      "fragments": 2737540
+    }
+  }
+]

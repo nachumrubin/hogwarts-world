@@ -1,0 +1,57 @@
+{
+ "oak-a": {
+  "fingerprint": "193996:70731:27932:111728:272910:-17.700:-1.832:-15.739:5.804:18.855:17.039:8674483a59f9d00f2b9f5418b44b1e06134a1b22b5652dbf13ddccf26a828846",
+  "center": [
+   -5.947818191685917,
+   9.427499329988617,
+   0.6501665991328984
+  ],
+  "radius": 19.349229901070764,
+  "albedo": "impostor.oak-a.albedo.webp?3bfa65826f",
+  "normal": "impostor.oak-a.normal.webp?2e0e037076"
+ },
+ "oak-b": {
+  "fingerprint": "207821:90941:37748:150992:308982:-15.034:-1.888:-14.652:9.713:19.368:12.207:8674483a59f9d00f2b9f5418b44b1e06134a1b22b5652dbf13ddccf26a828846",
+  "center": [
+   -2.6607214332443982,
+   9.683990391381476,
+   -1.2225269575633035
+  ],
+  "radius": 17.928400204901223,
+  "albedo": "impostor.oak-b.albedo.webp?104ce3860f",
+  "normal": "impostor.oak-b.normal.webp?63762f5ab3"
+ },
+ "oak-c": {
+  "fingerprint": "119374:39265:16982:67928:149994:-9.126:-1.474:-9.434:8.305:24.591:8.972:8674483a59f9d00f2b9f5418b44b1e06134a1b22b5652dbf13ddccf26a828846",
+  "center": [
+   -0.4106375145357628,
+   12.295260499469022,
+   -0.2311630254784678
+  ],
+  "radius": 15.542015489258146,
+  "albedo": "impostor.oak-c.albedo.webp?2db3a850eb",
+  "normal": "impostor.oak-c.normal.webp?e3a31ead41"
+ },
+ "pine": {
+  "fingerprint": "619464:36009:37114:148456:145437:-5.721:-1.282:-4.523:7.708:21.577:6.768:8674483a59f9d00f2b9f5418b44b1e06134a1b22b5652dbf13ddccf26a828846",
+  "center": [
+   0.9933848551180207,
+   10.788736120987812,
+   1.12266710379969
+  ],
+  "radius": 12.666153638480957,
+  "albedo": "impostor.pine.albedo.webp?ee15c382f9",
+  "normal": "impostor.pine.normal.webp?421f4f72b4"
+ },
+ "birch": {
+  "fingerprint": "146369:86580:43066:172264:75456:-3.476:-0.875:-6.203:5.487:20.990:4.233:8674483a59f9d00f2b9f5418b44b1e06134a1b22b5652dbf13ddccf26a828846",
+  "center": [
+   1.0054839984310677,
+   10.49515533613499,
+   -0.9852270091327058
+  ],
+  "radius": 12.14448992519647,
+  "albedo": "impostor.birch.albedo.webp?95a2d60b29",
+  "normal": "impostor.birch.normal.webp?8a67fc6d41"
+ }
+}

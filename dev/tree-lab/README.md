@@ -6,6 +6,9 @@ outside this folder is touched.
 
 Phase 4 (foliage): every specimen carries species-specific summer foliage grown from its own branch hierarchy:
 lobed oak leaves, paired Scots pine needles, small serrated birch leaves on pendulous shoots (see "Foliage" below).
+Phase 4.1 (crown realism and scalability): fuller crowns from recursive twig sprays, spray cards for the shaded
+interior and LOD1, recalibrated leaf lighting, packed instances, projected-size LOD with octahedral impostors, woodland
+stands of 12 / 50 / 200 trees and an in-lab hardware benchmark (see "Crowns, LOD and benchmark").
 Phase 3's photoscanned bark is unchanged. The **Materials** mode is the default; clay, silhouette, wireframe,
 normals and hierarchy are unchanged. An optional **woodland floor** environment sits beside the neutral plot. No
 wind and no seasons yet.
@@ -36,6 +39,7 @@ collection keeps growing in the background, so switching between them is instant
 | `lod` | `0` · `1` · `2` |
 | `live` | `0` renders on demand only (default is continuous frames, for real FPS) |
 | `shadow` | shadow-map size, default 4096 |
+| `bench` | run the benchmark on load: `oak-b` · `pine` · `birch` · `stand12` · `stand50` · `stand200` · `suite` (every scene × both cameras); with `cam=ground\|aerial`, `res=1920x1080`, `shadow=0\|1024\|2048\|4096`, `frames=120`. The result is in `window.__benchResult` |
 
 ### Controls
 
@@ -144,8 +148,35 @@ first visit to a deployed build pays the generation time.
 * **Rendering:** one instanced draw per foliage set (template mesh × instances: bent leaf, needle fascicle, card,
   twig), alpha-to-coverage with mip-aware alpha, alpha-tested shadows, separate leaf undersides, translucency
   with its own shadow test, per-shoot pigmentation variation.
-* **LOD:** 0 every leaf / fascicle and twiglet; 1 one shoot card per shoot; 2 crossed clump cards per cluster. The
-  stand picks LOD by distance (< 35 m, < 110 m, beyond). Impostors for the far distance are the next step.
+* **LOD:** 0 every leaf / fascicle and twiglet (shaded sprays as spray cards); 1 one crossed spray card per spray;
+  2 star clumps (three upright cards and a cap) per cluster; then the impostor (see below).
+
+## Crowns, LOD and benchmark (Phase 4.1)
+
+* **Crowns:** each shoot point on bearing wood grows a small twig system (a spray: leader, laterals, oak
+  sub-laterals) that leans out of the crown, so the foliage, not the skeleton tips, makes the crown edge. A
+  per-specimen fullness (the density experiments' control) scales spray spacing, sub-shoots and reach. Sprays whose
+  leader is in deep shade are drawn as one crossed **spray card** even at LOD0, so the crown interior has volume
+  without more leaves. Birch long shoots carry lateral spurs; pine shoots end in rounded, upturned tufts of curved
+  needles in a lighter glaucous colour.
+* **Lighting:** leaf reflectance recalibrated to measured summer leaves (Phase 4's was about half), light scattered
+  between leaves inside the crown, sky light transmitted through the blades, and cards lit as the volume of leaves
+  they stand for (shadow tested a spray's depth towards the sun).
+* **Instances:** 20 bytes each (positions unorm16 in a ±40 m frame, quaternion snorm8, log-coded width), one shared
+  GPU buffer per specimen and LOD. **Cards** use hull-fitted outlines instead of quads. **Alpha** mips preserve
+  each level's coverage (measured offline per layer) so leaves and needles do not dissolve with distance.
+* **LOD:** chosen per tree from its projected height on screen (LOD0 ≥ 700 px, LOD1 ≥ 240 px, LOD2 ≥ 110 px, then the
+  impostor), frustum-culled; LOD0 buffers are resident only while a tree near the camera uses them.
+* **Impostors** (`src/render/impostor.ts`): 9 × 9 hemi-octahedral frames of 112 px per specimen (albedo with coverage,
+  tree-local normal and occlusion), three frames blended and sampled along the view ray, so the tree never turns
+  with the camera and elevated broom-flight views have their own frames. Lit at run time; casts shadows.
+  Pre-baked atlases (`textures/impostor.*.webp`, `tools/evidence/bake-impostors.js` + `tools/impostor_atlas.py`) load
+  when their fingerprint matches the generated specimen; otherwise the lab bakes them itself.
+* **Stands:** the review stand (12 trees) and generated stands of 50 and 200 trees (Poisson-disc, mixed species).
+* **Benchmark** (Inspect panel, or `?bench=`): scene, camera (ground 1.7 m or aerial 80 m), resolution, shadow
+  map, frames; records adapter, GPU timestamps (where the browser has them), frame time median and p95, draw calls,
+  triangles, instances, resident memory and the LOD distribution, and downloads JSON. Software adapters are flagged:
+  SwiftShader timings are not GPU performance.
 
 ## Bark materials
 

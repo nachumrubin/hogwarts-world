@@ -4,7 +4,7 @@
 //   SPECIMENS=oak-a,oak-b,oak-c,pine,birch  COMPARE=oaks,all  SOFTWARE=1 (SwiftShader)  SHADOW=2048  UI=1 (also grab the
 //   interface: lab-ui.png)  SHOT=1200x900 (review shot size)
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 const req = createRequire('/opt/npm-tools/node_modules/');
@@ -41,6 +41,18 @@ if (process.env.STAND === '1') {
   const r = await page.evaluate(async () => { const res = await window.__lab.standStress(); return { shots: await Promise.all(res.shots.map((b) => window.__b64(b))), labels: res.labels, stats: res.stats }; });
   r.shots.forEach((u, k) => save(`stand-${k + 1}.png`, u));
   writeFileSync(`${out}/stand-stats.json`, JSON.stringify(r.stats.map((s, k) => ({ label: r.labels[k], ...s })), null, 2));
+  await browser.close(); srv.kill(); process.exit(0);
+}
+// RUN=tools/evidence/<script>.js: evaluate a script in the page (body of an async function using window.__lab and
+// window.__b64); it returns { 'file name': data URL | JSON-able value }, written to <outDir>
+if (process.env.RUN) {
+  const code = readFileSync(process.env.RUN, 'utf8');
+  const r = await page.evaluate(`(async () => { ${code}\n })()`);
+  for (const [name, v] of Object.entries(r)) {
+    mkdirSync(`${out}/${name}`.replace(/\/[^/]*$/, ''), { recursive: true });
+    if (typeof v === 'string' && v.startsWith('data:')) save(name, v); else { writeFileSync(`${out}/${name}`, typeof v === 'string' ? v : JSON.stringify(v, null, 2)); console.log(`${out}/${name}`); }
+  }
+  const errs = await page.evaluate('window.__errors || []'); if (errs.length) console.log('WebGPU errors:', errs.slice(0, 5));
   await browser.close(); srv.kill(); process.exit(0);
 }
 // STUDY=oak-b,pine,birch: foliage studies only (sheets, shots and stats)

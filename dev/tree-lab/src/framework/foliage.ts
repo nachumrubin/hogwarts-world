@@ -19,12 +19,16 @@
 import { type V3, add, sub, mul, norm, dot, cross, len, rotate, clamp, smooth, rng, perp, noise3 } from './math.ts';
 import type { Skeleton, TNode } from './skeleton.ts';
 
-/** Instance layout (floats): position 3, orientation quaternion 4 (template +Y = leaf axis, +Z = blade normal),
- *  size x (width) and y (length), fold, curl, sprite cell, light exposure (0..1), colour variation (−1..1),
- *  r1/r0 (twigs), spare. */
+/** Generation layout (floats, CPU only): position 3, orientation quaternion 4 (template +Y = leaf axis, +Z =
+ *  blade normal), size x (width) and y (length), fold, curl, sprite cell, light exposure (0..1), colour variation
+ *  (−1..1), r1/r0 (twigs), spare. */
 export const FI = 16;
+/** Packed GPU instance (bytes): position unorm16 × 3 (tree-local, x/z −40…40 m, y −5…75 m) + length unorm16
+ *  (0…2 m); orientation snorm8 × 4; width (log2-coded, 0.5 mm…0.5 m), fold, curl, r1 unorm8 × 4; sprite cell,
+ *  exposure, variation, spare unorm8 × 4. 20 bytes instead of 64. */
+export const PACKED = 20;
 export type FoliageKind = 'leaf' | 'needle' | 'card' | 'twig';
-export interface FoliageSet { kind: FoliageKind; layer: number; grid: [number, number]; data: Float32Array; count: number }
+export interface FoliageSet { kind: FoliageKind; layer: number; grid: [number, number]; data: Uint8Array; count: number; hull?: 'shoot' | 'clump' }
 export interface FoliageLod { sets: FoliageSet[]; instances: number; triangles: number }
 export interface FoliageStats { shoots: number; shed: number; leaves: number; leafArea: number; bearingLength: number; ms: number }
 export interface Foliage { lods: FoliageLod[]; stats: FoliageStats }
@@ -49,14 +53,28 @@ export interface FoliageSpec {
   density: number;
   /** twiglet radius at base (m), colour handled by the renderer */
   twigR: number;
-  /** broadleaf sprays: laterals per leader shoot, their length relative to the leader, and leaves per metre of
-   *  shoot (the skeleton's metamers are 0.1–0.4 m: the sprays fill the crown between them, as real twig systems do) */
-  laterals?: [number, number]; lateralLen?: [number, number]; leavesPerM?: number;
+  /** sprays: each shoot point on bearing wood grows a small twig system: a leader, `laterals` side shoots
+   *  (length × `latLen` of the leader, at `latAngle` rad) and, at level 2, `sub` shoots off each lateral. `volume`
+   *  0 keeps the laterals in one plane across the light, 1 spreads them all round (phyllotaxis). The skeleton's
+   *  metamers are 0.1–0.4 m: sprays fill the crown between them, as real twig systems do. */
+  spray?: { levels: number; laterals: [number, number]; latLen: [number, number]; latAngle: [number, number]; volume: number; sub?: [number, number]; subLen?: [number, number] };
+  /** leaves per metre of shoot (broadleaves) */
+  leavesPerM?: number;
+  /** outward reach (m): sprays lean out of the crown by up to this, so the foliage, not the skeleton tips, makes the
+   *  crown's edge */
+  reach?: number;
+  /** crown fullness 0…1 (the density experiments): spray spacing, sub-shoots and reach scale with it */
+  fullness?: number;
+  /** shoots below this light exposure carry one shoot card instead of individual leaves even at LOD0: the shaded
+   *  crown interior gains volume at a fraction of the cost (it is seen through the outer leaves) */
+  interiorCard?: number;
+  /** pine: shoots turn up towards their tips (rad over the shoot) */
+  upturn?: number;
   /** LOD1 shoot card (m, width × height), LOD2 clump card edge (m) and clustering cell (m) */
   card: [number, number]; clump: number; clumpCell: number;
 }
 
-interface Shoot { base: V3; dir: V3; len: number; exp: number; out: V3; seed: number; terminal: boolean }
+interface Shoot { base: V3; dir: V3; len: number; exp: number; out: V3; seed: number; terminal: boolean; level: number; root: number }
 
 const quatFromBasis = (X: V3, Y: V3, Z: V3): [number, number, number, number] => {
   // rotation matrix with columns X, Y, Z → quaternion (x, y, z, w)
@@ -125,46 +143,54 @@ export function growFoliage(sk: Skeleton, f: FoliageSpec): Foliage {
   const tips = wood.filter((n) => !n.children.length && !n.dead && !n.broken);
   const cc: V3 = mul(tips.reduce((s, n) => add(s, n.p), [0, 0, 0] as V3), 1 / Math.max(1, tips.length));
   const outward = (p: V3): V3 => { const d = sub(p, cc); d[1] *= 0.35; return len(d) > 1e-3 ? norm(d) : [1, 0, 0]; };
-  // ---- 1–2. shoots on bearing wood
+  // ---- 1–2. shoots on bearing wood: sprays (recursive twig systems), plus a terminal spray on every live tip
   const cand: Shoot[] = [];
   let bearing = 0, seedK = 0;
+  const full = f.fullness ?? 1, sp = f.spray;
+  const spacing = f.spacing / (0.7 + 0.6 * full);
+  const reach = (f.reach ?? 0) * (0.4 + 0.6 * full);
+  const spray = (base: V3, dir: V3, L: number, level: number, terminal: boolean, root = -1) => {
+    const seed = seedK++; if (root < 0) root = seed;
+    cand.push({ base, dir, len: L, exp: 1, out: outward(base), seed, terminal, level, root });
+    if (!sp || level >= sp.levels) return;
+    const cfg = level === 0 ? sp.laterals : (sp.sub ?? [0, 0]);
+    const lens = level === 0 ? sp.latLen : (sp.subLen ?? sp.latLen);
+    if (level === 1 && full < 0.35) return; // sub-shoots only in the fuller crowns
+    const n = cfg[0] + Math.floor(R() * (cfg[1] - cfg[0] + 1));
+    const across = cross(dir, [0, 1, 0]), flat = len(across) > 0.1 ? norm(across) : perp(dir);
+    const phi0 = R() * 6.283;
+    for (let j = 0; j < n; j++) {
+      const t = 0.18 + 0.72 * (j + R() * 0.8) / Math.max(n, 1);
+      const lb = add(base, mul(dir, L * t));
+      const around = rotate(perp(dir), dir, phi0 + j * 2.39996);
+      const side = norm(add(mul(flat, (j % 2 ? 1 : -1) * (1 - sp.volume)), mul(around, sp.volume)));
+      const ang = sp.latAngle[0] + (sp.latAngle[1] - sp.latAngle[0]) * R();
+      let ld = norm(add(mul(dir, Math.cos(ang)), mul(side, Math.sin(ang))));
+      ld = norm(add(ld, add(mul(outward(lb), reach * 0.5), [0, (R() - 0.4) * 0.25 - f.droop * 0.15, 0])));
+      const ll = L * (lens[0] + (lens[1] - lens[0]) * R()) * (1 - t * 0.35);
+      if (ll > 0.02) spray(lb, ld, ll, level + 1, false, root);
+    }
+  };
   for (const n of wood) {
-    const p = n.parent; if (!p || p.root && n.order < 0) continue;
+    const p = n.parent; if (!p) continue;
     if (n.dead || n.broken || n.r > f.maxR || n.root) continue;
     const tt = toTip.get(n) ?? Infinity; if (tt > f.zone) continue;
     const seg = sub(n.p, p.p), L = len(seg); if (L < 1e-4) continue;
     const ax = mul(seg, 1 / L);
     bearing += L;
-    const k = Math.max(1, Math.round((L / f.spacing) * f.density));
+    const k = Math.max(1, Math.round((L / spacing) * f.density));
     for (let s = 0; s < k; s++) {
       const t = (s + 0.3 + 0.4 * R()) / k;
       const base = add(p.p, mul(seg, t));
       const phi = (n.id * 2.39996 + s * 2.39996) % (Math.PI * 2);
       const side = rotate(perp(ax), ax, phi);
-      // divergence from the bearing axis, leaning outwards and towards the light
+      // divergence from the bearing axis, leaning outwards (reach) and towards the light
       let dir = norm(add(mul(ax, Math.cos(f.diverge)), mul(side, Math.sin(f.diverge))));
-      dir = norm(add(dir, add(mul(outward(base), 0.25), [0, f.type === 'pine' ? 0.1 : 0.15 - f.droop * 0.6, 0])));
+      dir = norm(add(dir, add(mul(outward(base), 0.25 + reach), [0, f.type === 'pine' ? 0.1 : 0.15 - f.droop * 0.6, 0])));
       const sl = f.shootLen[0] + (f.shootLen[1] - f.shootLen[0]) * R();
-      const b0 = add(base, mul(side, n.r));
-      cand.push({ base: b0, dir, len: sl, exp: 1, out: outward(base), seed: seedK++, terminal: false });
-      // spray: laterals off the leader, alternating sides, spreading roughly across the light
-      if (f.laterals) {
-        const nl = f.laterals[0] + Math.floor(R() * (f.laterals[1] - f.laterals[0] + 1));
-        const across = norm(cross(dir, [0, 1, 0])), flat = len(across) > 0.1 ? across : perp(dir);
-        for (let j = 0; j < nl; j++) {
-          const tt = 0.25 + 0.6 * (j + R() * 0.8) / Math.max(nl, 1);
-          const lb = add(b0, mul(dir, sl * tt));
-          const sgn = j % 2 ? 1 : -1, ang = (0.55 + 0.45 * R()) * sgn;
-          const ld = norm(add(rotate(dir, norm(cross(dir, flat)), ang), [0, (R() - 0.4) * 0.3 - f.droop * 0.4, 0]));
-          const ll = sl * (f.lateralLen![0] + (f.lateralLen![1] - f.lateralLen![0]) * R()) * (1 - tt * 0.4);
-          cand.push({ base: lb, dir: ld, len: ll, exp: 1, out: outward(lb), seed: seedK++, terminal: false });
-        }
-      }
+      spray(add(base, mul(side, n.r)), dir, sl, 0, false);
     }
-    if (!n.children.length) {
-      const sl = f.shootLen[1] * (0.9 + 0.3 * R());
-      cand.push({ base: n.p, dir: norm(add(ax, [0, f.type === 'pine' ? 0.05 : -f.droop * 0.5, 0])), len: sl, exp: 1, out: outward(n.p), seed: seedK++, terminal: true });
-    }
+    if (!n.children.length) spray(n.p, norm(add(ax, [0, f.type === 'pine' ? 0.05 : -f.droop * 0.5, 0])), f.shootLen[1] * (0.9 + 0.3 * R()), 0, true);
   }
   // ---- 3. light
   const min: V3 = [1e9, 1e9, 1e9], max: V3 = [-1e9, -1e9, -1e9];
@@ -172,7 +198,7 @@ export function growFoliage(sk: Skeleton, f: FoliageSpec): Foliage {
   const G = new Grid(min, max, 0.6);
   const leafArea = (f.leafLen[0] + f.leafLen[1]) ** 2 / 4 * (f.type === 'pine' ? 0.12 : 0.45);
   const nPer = (f.perShoot[0] + f.perShoot[1]) / 2;
-  for (const s of cand) { const q = G.idx(add(s.base, mul(s.dir, s.len * 0.6))); if (q >= 0) G.d[q] += (nPer * leafArea) / G.c ** 3 * G.c; }
+  for (const s of cand) { const q = G.idx(add(s.base, mul(s.dir, s.len * 0.6))); if (q >= 0) G.d[q] += ((f.leavesPerM ? s.len * f.leavesPerM : nPer) * leafArea) / G.c ** 3 * G.c; }
   G.exposure(f.extinction, f.sideLight);
   const shoots: Shoot[] = [];
   let shed = 0;
@@ -184,30 +210,50 @@ export function growFoliage(sk: Skeleton, f: FoliageSpec): Foliage {
     shoots.push(s);
   }
   // ---- 4. leaves / fascicles, twiglets (LOD0); cards (LOD1); clumps (LOD2)
-  const leaves: number[] = [], twigs: number[] = [], cards: number[] = [], clumps: number[] = [];
+  const leaves: number[] = [], twigs: number[] = [], cards: number[] = [], clumps: number[] = [], icards: number[] = [];
   let nLeaves = 0, area = 0;
   const put = (arr: number[], p: V3, q: number[], sx: number, sy: number, fold: number, curl: number, cell: number, e: number, v: number, r1 = 1) => arr.push(p[0], p[1], p[2], q[0], q[1], q[2], q[3], sx, sy, fold, curl, cell, e, v, r1, 0);
+  // sprays: a spray card (textures: tools/foliage_textures.py spray_card) is the whole leader-and-laterals system at
+  // true scale, sized from its leader; a spray whose leader is in deep shade is drawn as that card even at LOD0
+  const leadFrac = f.type === 'pine' ? 0.62 : f.type === 'broad' && f.droop > 0.3 ? 0.6 : 0.62;
+  const live = new Map<number, Shoot>(); for (const s of shoots) if (s.level === 0) live.set(s.root, s);
+  const interiorRoot = new Set<number>();
+  if ((f.interiorCard ?? 0) > 0) for (const [k, s] of live) if (s.exp < f.interiorCard!) interiorRoot.add(k);
+  const sprayCard = (arr: number[], s: Shoot, r: () => number, vari: number) => {
+    const cardN = norm(add([0, 1, 0], mul(s.out, 0.8)));
+    const ch = (s.len / leadFrac) * (0.95 + 0.1 * r()), cw = ch * (0.85 + 0.3 * r()), cv = Math.floor(r() * 3);
+    put(arr, s.base, frame(s.dir, cardN), cw, ch, 0.05, 0.06, cv, s.exp, vari);
+    // pines and full sprays: a second card across the first, so the spray has depth from every side
+    put(arr, s.base, frame(s.dir, norm(cross(s.dir, cardN))), cw * 0.85, ch, 0.03, 0.04, (cv + 1) % 3, s.exp, vari);
+  };
   for (const s of shoots) {
     const r = rng(f.seed * 7919 + s.seed);
     const e = s.exp, sun = smooth(0.35, 0.85, e);
     const tip = add(s.base, mul(s.dir, s.len));
     const vari = (noise3(s.base[0] * 0.7, s.base[1] * 0.7, s.base[2] * 0.7, f.seed % 97) + (r() - 0.5) * 0.6);
-    if (f.type === 'broad') put(twigs, s.base, frame(s.dir, s.out), f.twigR, s.len, 0, 0, 0, e, 0, 0.45);
+    const interior = interiorRoot.has(s.root);
+    if (f.type === 'broad' && s.level <= 1 && !interior) put(twigs, s.base, frame(s.dir, s.out), f.twigR * (s.level ? 0.7 : 1), s.len, 0, 0, 0, e, 0, 0.45);
+    if (interior && s.level === 0) sprayCard(icards, s, r, vari);
     const per = f.leavesPerM ? s.len * f.leavesPerM * (0.8 + 0.4 * r()) : f.perShoot[0] + (f.perShoot[1] - f.perShoot[0]) * r();
     const count = Math.max(1, Math.round(per * (0.45 + 0.55 * sun)));
     const side0 = perp(s.dir);
-    for (let k = 0; k < count; k++) {
+    for (let k = 0; k < (interior ? 0 : count); k++) {
       let p: V3, y: V3, nn: V3, sz: number;
       const phi = k * (f.type === 'pine' ? 2.39996 : 2.513) + r() * 0.5;
       const around = rotate(side0, s.dir, phi);
       if (f.type === 'pine') {
         // fascicles spiral round the shoot, pointing forwards (35–60°), sparser on older (proximal) wood
-        const t = Math.pow(r(), 0.75);
-        p = add(s.base, mul(s.dir, s.len * (1 - t)));
-        y = norm(add(mul(s.dir, Math.cos(0.65 + 0.35 * r())), mul(around, Math.sin(0.65 + 0.35 * r()))));
+        // fascicles spiral round the shoot, the shoot turning up towards its tip; needles point forwards (30–65°),
+        // splaying wider towards the tip (a rounded tuft, not a flat brush), curved, sparser on older wood
+        const t = Math.pow(r(), 0.75), along = 1 - t;
+        const up = (f.upturn ?? 0) * along;
+        const sdir = norm(add(s.dir, [0, Math.sin(up), 0]));
+        p = add(s.base, mul(sdir, s.len * along));
+        const splay = 0.5 + 0.55 * r() + 0.25 * along;
+        y = norm(add(mul(sdir, Math.cos(splay)), mul(around, Math.sin(splay))));
         nn = rotate(around, y, r() * Math.PI);
-        sz = f.leafLen[0] + (f.leafLen[1] - f.leafLen[0]) * r();
-        put(leaves, p, frame(y, nn), sz * 0.5, sz, 0, 0.08 + 0.1 * r(), Math.floor(r() * 8), e, vari);
+        sz = (f.leafLen[0] + (f.leafLen[1] - f.leafLen[0]) * r()) * (0.85 + 0.25 * along);
+        put(leaves, p, frame(y, nn), sz * 0.5, sz, 0.04 * r(), 0.1 + 0.18 * r(), Math.floor(r() * 8), e, vari);
       } else {
         // broadleaf: oak leaves crowd towards the shoot tip; birch leaves alternate along the shoot
         const t = f.leafy * (k + 0.5) / count;
@@ -225,12 +271,8 @@ export function growFoliage(sk: Skeleton, f: FoliageSpec): Foliage {
       }
       nLeaves++; area += sz * sz * (f.type === 'pine' ? 0.06 : 0.3);
     }
-    // LOD1: one card per shoot, facing the light (pines: two crossed, a bottle-brush)
-    const cardN = norm(add([0, 1, 0], mul(s.out, 0.8)));
-    const cv = Math.floor(r() * 3);
-    const cw = f.card[0] * (0.85 + 0.3 * r()), ch = Math.max(f.card[1], s.len * 1.25);
-    put(cards, s.base, frame(s.dir, cardN), cw, ch, 0.05, 0.06, cv, e, vari);
-    if (f.type === 'pine') put(cards, s.base, frame(s.dir, cross(s.dir, cardN)), cw, ch, 0, 0.04, (cv + 1) % 3, e, vari);
+    // LOD1: one crossed spray card per spray (a lateral whose leader was shed keeps a card of its own)
+    if (s.level === 0 || !live.has(s.root)) sprayCard(cards, s, r, vari);
     void tip;
   }
   // LOD2: clusters of shoots on a coarse grid → crossed clump cards, sized to the cluster
@@ -246,21 +288,50 @@ export function growFoliage(sk: Skeleton, f: FoliageSpec): Foliage {
     const size = f.clump * clamp(Math.sqrt(l.length / 6), 0.6, 1.4);
     const up: V3 = [0, 1, 0];
     const base = sub(c, [0, size * 0.45, 0]);
-    put(clumps, base, frame(up, norm(add(out, [0, 0.35, 0]))), size, size, 0.08, 0, 3, e, (r() - 0.5));
-    put(clumps, base, frame(up, norm(cross(out, up))), size * 0.8, size, 0.05, 0, 3, e, (r() - 0.5));
-    if (e > 0.6) put(clumps, add(base, [0, size * 0.5, 0]), frame(out, up), size * 0.75, size * 0.7, 0.1, 0, 3, e, (r() - 0.5)); // a near-horizontal top card
+    // a tent of three cards 120° apart, each leaning out from the clump's axis (oaks and pine 40°, the pendulous birch
+    // 15°, keeping its hanging curtains), turned at random so neighbouring clumps never line up, and a cap card. Upright
+    // cards turned edge-on became thin vertical slivers in side views; leaning cards keep their width from the
+    // ground, the side and above
+    const v = r() - 0.5, phi = r() * Math.PI * 2, lean = f.droop > 0.3 ? 0.27 : 0.7;
+    for (let j = 0; j < 3; j++) {
+      const o = rotate(out, up, phi + (j * 2 * Math.PI) / 3);
+      const yAx = norm(add(mul(up, Math.cos(lean)), mul(o, Math.sin(lean))));   // the card's long axis leans outwards
+      put(clumps, base, frame(yAx, o), size * (j ? 0.9 : 1), size, 0.06, 0, 3, e, v);
+    }
+    put(clumps, add(base, [0, size * 0.5, 0]), frame(rotate(out, up, phi), up), size * 0.85, size * 0.8, 0.1, 0, 3, e, v);
   }
-  const set = (kind: FoliageKind, layer: number, grid: [number, number], a: number[]): FoliageSet => ({ kind, layer, grid, data: new Float32Array(a), count: a.length / FI });
+  const set = (kind: FoliageKind, layer: number, grid: [number, number], a: number[]): FoliageSet => ({ kind, layer, grid, data: pack(a), count: a.length / FI });
   const tri = { leaf: 8, needle: 2, card: 4, twig: 8 } as const;
   const lod = (sets: FoliageSet[]): FoliageLod => ({ sets: sets.filter((s) => s.count), instances: sets.reduce((a, s) => a + s.count, 0), triangles: sets.reduce((a, s) => a + s.count * tri[s.kind], 0) });
   return {
     lods: [
-      lod([set('twig', 0, [1, 1], twigs), set(f.type === 'pine' ? 'needle' : 'leaf', f.spriteLayer, [4, 2], leaves)]),
-      lod([set('card', f.cardLayer, [2, 2], cards)]),
-      lod([set('card', f.cardLayer, [2, 2], clumps)]),
+      lod([set('twig', 0, [1, 1], twigs), set(f.type === 'pine' ? 'needle' : 'leaf', f.spriteLayer, [4, 2], leaves), { ...set('card', f.cardLayer, [2, 2], icards), hull: 'shoot' }]),
+      lod([{ ...set('card', f.cardLayer, [2, 2], cards), hull: 'shoot' }]),
+      lod([{ ...set('card', f.cardLayer, [2, 2], clumps), hull: 'clump' }]),
     ],
     stats: { shoots: shoots.length, shed, leaves: nLeaves, leafArea: +area.toFixed(1), bearingLength: +bearing.toFixed(1), ms: Math.round(performance.now() - t0) },
   };
+}
+
+/** Pack generation floats (FI per instance) into PACKED-byte GPU instances. */
+export function pack(a: number[]): Uint8Array {
+  const n = a.length / FI, out = new Uint8Array(n * PACKED), dv = new DataView(out.buffer);
+  const u16 = (o: number, v: number) => dv.setUint16(o, Math.round(clamp(v, 0, 1) * 65535), true);
+  const s8 = (v: number) => (Math.round(clamp(v, -1, 1) * 127) + 256) % 256, u8 = (v: number) => Math.round(clamp(v, 0, 1) * 255);
+  for (let k = 0; k < n; k++) {
+    const i = k * FI, o = k * PACKED;
+    u16(o, (a[i] + 40) / 80); u16(o + 2, (a[i + 1] + 5) / 80); u16(o + 4, (a[i + 2] + 40) / 80); u16(o + 6, a[i + 8] / 2);
+    let qx = a[i + 3], qy = a[i + 4], qz = a[i + 5], qw = a[i + 6]; if (qw < 0) { qx = -qx; qy = -qy; qz = -qz; qw = -qw; }
+    out[o + 8] = s8(qx); out[o + 9] = s8(qy); out[o + 10] = s8(qz); out[o + 11] = s8(qw);
+    out[o + 12] = u8((Math.log2(Math.max(a[i + 7], 0.0005) / 0.0005)) / 10); out[o + 13] = u8(a[i + 9] / 0.5); out[o + 14] = u8(a[i + 10] / 0.5); out[o + 15] = u8(a[i + 14]);
+    out[o + 16] = a[i + 11]; out[o + 17] = u8(a[i + 12]); out[o + 18] = u8(a[i + 13] * 0.5 + 0.5); out[o + 19] = 0;
+  }
+  return out;
+}
+/** Decode instance k's position and exposure (tools, viewpoints). */
+export function unpackPos(d: Uint8Array, k: number): { p: V3; e: number; cell: number } {
+  const dv = new DataView(d.buffer, d.byteOffset, d.byteLength), o = k * PACKED;
+  return { p: [dv.getUint16(o, true) / 65535 * 80 - 40, dv.getUint16(o + 2, true) / 65535 * 80 - 5, dv.getUint16(o + 4, true) / 65535 * 80 - 40], e: d[o + 17] / 255, cell: d[o + 16] };
 }
 
 function hash(a: number, b: number): number { const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return x - Math.floor(x); }

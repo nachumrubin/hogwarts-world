@@ -4,7 +4,7 @@ import { MeshOut, meshChains, LODS, type BarkFn } from './framework/mesher.ts';
 import type { Skeleton, Chain, TNode } from './framework/skeleton.ts';
 import { type V3 } from './framework/math.ts';
 import { SPECIES, type SpeciesDef, type Poi } from './species/index.ts';
-import { growFoliage, type Foliage } from './framework/foliage.ts';
+import { growFoliage, unpackPos, type Foliage } from './framework/foliage.ts';
 
 export interface LodMesh { v: Float32Array; i: Uint32Array; tris: number; verts: number; ms: number }
 export interface Diagnostics {
@@ -83,31 +83,33 @@ function brokenPoi(sk: Skeleton): Poi['broken'] {
 
 /** Foliage viewpoints: a sunlit shoot on the crown's edge at about two-thirds of the crown's height (close-up and
  *  leaf macro look at it from outside the crown), and the crown's centre (interior, ground-level upward, aerial). */
-function crownPoi(f: { lods: { sets: { kind: string; data: Float32Array; count: number }[] }[] }, min: V3, max: V3): Poi['crown'] {
+function crownPoi(f: Foliage, min: V3, max: V3): Poi['crown'] {
+  void min; void max;
   const set = f.lods[0].sets.find((s) => s.kind === 'leaf' || s.kind === 'needle'); if (!set || !set.count) return undefined;
-  const d = set.data, n = set.count, F = 16;
-  let cx = 0, cy = 0, cz = 0;
-  for (let k = 0; k < n; k++) { cx += d[k * F]; cy += d[k * F + 1]; cz += d[k * F + 2]; }
+  const n = set.count, P: V3[] = [], E: number[] = [];
+  for (let k = 0; k < n; k++) { const u = unpackPos(set.data, k); P.push(u.p); E.push(u.e); }
+  let cx = 0, cy = 0, cz = 0, lo = 1e9, hi = -1e9;
+  for (const p of P) { cx += p[0]; cy += p[1]; cz += p[2]; lo = Math.min(lo, p[1]); hi = Math.max(hi, p[1]); }
   cx /= n; cy /= n; cz /= n;
-  let lo = 1e9, hi = -1e9; for (let k = 0; k < n; k++) { lo = Math.min(lo, d[k * F + 1]); hi = Math.max(hi, d[k * F + 1]); }
   const want = lo + (hi - lo) * 0.62, sun = Math.atan2(0.55, 0.42);
   // local foliage density (0.4 m cells): the close-ups should land on a full spray or tuft, not a stray leaf
-  const cell = (k: number) => `${Math.floor(d[k * F] / 0.4)},${Math.floor(d[k * F + 1] / 0.4)},${Math.floor(d[k * F + 2] / 0.4)}`;
-  const dens = new Map<string, number>(); for (let k = 0; k < n; k++) { const c = cell(k); dens.set(c, (dens.get(c) ?? 0) + 1); }
+  const cell = (p: V3) => `${Math.floor(p[0] / 0.4)},${Math.floor(p[1] / 0.4)},${Math.floor(p[2] / 0.4)}`;
+  const dens = new Map<string, number>(); for (const p of P) { const c = cell(p); dens.set(c, (dens.get(c) ?? 0) + 1); }
   let dmax = 1; for (const v of dens.values()) dmax = Math.max(dmax, v);
-  let best = -1, bs = -1e9, R = 0;
-  for (let k = 0; k < n; k++) R = Math.max(R, Math.hypot(d[k * F] - cx, d[k * F + 2] - cz));
+  let best = 0, bs = -1e9, R = 0;
+  for (const p of P) R = Math.max(R, Math.hypot(p[0] - cx, p[2] - cz));
   for (let k = 0; k < n; k += 7) {
-    const x = d[k * F] - cx, y = d[k * F + 1], z = d[k * F + 2] - cz, r = Math.hypot(x, z);
+    const p = P[k], x = p[0] - cx, z = p[2] - cz, r = Math.hypot(x, z);
     const az = Math.atan2(x, z), da = Math.abs(Math.atan2(Math.sin(az - sun), Math.cos(az - sun)));
-    const sc = r / Math.max(R, 1) * 3 - Math.abs(y - want) / Math.max(hi - lo, 1) * 4 - da * 1.2 + d[k * F + 12] * 2 + (dens.get(cell(k)) ?? 0) / dmax * 4;
+    const sc = r / Math.max(R, 1) * 3 - Math.abs(p[1] - want) / Math.max(hi - lo, 1) * 4 - da * 1.2 + E[k] * 2 + (dens.get(cell(p)) ?? 0) / dmax * 4;
     if (sc > bs) { bs = sc; best = k; }
   }
-  const p: V3 = [d[best * F], d[best * F + 1], d[best * F + 2]];
+  const p = P[best];
   return { leaf: p, az: Math.atan2(p[0] - cx, p[2] - cz), center: [cx, cy, cz], radius: R, top: hi, low: lo };
 }
 
-export function buildSpecimen(id: string, lods: number[] = [0, 1, 2]): BuiltSpecimen {
+/** `density`: crown-density scale for the density experiments (fullness × density; 1 = the specimen as defined). */
+export function buildSpecimen(id: string, lods: number[] = [0, 1, 2], density = 1): BuiltSpecimen {
   const def = specimen(id);
   const t0 = performance.now();
   const { sk, info } = def.grow();
@@ -124,7 +126,7 @@ export function buildSpecimen(id: string, lods: number[] = [0, 1, 2]): BuiltSpec
     meshes.push({ v: new Float32Array(o.v), i: new Uint32Array(o.i), tris: o.i.length / 3, verts: o.count, ms });
     meshMs.push(ms);
   }
-  const foliage = growFoliage(sk, def.foliage);
+  const foliage = growFoliage(sk, density === 1 ? def.foliage : { ...def.foliage, fullness: (def.foliage.fullness ?? 1) * density });
   const diag = diagnose(sk, chains, info, growMs, meshMs);
   const min: V3 = [1e9, 1e9, 1e9], max: V3 = [-1e9, -1e9, -1e9];
   for (const n of sk.nodes) if (!n.root) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], n.p[k] - n.r); max[k] = Math.max(max[k], n.p[k] + n.r); }

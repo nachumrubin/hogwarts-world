@@ -1,0 +1,172 @@
+{
+  "cards": {
+    "oak-b": {
+      "lod0-quad": {
+        "rasterizedPerFoliagePixel": 9.558666455160745,
+        "shadedFraction": 0.22778662643742426,
+        "fragments": 5061658,
+        "foliageCoverage": 0.4903111111111111
+      },
+      "lod1-quad": {
+        "rasterizedPerFoliagePixel": 23.373893558559015,
+        "shadedFraction": 0.12181423911973165,
+        "fragments": 2305297,
+        "foliageCoverage": 0.0913212962962963
+      },
+      "lod2-quad": {
+        "rasterizedPerFoliagePixel": 13.735033410609573,
+        "shadedFraction": 0.17310868191039758,
+        "fragments": 302157,
+        "foliageCoverage": 0.020369444444444443
+      },
+      "lod0-hull": {
+        "rasterizedPerFoliagePixel": 5.909714932980933,
+        "shadedFraction": 0.3687448408753453,
+        "fragments": 3130376,
+        "foliageCoverage": 0.490462962962963
+      },
+      "lod1-hull": {
+        "rasterizedPerFoliagePixel": 9.93509456924091,
+        "shadedFraction": 0.2876210891644975,
+        "fragments": 979650,
+        "foliageCoverage": 0.09130092592592592
+      },
+      "lod2-hull": {
+        "rasterizedPerFoliagePixel": 4.149624787072418,
+        "shadedFraction": 0.5601437859187433,
+        "fragments": 90134,
+        "foliageCoverage": 0.020112037037037036
+      }
+    },
+    "pine": {
+      "lod0-quad": {
+        "rasterizedPerFoliagePixel": 40.35828799768908,
+        "shadedFraction": 0.044766558270367254,
+        "fragments": 838282,
+        "foliageCoverage": 0.019232407407407406
+      },
+      "lod1-quad": {
+        "rasterizedPerFoliagePixel": 12.561049957662997,
+        "shadedFraction": 0.19113424022218328,
+        "fragments": 74173,
+        "foliageCoverage": 0.0054675925925925925
+      },
+      "lod2-quad": {
+        "rasterizedPerFoliagePixel": 9.977502163253533,
+        "shadedFraction": 0.2538448196114709,
+        "fragments": 34592,
+        "foliageCoverage": 0.0032101851851851853
+      },
+      "lod0-hull": {
+        "rasterizedPerFoliagePixel": 39.93328202414739,
+        "shadedFraction": 0.04533994721582128,
+        "fragments": 830173,
+        "foliageCoverage": 0.019249074074074075
+      },
+      "lod1-hull": {
+        "rasterizedPerFoliagePixel": 8.214919767838852,
+        "shadedFraction": 0.2958460611350082,
+        "fragments": 48123,
+        "foliageCoverage": 0.005424074074074074
+      },
+      "lod2-hull": {
+        "rasterizedPerFoliagePixel": 4.160479391990646,
+        "shadedFraction": 0.5878592004496592,
+        "fragments": 14233,
+        "foliageCoverage": 0.0031675925925925925
+      }
+    },
+    "birch": {
+      "lod0-quad": {
+        "rasterizedPerFoliagePixel": 10.281385207059955,
+        "shadedFraction": 0.18184573559396755,
+        "fragments": 1197658,
+        "foliageCoverage": 0.10785925925925927
+      },
+      "lod1-quad": {
+        "rasterizedPerFoliagePixel": 42.22556537879158,
+        "shadedFraction": 0.05497961789923238,
+        "fragments": 864484,
+        "foliageCoverage": 0.01895648148148148
+      },
+      "lod2-quad": {
+        "rasterizedPerFoliagePixel": 14.467053601911916,
+        "shadedFraction": 0.13900033039127768,
+        "fragments": 84748,
+        "foliageCoverage": 0.005424074074074074
+      },
+      "lod0-hull": {
+        "rasterizedPerFoliagePixel": 6.640948968456509,
+        "shadedFraction": 0.28076111413736127,
+        "fragments": 772867,
+        "foliageCoverage": 0.10775833333333333
+      },
+      "lod1-hull": {
+        "rasterizedPerFoliagePixel": 15.76066835541699,
+        "shadedFraction": 0.14443259616424808,
+        "fragments": 323535,
+        "foliageCoverage": 0.019007407407407407
+      },
+      "lod2-hull": {
+        "rasterizedPerFoliagePixel": 5.0595567867036015,
+        "shadedFraction": 0.39597591021078565,
+        "fragments": 29224,
+        "foliageCoverage": 0.005348148148148148
+      }
+    }
+  },
+  "alpha": {},
+  "memory": {
+    "oak-b": [
+      {
+        "instances": 239765,
+        "packedBytes": 4795300,
+        "floatBytes": 15344960
+      },
+      {
+        "instances": 37748,
+        "packedBytes": 754960,
+        "floatBytes": 2415872
+      },
+      {
+        "instances": 9088,
+        "packedBytes": 181760,
+        "floatBytes": 581632
+      }
+    ],
+    "pine": [
+      {
+        "instances": 620986,
+        "packedBytes": 12419720,
+        "floatBytes": 39743104
+      },
+      {
+        "instances": 37114,
+        "packedBytes": 742280,
+        "floatBytes": 2375296
+      },
+      {
+        "instances": 1452,
+        "packedBytes": 29040,
+        "floatBytes": 92928
+      }
+    ],
+    "birch": [
+      {
+        "instances": 196108,
+        "packedBytes": 3922160,
+        "floatBytes": 12550912
+      },
+      {
+        "instances": 43066,
+        "packedBytes": 861320,
+        "floatBytes": 2756224
+      },
+      {
+        "instances": 3096,
+        "packedBytes": 61920,
+        "floatBytes": 198144
+      }
+    ]
+  }
+}

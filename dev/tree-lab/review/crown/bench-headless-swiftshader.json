@@ -1,0 +1,200 @@
+[
+  {
+    "tool": "Tree Lab benchmark",
+    "commit": "72e8685+",
+    "date": "2026-11-25T23:31:54.542Z",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "adapter": {
+      "name": "google swiftshader",
+      "software": true,
+      "timestampQueries": true
+    },
+    "settings": {
+      "scene": "oak-b",
+      "camera": "ground",
+      "width": 1280,
+      "height": 720,
+      "shadow": 2048,
+      "frames": 3
+    },
+    "camera": {
+      "eye": [
+        0,
+        1.7,
+        30.988769252420724
+      ],
+      "target": [
+        0,
+        8.71559135224333,
+        0
+      ],
+      "fovDeg": 45
+    },
+    "frameMs": {
+      "median": 18988.900000000373,
+      "p95": 19381.800000000745,
+      "mean": 19089.86666666654,
+      "note": "wall time submit → GPU done, one frame at a time (latency, includes the shadow pass)"
+    },
+    "gpuMs": {
+      "median": 17811.343976,
+      "p95": 18161.889897,
+      "mean": 17926.617992333337,
+      "note": "timestamp queries, main pass"
+    },
+    "drawCalls": 5,
+    "triangles": 316456,
+    "foliageInstances": 37748,
+    "trees": 1,
+    "lod": {
+      "lod0": 0,
+      "lod1": 1,
+      "lod2": 0,
+      "impostor": 0,
+      "culled": 0
+    },
+    "memory": {
+      "geometryBytes": 18699780,
+      "foliageInstanceBytes": 3776600,
+      "textureBytes": 123032888,
+      "impostorAtlasBytes": 54186960,
+      "shadowMapBytes": 16777216,
+      "renderTargetBytes": 33177600,
+      "lod0Released": 83474396,
+      "total": 249651044
+    },
+    "warning": "Software adapter: these timings are CPU-rasterizer timings, not GPU performance."
+  },
+  {
+    "tool": "Tree Lab benchmark",
+    "commit": "72e8685+",
+    "date": "2026-11-25T23:47:48.315Z",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "adapter": {
+      "name": "google swiftshader",
+      "software": true,
+      "timestampQueries": true
+    },
+    "settings": {
+      "scene": "stand200",
+      "camera": "ground",
+      "width": 1280,
+      "height": 720,
+      "shadow": 2048,
+      "frames": 3
+    },
+    "camera": {
+      "eye": [
+        21.213203435596427,
+        1.7,
+        94.38834764831844
+      ],
+      "target": [
+        0,
+        9,
+        0
+      ],
+      "fovDeg": 45
+    },
+    "frameMs": {
+      "median": 239989,
+      "p95": 240928.70000000112,
+      "mean": 237738.4666666668,
+      "note": "wall time submit → GPU done, one frame at a time (latency, includes the shadow pass)"
+    },
+    "gpuMs": {
+      "median": 197877.136308,
+      "p95": 199166.852115,
+      "mean": 196262.56497066666,
+      "note": "timestamp queries, main pass"
+    },
+    "drawCalls": 285,
+    "triangles": 16018034,
+    "foliageInstances": 2461083,
+    "trees": 200,
+    "lod": {
+      "lod0": 3,
+      "lod1": 27,
+      "lod2": 108,
+      "impostor": 26,
+      "culled": 36
+    },
+    "memory": {
+      "geometryBytes": 84860572,
+      "foliageInstanceBytes": 25399980,
+      "textureBytes": 123032888,
+      "impostorAtlasBytes": 54186960,
+      "shadowMapBytes": 16777216,
+      "renderTargetBytes": 33177600,
+      "lod0Released": 25040888,
+      "total": 337435216
+    },
+    "warning": "Software adapter: these timings are CPU-rasterizer timings, not GPU performance."
+  },
+  {
+    "tool": "Tree Lab benchmark",
+    "commit": "72e8685+",
+    "date": "2026-11-25T23:51:38.855Z",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "adapter": {
+      "name": "google swiftshader",
+      "software": true,
+      "timestampQueries": true
+    },
+    "settings": {
+      "scene": "stand200",
+      "camera": "aerial",
+      "width": 1280,
+      "height": 720,
+      "shadow": 2048,
+      "frames": 3
+    },
+    "camera": {
+      "eye": [
+        -97.2271824131503,
+        80,
+        132.58252147247765
+      ],
+      "target": [
+        0,
+        0,
+        -8.838834764831844
+      ],
+      "fovDeg": 45
+    },
+    "frameMs": {
+      "median": 54716.40000000037,
+      "p95": 54924.59999999963,
+      "mean": 54701,
+      "note": "wall time submit → GPU done, one frame at a time (latency, includes the shadow pass)"
+    },
+    "gpuMs": {
+      "median": 48529.271793,
+      "p95": 48694.631269,
+      "mean": 48430.91826866666,
+      "note": "timestamp queries, main pass"
+    },
+    "drawCalls": 130,
+    "triangles": 2121560,
+    "foliageInstances": 251513,
+    "trees": 200,
+    "lod": {
+      "lod0": 0,
+      "lod1": 0,
+      "lod2": 63,
+      "impostor": 137,
+      "culled": 0
+    },
+    "memory": {
+      "geometryBytes": 35865092,
+      "foliageInstanceBytes": 3776600,
+      "textureBytes": 123032888,
+      "impostorAtlasBytes": 54186960,
+      "shadowMapBytes": 16777216,
+      "renderTargetBytes": 33177600,
+      "lod0Released": 95659748,
+      "total": 266816356
+    },
+    "warning": "Software adapter: these timings are CPU-rasterizer timings, not GPU performance."
+  }
+]

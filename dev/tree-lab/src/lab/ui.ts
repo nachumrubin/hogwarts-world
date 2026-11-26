@@ -16,7 +16,7 @@ const VIEW_BTNS: [View, string, string][] = [['front', 'Front', 'Digit1'], ['sid
 
 export function bindUI(lab: Lab): void {
   const toast = (msg: string) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout((t as any)._h); (t as any)._h = setTimeout(() => t.classList.remove('show'), 2600); };
-  const busy = (on: boolean, msg = '') => { $('loading').hidden = !on; $('loadingText').textContent = msg; document.querySelector('.dot')!.classList.toggle('busy', on); $('status').textContent = on ? msg : 'Ready · foliage phase (summer; no wind)'; };
+  const busy = (on: boolean, msg = '') => { $('loading').hidden = !on; $('loadingText').textContent = msg; document.querySelector('.dot')!.classList.toggle('busy', on); $('status').textContent = on ? msg : 'Ready · crown phase 4.1 (summer; no wind)'; };
   lab.onStatus = (msg, b) => busy(b, msg);
   const guard = async (fn: () => Promise<unknown>) => { try { await fn(); } catch (e) { console.error(e); const el = $('error'); el.hidden = false; el.textContent = String((e as Error).message || e); busy(false); } };
 
@@ -74,6 +74,20 @@ export function bindUI(lab: Lab): void {
     const id = lab.subject().id; const r = await lab.foliageStudy(id, 800, 600, (k, n) => p(`shot ${Math.min(k + 1, n)} of ${n}`)); download(r.sheet, `treelab-${id}-foliage-study.png`);
   }));
   $('standBtn').onclick = () => guard(async () => { await lab.stand(); lab.setEnv(true); ($('woodland') as HTMLInputElement).checked = true; });
+  $('stand200Btn').onclick = () => guard(async () => { busy(true, 'Stand of 200 trees: baking impostors'); try { await lab.standOf(200); lab.setEnv(true); ($('woodland') as HTMLInputElement).checked = true; } finally { busy(false); } });
+  $('benchBtn').onclick = () => guard(async () => {
+    const [w, hh] = ($('bRes') as HTMLSelectElement).value.split('x').map(Number);
+    const o = { width: w, height: hh, shadow: +($('bShadow') as HTMLSelectElement).value, frames: +($('bFrames') as HTMLSelectElement).value };
+    const scene = ($('bScene') as HTMLSelectElement).value, camera = ($('bCam') as HTMLSelectElement).value as 'ground' | 'aerial';
+    ($('benchBtn') as HTMLButtonElement).disabled = true;
+    try {
+      busy(true, 'Benchmark running…');
+      const res = scene === 'suite' ? await lab.benchSuite(o, (r) => busy(true, `Benchmark: ${(r.settings as { scene: string }).scene} ${(r.settings as { camera: string }).camera} done`)) : [await lab.bench({ scene, camera, ...o })];
+      const first = res[0] as { adapter: { name: string; software: boolean }; frameMs: { median: number }; gpuMs: { median: number } | null };
+      $('benchNote').textContent = `${first.adapter.name}${first.adapter.software ? ' (software — not GPU performance)' : ''}: median ${first.frameMs.median?.toFixed(2)} ms${first.gpuMs ? `, GPU ${first.gpuMs.median?.toFixed(2)} ms` : ''}${res.length > 1 ? ` (first of ${res.length})` : ''}`;
+      download(new Blob([JSON.stringify(res, null, 1)], { type: 'application/json' }), `treelab-bench-${scene}-${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.json`);
+    } finally { busy(false); ($('benchBtn') as HTMLButtonElement).disabled = false; }
+  });
   $('cmpBtn').onclick = () => guard(() => capturing('Oak comparison', async (p) => { p('rendering'); download(await lab.comparisonSheet('oaks'), 'treelab-compare-oaks.png'); }));
   $('zipBtn').onclick = () => guard(() => capturing('Export', async (p) => { download(await lab.exportAll(p), `treelab-review-${new Date().toISOString().slice(0, 10)}.zip`); }));
 
@@ -107,7 +121,7 @@ export function bindUI(lab: Lab): void {
       fb.hidden = false; fb.innerHTML = '';
       const all = h('button', {}, 'Whole line-up'); all.classList.toggle('on', !s.focus); all.onclick = () => lab.focus(null); fb.appendChild(all);
       for (const id of lab.members()) { const b = h('button', {}, esc(lab.store.get(id).def.name.split(' — ')[0] + (lab.store.get(id).def.name.includes('—') ? ' ' + lab.store.get(id).def.variant : ''))); b.classList.toggle('on', s.focus === id); b.onclick = () => lab.focus(id); fb.appendChild(b); }
-      const set = COMPARISONS.find((c) => c.id === s.compare) ?? { label: 'Woodland stand — 12 trees, LOD by distance (stress test)' };
+      const set = COMPARISONS.find((c) => c.id === s.compare) ?? { label: `Woodland stand — ${lab.scene.standN} trees · LOD ${lab.scene.lodCounts.slice(0, 4).join('/')} (0/1/2/impostor)` };
       $('capKicker').textContent = 'COMPARISON · TRUE SCALE'; $('capName').textContent = set.label; $('capLatin').textContent = s.focus ? `inspecting ${lab.store.get(s.focus).def.name}` : '';
     } else {
       fb.hidden = true;

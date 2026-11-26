@@ -14,20 +14,26 @@ import type { FoliageSpec } from '../framework/foliage.ts';
 
 // ---- summer foliage (framework/foliage.ts). Texture layers: sprites 0 oak, 1 birch, 2 pine; cards 3 oak, 4 birch, 5 pine.
 const OAK_LEAVES: FoliageSpec = {
-  type: 'broad', spriteLayer: 0, cardLayer: 3, seed: 11, maxR: 0.025, zone: 2.6, spacing: 0.07, shootLen: [0.18, 0.42], diverge: 0.8,
-  perShoot: [5, 9], leafLen: [0.085, 0.125], leafy: 0.92, toLight: 0.7, droop: 0, extinction: 0.55, sideLight: 1, shedBelow: 0.15, density: 1,
-  laterals: [3, 5], lateralLen: [0.4, 0.7], leavesPerM: 30,
-  twigR: 0.0025, card: [0.34, 0.34], clump: 1.6, clumpCell: 1.3,
+  type: 'broad', spriteLayer: 0, cardLayer: 3, seed: 11, maxR: 0.03, zone: 3.2, spacing: 0.2, shootLen: [0.4, 0.85], diverge: 0.9,
+  perShoot: [5, 9], leafLen: [0.085, 0.125], leafy: 0.92, toLight: 0.7, droop: 0, extinction: 0.5, sideLight: 1, shedBelow: 0.15, density: 1,
+  spray: { levels: 2, laterals: [3, 5], latLen: [0.45, 0.75], latAngle: [0.55, 1.05], volume: 0.6, sub: [1, 3], subLen: [0.35, 0.6] },
+  leavesPerM: 18, reach: 0.6, fullness: 1, interiorCard: 0.3,
+  twigR: 0.0025, card: [0.34, 0.34], clump: 1.6, clumpCell: 1.1,
 };
 const BIRCH_LEAVES: FoliageSpec = {
-  type: 'broad', spriteLayer: 1, cardLayer: 4, seed: 23, maxR: 0.007, zone: 2.5, spacing: 0.06, shootLen: [0.03, 0.07], diverge: 0.6,
-  perShoot: [2, 4], leafLen: [0.05, 0.075], leafy: 1, toLight: 0.4, droop: 0.6, extinction: 0.45, sideLight: 1, shedBelow: 0.12, density: 1,
-  twigR: 0.0012, card: [0.2, 0.24], clump: 1.1, clumpCell: 1.0,
+  // pendulous long shoots with short lateral spurs spreading sideways: wider, airy sprays, not hanging strings
+  type: 'broad', spriteLayer: 1, cardLayer: 4, seed: 23, maxR: 0.009, zone: 2.6, spacing: 0.11, shootLen: [0.16, 0.34], diverge: 0.8,
+  perShoot: [2, 4], leafLen: [0.05, 0.075], leafy: 1, toLight: 0.5, droop: 0.5, extinction: 0.45, sideLight: 1, shedBelow: 0.12, density: 1,
+  spray: { levels: 2, laterals: [2, 4], latLen: [0.45, 0.85], latAngle: [0.8, 1.3], volume: 0.7, sub: [0, 2], subLen: [0.3, 0.55] },
+  leavesPerM: 24, reach: 0.25, fullness: 1, interiorCard: 0.22,
+  twigR: 0.0012, card: [0.22, 0.22], clump: 1.1, clumpCell: 0.9,
 };
 const PINE_NEEDLES: FoliageSpec = {
-  type: 'pine', spriteLayer: 2, cardLayer: 5, seed: 37, maxR: 0.035, zone: 1.15, spacing: 0.045, shootLen: [0.05, 0.065], diverge: 0.12,
-  perShoot: [26, 38], leafLen: [0.055, 0.075], leafy: 1, toLight: 0, droop: 0, extinction: 0.35, sideLight: 1, shedBelow: 0.12, density: 1,
-  twigR: 0, card: [0.16, 0.16], clump: 1.3, clumpCell: 1.1,
+  // tufts: the last years' shoots with a few side shoots, turning up at the tips, needles splaying into rounded tufts
+  type: 'pine', spriteLayer: 2, cardLayer: 5, seed: 37, maxR: 0.035, zone: 1.15, spacing: 0.06, shootLen: [0.06, 0.09], diverge: 0.15,
+  perShoot: [20, 28], leafLen: [0.06, 0.08], leafy: 1, toLight: 0, droop: 0, extinction: 0.35, sideLight: 1, shedBelow: 0.12, density: 1,
+  spray: { levels: 1, laterals: [0, 2], latLen: [0.5, 0.85], latAngle: [0.45, 0.85], volume: 1 }, upturn: 0.5, fullness: 1, interiorCard: 0.25,
+  twigR: 0, card: [0.16, 0.16], clump: 1.3, clumpCell: 1.0,
 };
 
 
@@ -105,8 +111,8 @@ export const SPECIES: SpeciesDef[] = [
     summary: 'Open-grown veteran from checkpoint 9c024fe. Storm-lost limb, stag-headed top, basal hollow; the one-sided crown is its history.',
     seed: OAK_A.seed, preset: 'OAK_A (open-grown, storm-damaged)', params: oakParams(OAK_A), crownR: 13,
     grow: () => growOak(OAK_A), bark: oakBark as BarkFn, figure: [4.2, 3.2],
-    // a declining veteran: thinner crown, more shed in the shade, the dead top and storm-broken limb bare
-    foliage: { ...OAK_LEAVES, seed: 101, density: 0.72, shedBelow: 0.2 },
+    // a declining veteran: a moderately thinner crown than the others, the dead top and storm-broken limb bare
+    foliage: { ...OAK_LEAVES, seed: 101, density: 0.88, shedBelow: 0.18, fullness: 0.8 },
     mesh: fusedMesh(oakBark as BarkFn, region([-6, -0.9, -6], [6, 7, 6], [0.055, 0.12], 0.14, oakBark as BarkFn, 0.55, oakCarve, OAK_FLARE)),
     poi: () => ({ trunkY: 1.6, trunkAz: 0.5, trunkDist: 6.5, junction: [0.3, 4.2, -0.1], junctionAz: 0.7, junctionEl: 0.25, junctionDist: 5.5 }),
   },
@@ -116,7 +122,7 @@ export const SPECIES: SpeciesDef[] = [
     seed: OAK_B.seed, preset: 'OAK_B (open parkland, early crown loss)', params: oakParams(OAK_B), crownR: 14,
     grow: () => growOak(OAK_B), bark: oakBark as BarkFn, figure: [4.6, 3.4],
     // vigorous open-grown parkland oak: dense, full to the crown edge, low limbs leafy
-    foliage: { ...OAK_LEAVES, seed: 202, density: 1.1, shedBelow: 0.13 },
+    foliage: { ...OAK_LEAVES, seed: 202, density: 1.15, shedBelow: 0.12, reach: 0.45 },
     mesh: fusedMesh(oakBark as BarkFn, region([-7, -0.9, -7], [7, 7.5, 7], [0.055, 0.12], 0.14, oakBark as BarkFn, 0.55, undefined, OAK_FLARE)),
     poi: (sk) => junctionPoi(sk, 1.6, 7),
   },
@@ -125,8 +131,8 @@ export const SPECIES: SpeciesDef[] = [
     summary: 'Grew up in closed woodland: tall clear stem, high narrow crown shaped by the race for the canopy gap.',
     seed: OAK_C.seed, preset: 'OAK_C (closed woodland, light from above)', params: oakParams(OAK_C), crownR: 8,
     grow: () => growOak(OAK_C), bark: oakBark as BarkFn, figure: [3.2, 2.4],
-    // forest-grown: light from above only, so foliage gathers in the upper crown and the shaded flanks are shed
-    foliage: { ...OAK_LEAVES, seed: 303, density: 1, sideLight: 0.22, shedBelow: 0.24 },
+    // forest-grown: light from above only, so foliage gathers in a full upper crown and the shaded flanks are shed
+    foliage: { ...OAK_LEAVES, seed: 303, density: 1.1, sideLight: 0.22, shedBelow: 0.2 },
     mesh: fusedMesh(oakBark as BarkFn, region([-3.4, -0.9, -3.4], [3.4, 13.5, 3.4], [0.06, 0.12], 0.12, oakBark as BarkFn, 0.55, undefined, OAK_FLARE)),
     poi: (sk) => junctionPoi(sk, 1.6, 5.5),
   },
