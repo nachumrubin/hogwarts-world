@@ -100,7 +100,7 @@ function wingSurface(lod,seg){
       const base=p.length/3;
       color.setHex(0xfffcf5);
       color.multiplyScalar(.94+.06*Math.sin(i*2.2+seg));
-      const tileColumn=(i*3+seg+row)%4,tileRow=seg===0?2:Math.min(2,row);
+      const tileColumn=(i*3+Math.floor(i/3)+seg+row)%4,tileRow=seg===0?2:Math.min(2,row);
       for(let j=0;j<=steps;j++){
         const u=(1-Math.cos(Math.PI*j/steps))/2;
         const width=(.88+.25*u)*(primary?.032-.004*t:.027)*(covert?1.08:1)*(.98+.095*jitter)*(primary?1-.17*t*u:1)
@@ -155,8 +155,10 @@ export function owlWing(owl,s,map){
     // Index winding points towards the ventral web. THREE accounts for
     // the mirrored mount when choosing the GL front face.
     mesh.material.onBeforeCompile=shader=>{
-      shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',
-        '#include <color_fragment>\nif(gl_FrontFacing) diffuseColor.rgb = mix(vec3(0.97,0.94,0.87), diffuseColor.rgb, 0.14);');
+      // The fourth row of the shared atlas carries the ventral pigmentation.
+      shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',
+        T.ShaderChunk.map_fragment.replace('map, vMapUv',
+          'map, gl_FrontFacing ? vec2(vMapUv.x, 0.75 + 0.25 * fract(vMapUv.y * 4.0)) : vMapUv'));
       // Thin pale vanes transmit some dorsal illumination. The contribution
       // follows the actual incident lights and vanishes in an unlit scene.
       shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>

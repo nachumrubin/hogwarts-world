@@ -16,10 +16,10 @@ const views={
   headFront:[[0,.24,.046],[0,.015,1],.16],headSide:[[0,.24,.046],[1,.02,0],.16],
   front:[[0,.145,0],[0,.025,1],.36],side:[[0,.145,-.018],[1,.025,0],.36],
   rear:[[0,.145,0],[0,.025,-1],.36],quarter:[[0,.145,0],[.82,.14,1],.36],
-  face:[[0,baseline===4?.235:.246,.044],[.14,.06,1],.147],breast:[[0,.148,.037],[.45,.045,1],.153],flying:[[0,.40,.085],[.21,.16,1],.84],
+  face:[[0,baseline>=4?.235:.246,.044],[.14,.06,1],.147],breast:[[0,.148,.037],[.45,.045,1],.153],flying:[[0,.40,.085],[.21,.16,1],.84],
   folded:[[0,.153,-.062],[1,.34,-.30],.245],above:[[0,.19,-.08],[0,1,.005],.80],
   below:[[0,.19,-.08],[0,-1,.005],.80],silhouette:[[0,.141,-.025],[1,.04,.16],.36],
-  talons:[[0,.017,.010],[.75,.16,1],.094],travel:[[0,.29,.04],[.71,.18,1],.88],
+  legs:[[0,.057,0],[.93,.02,.38],.144],talons:[[0,.017,.010],[.75,.16,1],.094],travel:[[0,.29,.04],[.71,.18,1],.88],
   flight:[[0,.4,.085],[.58,.22,1],.84]
 };
 let birds,t;
@@ -58,9 +58,9 @@ window.frame=([action,i])=>{
   for(let j=0;j<3;j++)step(action==='Look'&&i<20?'Perch':action,{stimulus:V([.4*Math.sin(i/14),.29+.08*Math.sin(i/22),.34])});
   return capture(action==='Look'?'quarter':['Takeoff','Land'].includes(action)?'travel':'flight','material',false);
 };
-window.measure=()=>{
+window.measure=(reverse=false)=>{
   const gl=renderer.getContext(),readback=new Uint8Array(4),rows=[];
-  for(let lod=0;lod<3;lod++)for(let version=0;version<2;version++){
+  for(let lod=0;lod<3;lod++)for(const version of reverse?[1,0]:[0,1]){
     reset();birds.forEach((b,i)=>{b.root.visible=i===version;b.setLOD(lod)});
     const bird=birds[version];for(let j=0;j<180;j++)step('Fly');
     scene.overrideMaterial=null;perch.visible=false;
@@ -79,7 +79,7 @@ window.measure=()=>{
       for(;;){textureBytes+=4*w*h;if(w===1&&h===1)break;w=Math.max(1,w>>1);h=Math.max(1,h>>1)}
     }
     rows.push({revision:'A.'+(version+baseline),lod,triangles:renderer.info.render.triangles,
-      calls:renderer.info.render.calls,textureBytes,medianMs:times[16],p95Ms:times[30]});
+      samples:times,calls:renderer.info.render.calls,textureBytes,medianMs:times[16],p95Ms:times[30]});
   }
   reset();const bounds=()=>birds.map(b=>new T.Box3().setFromObject(b.root,true).getSize(new T.Vector3()).toArray());
   const perched=bounds();for(let i=0;i<180;i++)step('Unfold');

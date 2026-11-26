@@ -13,18 +13,18 @@ export const actions={Perch:'Perched idle',Look:'Track target',Unfold:'Unfold wi
 
 function foot(owl,s){
   const carrier=joint(owl.root),ankle=joint(carrier,s*.021,.0795,-.001);
-  owl.loft(ankle,cream,[[0,.049,-.024,.012,.015],[0,.013,-.012,.016,.021],[0,-.018,-.006,.012,.014],[0,-.042,.004,.008,.010],[0,-.064,.012,.0045,.005]]);
+  owl.loft(ankle,cream,[[0,.049,-.017,.015,.019],[0,.010,-.022,.020,.024],[0,-.015,-.021,.016,.019],[0,-.033,-.007,.012,.014],[0,-.049,.004,.007,.009],[0,-.064,.012,.0045,.005]]);
   const legPlumes=[];
   for(let i=0;i<16;i++){
     const a=i*Math.PI/8,x=Math.cos(a),z=Math.sin(a);
-    legPlumes.push([[x*.014,-.008,-.005+z*.015],[x*.006,-.053+.004*Math.cos(a*3),.006+z*.007],.004,[x,0,z]]);
+    legPlumes.push([[x*.017,.006,-.022+z*.022],[x*.009,-.047+.006*Math.cos(a*3),.001+z*.011],.005,[x,0,z]]);
   }
   for(let i=0;i<31;i++){
     const a=i*2.40,x=Math.cos(a),z=Math.sin(a),r=.009+.0014*Math.sin(i*3);
     const upper=i%3===0;
-    const start=upper?[x*.015,.010,-.010+z*.017]:[x*.012,-.026,-.002+z*.014];
-    const end=upper?[x*.012,-.027+.004*Math.cos(i),-.001+z*.013]:[x*r,-.052-.012*(.5+.5*Math.sin(i*9)),.007+z*r];
-    legPlumes.push([start,end,upper?.0044:.0032,[x,0,z]]);
+    const start=upper?[x*.020,.012,-.022+z*.023]:[x*.016,-.015,-.018+z*.019];
+    const end=upper?[x*.014,-.036+.005*Math.cos(i),-.005+z*.015]:[x*r,-.052-.012*(.5+.5*Math.sin(i*9)),.007+z*r];
+    legPlumes.push([start,end,upper?.0056:.0037,[x,0,z]]);
   }
   plumage(owl,ankle,0xe7dbca,legPlumes);
   const digit=(parent,color,rows)=>owl.mesh(parent,color,l=>sweep(rows,[14,10,7][l]));
@@ -36,9 +36,9 @@ function foot(owl,s){
     // Transverse scutes rise along the phalanx and flatten into the pad.
     const scutes=[[0,0,-.002,.0034,.0026]];
     for(let n=0;n<4;n++){
-      const u=.04+.10*n,r=.0030-.0008*u;
+      const u=.04+.10*n,r=.0032-.0016*u;
       scutes.push([0,-u*.002,length*u,r,.0022],
-        [0,.00016-u*.002,length*(u+.035),r+.00022,.00265]);
+        [0,.00016-u*.002,length*(u+.035),r+.00016,.00245]);
     }
     scutes.push([0,-.001,length*.43,.0031,.0026],[0,-.001,length*.50,.0021,.0019]);
     owl.mesh(knuckle,0xb8a496,lod=>{
@@ -47,7 +47,20 @@ function foot(owl,s){
     });
     const tip=joint(knuckle,0,-.001,length*.43);
     digit(tip,0xa58f80,[[0,0,-.001,.0025,.0022],[0,-.0003,length*.13,.0022,.0018],[0,-.001,length*.24,.0025,.0022],[0,-.002,length*.38,.0019,.0016]]);
-    digit(tip,0x4b4038,[[0,-.001,length*.32,.0023,.0019],[0,-.002,length*.46,.0022,.0020],[0,-.004,length*.56,.0017,.0018],[0,-.008,length*.60,.0011,.0013],[0,-.012,length*.52,.00071,.00061],[0,-.014,length*.40,.00010,.00014]]);
+    // Fit the horn centreline around the lab's 36 mm perch in the planted
+    // pose. Bake that curve into digit space so release still uses the rig.
+    const horn=[[0,-.001,length*.32,.0023,.0019],[0,-.002,length*.46,.0022,.0020],[0,-.004,length*.56,.0017,.0018],[0,-.008,length*.60,.0011,.0013],[0,-.0116,length*.53,.00071,.00061],[0,-.0142,length*.39,.00010,.00014]];
+    knuckle.rotation.x=.22;tip.rotation.x=.56;tip.updateWorldMatrix(true,false);
+    const point=new T.Vector3(),forward=Math.sign(Math.cos(yaw));
+    for(const section of horn){
+      point.set(...section.slice(0,3)).applyMatrix4(tip.matrixWorld);
+      const r=.018+section[4]*.8;
+      const tangent=Math.sqrt(Math.max(0,r*r-(point.y+.006)**2));
+      point.z=.011+forward*Math.max(forward*(point.z-.011),tangent);
+      tip.worldToLocal(point);section.splice(0,3,point.x,point.y,point.z);
+    }
+    knuckle.rotation.x=0;tip.rotation.x=0;
+    digit(tip,0x4b4038,horn);
     toes.push([knuckle,tip,length]);
   }
   return (air,grip,reach)=>{

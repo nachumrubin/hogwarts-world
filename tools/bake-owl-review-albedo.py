@@ -40,6 +40,7 @@ radius=np.hypot(dx,dy)
 fiber=np.sin(166*angle+8*np.sin(11*angle)+105*radius)
 bundle=166*angle+8*np.sin(11*angle)+105*radius
 streak=6.8*fiber+3.8*np.sin(347*angle+220*radius+4*np.sin(17*angle))
+streak+=2.2*np.sin(523*angle+radius*560+5*np.sin(23*angle))
 streak+=3.2*np.sin(2.4*bundle+1260*radius)
 disc=np.hypot(X/(.052+.004*np.clip(Y/.044,-1,1)),(Y+.005*np.exp(-(X/.013)**2))/.046)
 # Soft warm ends in the outermost row of the ruff.

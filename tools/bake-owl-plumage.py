@@ -83,7 +83,12 @@ def wing_atlas():
                 base-=band[:,:,None]*[65,53,37]
                 base+=u[:,:,None]*[14,16,20]
             elif row==3:
-                base=np.full((tile,tile,3),[242.,233.,213.])
+                base=np.full((tile,tile,3),[246.,240.,225.])
+                # Broken subterminal bars and a short shaft streak on ivory webs.
+                wave=(u*3.3+.18*flank+.07*col+.025*np.sin(8*k+phase))
+                bars=np.exp(-(np.sin(np.pi*wave)/.38)**2)*np.clip(1.3-flank,0,1)
+                streak=np.exp(-((k-.10)/.19)**2-((u-.65-.04*col)/.12)**2)
+                base-=(bars*(.36+.55*u)+streak*.75)[:,:,None]*[71,74,73]
             else:
                 patch=np.asarray(PHOTO.crop((447+col*19,181+row*12,536+col*19,234+row*12)).resize((tile,tile)),float)
                 base=.45*patch+.55*np.array([219,168,98])
@@ -98,7 +103,7 @@ def wing_atlas():
             groove=np.sin(2*np.pi*(40*u+7.2*flank+1.7*flank**2)+phase)
             barb=groove*(3.6+flank*2)+2*np.sin(512*u+flank*71)
             rachis=np.exp(-(shaft/(.016+.021*(1-u)))**2)
-            shade=barb+rachis*17-4*flank+np.clip(u-.80,0,1)*34
+            shade=barb+rachis*20-4*flank+np.clip(u-.80,0,1)*34
             atlas[row*tile:(row+1)*tile,col*tile:(col+1)*tile]=base+shade[:,:,None]
     export('wing','wingRGB',atlas)
 

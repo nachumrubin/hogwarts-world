@@ -36,21 +36,21 @@ function frontDepth(x,y){
   const cosine=Math.sqrt(Math.max(0,1-(x/.0595)**2-(y/.057)**2));
   const hollow=gauss((Math.abs(x)-eyeX)/.014,(y-eyeY)/.014);
   const ridge=.009*gauss(x/(.003+.007*clamp((y+.037)/.06,0,1)),(y+.006)/.031);
-  const cheek=.003*gauss((Math.abs(x)-.032)/.018,(y+.015)/.02);
+  const cheek=.0043*gauss((Math.abs(x)-.032)/.018,(y+.015)/.02);
   const notch=.013*gauss(x/.014,(y-.033)/.019);
   const radius=Math.hypot(x/(.050+.009*clamp(y/.044,-1,1)),(y+notch)/.046);
   const ruff=.0019*Math.exp(-(((radius-.93)/.21)**2));
   const brow=.0023*gauss((Math.abs(x)-.023)/.018,(y-.022)/.011);
-  return .048*cosine**.69+cosine*(ridge+cheek+ruff+brow-.0085*hollow-.38*notch);
+  return .048*cosine**.69+cosine*(ridge+cheek+ruff+brow-.0076*hollow-.38*notch);
 }
 // A broad superorbital shelf narrows to the chin. The paired crown lobes
 // share the same continuous surface as the orbital sockets and lower ruff.
 function faceWidth(y){
-  return 1+.065*gauss((y-.020)/.023,0)-.46*clamp((-y-.006)/.045,0,1);
+  return 1+.034*gauss((y-.019)/.025,0)+.11*gauss((y+.034)/.019,0)-.038*clamp((-y-.010)/.045,0,1);
 }
 function faceHeight(x,y){
   const forehead=clamp((y-.020)/.034,0,1);
-  return y-.006*forehead**2-.0012*forehead*gauss(x/.014,0);
+  return y*1.074+.0024*forehead**2+.0029*clamp((-y-.030)/.026,0,1)**2;
 }
 function cranium(l){
   const g=new T.SphereGeometry(1,[96,64,40][l],[60,40,24][l]);
@@ -72,13 +72,13 @@ function cranium(l){
   const points=Array.from(pos.array),tex=Array.from(uv.array),index=Array.from(g.index.array);
   const count=[52,31,15][l];
   for(const sign of [-1,1])for(let ring=0;ring<3;ring++)for(let i=0;i<count;i++){
-    const angle=2*Math.PI*(i+.37*ring)/count;
+    const angle=2*Math.PI*(i+.37*ring+.15*Math.sin(4.31*i+ring))/count;
     const dx=Math.cos(angle),dy=Math.sin(angle);
     const start=points.length/3;
     if(eyeX+(.020+.0065*ring)*dx<.002)continue;
     for(const along of [0,.58,1])for(const across of [-1,0,1]){
-      const reach=.011+.0065*ring+(.008+.0017*Math.sin(i*2.6))*along;
-      const width=.0019*across*(1-.87*along**2);
+      const reach=.011+.0065*ring+(.0084+.0022*Math.sin(i*2.6))*along;
+      const width=.00152*across*(1-.87*along**2);
       const x=sign*(eyeX+reach*dx-width*dy),y=eyeY+reach*dy*(dy<0?1.30:1.13)+width*dx;
       const front=Math.sqrt(Math.max(0,1-(x/.0595)**2-(y/.057)**2));
       const mantle=(1-front)*(.4+.6*clamp((-y-.014)/.043,0,1));
@@ -108,7 +108,7 @@ function orbit(l,s,lids){
   rings.forEach((r,j)=>{
     for(let i=0;i<=n;i++){
       const a=i/n*2*Math.PI,cs=Math.cos(a),sn=Math.sin(a);
-      const dx=.0080*r*cs,slant=.00065*r*cs;
+      const dx=.00765*r*cs,slant=.00065*r*cs;
       const dy=.0070*r*sn*(.82+.18*Math.abs(sn));
       const x=s*(eyeX+dx),y=eyeY+slant+dy;
       // Lower lid rises and upper lid descends to the same gently tilted seam.
@@ -142,6 +142,8 @@ export function owlFace(owl){
     const eye=owl.mesh(owl.head,0xffffff,l=>orbit(l,s,false));eye.material.vertexColors=true;eye.material.roughness=.22;
     const lid=owl.mesh(owl.head,0xfffffc,l=>orbit(l,s,true));lid.material.vertexColors=true;lids.push(lid);
   }
-  owl.loft(owl.head,0xaa8c72,[[0,-.013,.049,.0035,.0028],[0,-.022,.048,.0038,.0033],[0,-.026,.048,.0024,.0028],[0,-.031,.046,.0012,.0016],[0,-.032,.044,.00036,.00045]]);
+  const bill=[[-.013,-.0014,.0035,.0027],[-.021,.0007,.0034,.0029],
+    [-.026,.0024,.0024,.0024],[-.030,.0020,.0011,.0015],[-.032,.0003,.0003,.0004]];
+  owl.loft(owl.head,0xaa907d,bill.map(([y,lift,w,h])=>[0,faceHeight(0,y),frontDepth(0,y)+lift,w,h]));
   return closure=>{for(const lid of lids)lid.morphTargetInfluences[0]=closure};
 }
