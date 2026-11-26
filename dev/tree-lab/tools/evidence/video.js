@@ -3,7 +3,7 @@
 // tools/lod_video.py labels them and encodes MP4. window.__args: { kind: 'ground' | 'aerial', fps, w, h }
 const lab = window.__lab, out = {}, a = window.__args || {};
 const kind = a.kind || 'ground', fps = a.fps || 12, W = a.w || 640, H = a.h || 360, dt = 1 / fps;
-const n = kind === 'ground' ? 12 : 50;
+const n = a.stand || 12;   // the 50-tree stand at 1080p LOD took ~4 min a frame on SwiftShader
 await lab.ensureImpostors(['oak-a', 'oak-b', 'oak-c', 'pine', 'birch']);
 await lab.standOf(n); lab.setEnv(true); lab.setLight('day'); lab.setMode('lit');
 lab.scene.pinned = true; lab.scene.resetTransitions();
@@ -19,10 +19,10 @@ const segs = kind === 'ground' ? [
   [4, (t) => ({ eye: [21, 1.7, 41 + 160 * ease(t)], target: [0, 8, 0], label: 'moving out through the stand, up to 60 m/s' })],
   [4, (t) => ({ eye: [21, 1.7, 201 - 160 * ease(t)], target: [0, 8, 0], label: 'moving back in' })],
 ] : [
-  [6, (t) => ({ eye: [10, 2 + 118 * ease(t), 70], target: [0, 5, 0], label: 'vertical ascent to 120 m' })],
+  [6, (t) => ({ eye: [10, 15 + 105 * ease(t), 70], target: [0, 5, 0], label: 'vertical ascent from 15 m to 120 m' })],
   [6, (t) => ({ eye: [-110 + 180 * t, 60, 60], target: [-70 + 180 * t, 10, -30], label: 'broom flight at 60 m, 30 m/s' })],
   [6, (t) => ({ eye: [-80 + 160 * t, 35, 0], target: [-50 + 160 * t, 0, 0], label: 'directly above the canopy, 35 m, 27 m/s' })],
-  [6, (t) => ({ eye: [10, 120 - 118 * ease(t), 70], target: [0, 5, 0], label: 'vertical descent' })],
+  [6, (t) => ({ eye: [10, 120 - 105 * ease(t), 70], target: [0, 5, 0], label: 'vertical descent to 15 m' })],
 ];
 const frames = [];
 let k = 0;

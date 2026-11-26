@@ -1,0 +1,1567 @@
+{
+  "fps": 5,
+  "w": 480,
+  "h": 270,
+  "frames": [
+    {
+      "k": 0,
+      "t": 0,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 1,
+      "t": 0.2,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 2,
+      "t": 0.4,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 3,
+      "t": 0.6000000000000001,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 4,
+      "t": 0.8,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 5,
+      "t": 1,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 6,
+      "t": 1.2000000000000002,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 7,
+      "t": 1.4000000000000001,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 8,
+      "t": 1.6,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 9,
+      "t": 1.8,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 10,
+      "t": 2,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 11,
+      "t": 2.2,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 12,
+      "t": 2.4000000000000004,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 13,
+      "t": 2.6,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 14,
+      "t": 2.8000000000000003,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 15,
+      "t": 3,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 16,
+      "t": 3.2,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 17,
+      "t": 3.4000000000000004,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 18,
+      "t": 3.6,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 19,
+      "t": 3.8000000000000003,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 20,
+      "t": 4,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 21,
+      "t": 4.2,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 22,
+      "t": 4.4,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 23,
+      "t": 4.6000000000000005,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 24,
+      "t": 4.800000000000001,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 25,
+      "t": 5,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 26,
+      "t": 5.2,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 27,
+      "t": 5.4,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 28,
+      "t": 5.6000000000000005,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 29,
+      "t": 5.800000000000001,
+      "label": "walking towards Oak B, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 30,
+      "t": 6,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    },
+    {
+      "k": 31,
+      "t": 6.2,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    },
+    {
+      "k": 32,
+      "t": 6.4,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    },
+    {
+      "k": 33,
+      "t": 6.6000000000000005,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 34,
+      "t": 6.800000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 35,
+      "t": 7,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 36,
+      "t": 7.2,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 37,
+      "t": 7.4,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 38,
+      "t": 7.6000000000000005,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 39,
+      "t": 7.800000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 40,
+      "t": 8,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 41,
+      "t": 8.200000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 42,
+      "t": 8.4,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 43,
+      "t": 8.6,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 44,
+      "t": 8.8,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 45,
+      "t": 9,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 46,
+      "t": 9.200000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 47,
+      "t": 9.4,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 48,
+      "t": 9.600000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 49,
+      "t": 9.8,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        4,
+        7,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 50,
+      "t": 10,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    },
+    {
+      "k": 51,
+      "t": 10.200000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    },
+    {
+      "k": 52,
+      "t": 10.4,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    },
+    {
+      "k": 53,
+      "t": 10.600000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 54,
+      "t": 10.8,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 55,
+      "t": 11,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 56,
+      "t": 11.200000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 57,
+      "t": 11.4,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 58,
+      "t": 11.600000000000001,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 59,
+      "t": 11.8,
+      "label": "walking away, 2.3 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 60,
+      "t": 12,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 61,
+      "t": 12.200000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 62,
+      "t": 12.4,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 63,
+      "t": 12.600000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 64,
+      "t": 12.8,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 65,
+      "t": 13,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 66,
+      "t": 13.200000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 67,
+      "t": 13.4,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 68,
+      "t": 13.600000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 69,
+      "t": 13.8,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 70,
+      "t": 14,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 71,
+      "t": 14.200000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 72,
+      "t": 14.4,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 73,
+      "t": 14.600000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 74,
+      "t": 14.8,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 75,
+      "t": 15,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 76,
+      "t": 15.200000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 77,
+      "t": 15.4,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 78,
+      "t": 15.600000000000001,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 79,
+      "t": 15.8,
+      "label": "orbiting Oak B at 45 m",
+      "lod": [
+        4,
+        8,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 80,
+      "t": 16,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 81,
+      "t": 16.2,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 82,
+      "t": 16.400000000000002,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        3,
+        8,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 83,
+      "t": 16.6,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        4,
+        8,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 84,
+      "t": 16.8,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        3,
+        9,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 85,
+      "t": 17,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        3,
+        9,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 86,
+      "t": 17.2,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 87,
+      "t": 17.400000000000002,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 88,
+      "t": 17.6,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 89,
+      "t": 17.8,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 90,
+      "t": 18,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 91,
+      "t": 18.2,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 92,
+      "t": 18.400000000000002,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 93,
+      "t": 18.6,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 94,
+      "t": 18.8,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 95,
+      "t": 19,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 96,
+      "t": 19.200000000000003,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 97,
+      "t": 19.400000000000002,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 98,
+      "t": 19.6,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 99,
+      "t": 19.8,
+      "label": "moving out through the stand, up to 60 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 100,
+      "t": 20,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 101,
+      "t": 20.200000000000003,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 102,
+      "t": 20.400000000000002,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 103,
+      "t": 20.6,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 104,
+      "t": 20.8,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 105,
+      "t": 21,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 106,
+      "t": 21.200000000000003,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 107,
+      "t": 21.400000000000002,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 108,
+      "t": 21.6,
+      "label": "moving back in",
+      "lod": [
+        0,
+        9,
+        0,
+        3,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 109,
+      "t": 21.8,
+      "label": "moving back in",
+      "lod": [
+        0,
+        10,
+        0,
+        2,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 110,
+      "t": 22,
+      "label": "moving back in",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 111,
+      "t": 22.200000000000003,
+      "label": "moving back in",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 112,
+      "t": 22.400000000000002,
+      "label": "moving back in",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 113,
+      "t": 22.6,
+      "label": "moving back in",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 114,
+      "t": 22.8,
+      "label": "moving back in",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 115,
+      "t": 23,
+      "label": "moving back in",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 116,
+      "t": 23.200000000000003,
+      "label": "moving back in",
+      "lod": [
+        2,
+        10,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 117,
+      "t": 23.400000000000002,
+      "label": "moving back in",
+      "lod": [
+        3,
+        9,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 118,
+      "t": 23.6,
+      "label": "moving back in",
+      "lod": [
+        2,
+        9,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    },
+    {
+      "k": 119,
+      "t": 23.8,
+      "label": "moving back in",
+      "lod": [
+        2,
+        9,
+        0,
+        0,
+        1
+      ],
+      "fading": true
+    }
+  ]
+}

@@ -220,15 +220,25 @@ Against the provisional targets (coverage within 5 points, luminance within 5 %)
 * Stand mode applies this live (every frame while trees fade, otherwise when the camera moves). Scripts and the
   benchmark pin the stand's camera.
 
-**Recordings** (`review/lod/lod-ground.mp4`, `lod-aerial.mp4`; 480 × 270, 5 fps, LOD chosen as on a 1080p screen, real-time camera paths, frames
+**Recordings** (`review/lod/lod-ground.mp4`, `lod-aerial.mp4`; 480 × 270, 5 and 4 fps, LOD chosen as on a 1080p screen, real-time camera paths, frames
 rendered offscreen with the same LOD machinery and labelled with the trees per LOD and when a cross-fade runs):
 
 * ground (12-tree stand): walking towards Oak B across its LOD0/LOD1 switch (≈ 36 m) at 2.3 m/s and back; orbiting
   it at 45 m; moving out through the stand (up to 60 m/s) and back in, several trees switching together;
-* aerial (50-tree stand): vertical ascent from the floor to 120 m; broom flight at 60 m and 30 m/s; a pass directly
-  over the canopy at 35 m (27 m/s); descent.
+* aerial (12-tree stand, 4 fps): vertical ascent from 15 m to 120 m; broom flight at 60 m and 30 m/s; a pass directly
+  over the canopy at 35 m (27 m/s); descent to 15 m. The 50-tree stand was tried: with the chosen chain nearly all
+  50 trees stay at LOD1 from that height on a 1080p screen, and SwiftShader took ~4 minutes a frame.
 
-Recordings: see `review/lod/` (added in a follow-up commit once rendered; section 8 explains the frame rate).
+Ground recording: Oak B goes to LOD0 as the camera closes in (frames 30–32 cross-fade) and back to LOD1 walking away
+(frames 50–52); the orbit at constant distance changes nothing (hysteresis); moving out and back through the stand,
+trees cross LOD0 ↔ LOD1 and LOD1 ↔ impostor in groups (frames 84–119; at most 3 impostors at the 1080p thresholds), each a 3-frame dithered fade. Per-frame LOD counts are
+burned into the video and in `review/lod/video-*-frames.json`.
+
+Aerial recording: over the canopy at 35 m the trees below cross LOD1 ↔ LOD0 (frames 54–64, up to three at once), and
+at the start of the descent (72–74). At 1080p thresholds a 19–25 m tree stays at or above 140 px out to ~180 m, so
+on this 80 m stand the aerial path never reaches impostor distance: the impostor transitions are in the ground
+recording's run out and back (frames 96–112). Broom flight across larger woods (the 200-tree stand) would show them,
+but at ~4 minutes a frame on SwiftShader it was not renderable here.
 
 ## 7. Benchmark
 
@@ -246,7 +256,7 @@ Unchanged in use (Inspect panel, `?bench=`); the LOD distribution it reports now
 * Ground-level views now keep LOD1 down to 140 px, so they carry more triangles than chain A (section 3);
   untested on hardware.
 * The LOD2 clump cards remain in the data and in the LOD menu but are not in the distance chain.
-* Recordings are 5 frames per second: each frame is rendered offscreen by SwiftShader (about a minute a frame), so
+* Recordings are 5 (ground) and 4 (aerial) frames per second: each frame is rendered offscreen by SwiftShader (about a minute a frame), so
   real-time playback is not possible in this environment. The camera paths are real time; the frames are spaced
   0.2 s apart, which is enough to see each cross-fade (0.6 s, 3 frames) but not fine motion.
 * No hardware timings.

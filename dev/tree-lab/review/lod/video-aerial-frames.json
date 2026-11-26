@@ -1,0 +1,1255 @@
+{
+  "fps": 4,
+  "w": 480,
+  "h": 270,
+  "frames": [
+    {
+      "k": 0,
+      "t": 0,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 1,
+      "t": 0.25,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 2,
+      "t": 0.5,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 3,
+      "t": 0.75,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 4,
+      "t": 1,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 5,
+      "t": 1.25,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 6,
+      "t": 1.5,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 7,
+      "t": 1.75,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 8,
+      "t": 2,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 9,
+      "t": 2.25,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 10,
+      "t": 2.5,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 11,
+      "t": 2.75,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 12,
+      "t": 3,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 13,
+      "t": 3.25,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 14,
+      "t": 3.5,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 15,
+      "t": 3.75,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 16,
+      "t": 4,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 17,
+      "t": 4.25,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 18,
+      "t": 4.5,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 19,
+      "t": 4.75,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 20,
+      "t": 5,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 21,
+      "t": 5.25,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 22,
+      "t": 5.5,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 23,
+      "t": 5.75,
+      "label": "vertical ascent from 15 m to 120 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 24,
+      "t": 6,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        0,
+        3
+      ],
+      "fading": false
+    },
+    {
+      "k": 25,
+      "t": 6.25,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        0,
+        3
+      ],
+      "fading": false
+    },
+    {
+      "k": 26,
+      "t": 6.5,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        10,
+        0,
+        0,
+        2
+      ],
+      "fading": false
+    },
+    {
+      "k": 27,
+      "t": 6.75,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        10,
+        0,
+        0,
+        2
+      ],
+      "fading": false
+    },
+    {
+      "k": 28,
+      "t": 7,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        11,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 29,
+      "t": 7.25,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        11,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 30,
+      "t": 7.5,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        11,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 31,
+      "t": 7.75,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        11,
+        0,
+        0,
+        1
+      ],
+      "fading": false
+    },
+    {
+      "k": 32,
+      "t": 8,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 33,
+      "t": 8.25,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 34,
+      "t": 8.5,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 35,
+      "t": 8.75,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 36,
+      "t": 9,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 37,
+      "t": 9.25,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 38,
+      "t": 9.5,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 39,
+      "t": 9.75,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 40,
+      "t": 10,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        10,
+        0,
+        0,
+        2
+      ],
+      "fading": false
+    },
+    {
+      "k": 41,
+      "t": 10.25,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        0,
+        3
+      ],
+      "fading": false
+    },
+    {
+      "k": 42,
+      "t": 10.5,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        7,
+        0,
+        0,
+        5
+      ],
+      "fading": false
+    },
+    {
+      "k": 43,
+      "t": 10.75,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        6,
+        0,
+        0,
+        6
+      ],
+      "fading": false
+    },
+    {
+      "k": 44,
+      "t": 11,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        6,
+        0,
+        0,
+        6
+      ],
+      "fading": false
+    },
+    {
+      "k": 45,
+      "t": 11.25,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        4,
+        0,
+        0,
+        8
+      ],
+      "fading": false
+    },
+    {
+      "k": 46,
+      "t": 11.5,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        2,
+        0,
+        0,
+        10
+      ],
+      "fading": false
+    },
+    {
+      "k": 47,
+      "t": 11.75,
+      "label": "broom flight at 60 m, 30 m/s",
+      "lod": [
+        0,
+        1,
+        0,
+        0,
+        11
+      ],
+      "fading": false
+    },
+    {
+      "k": 48,
+      "t": 12,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        6,
+        0,
+        0,
+        6
+      ],
+      "fading": false
+    },
+    {
+      "k": 49,
+      "t": 12.25,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        6,
+        0,
+        0,
+        6
+      ],
+      "fading": false
+    },
+    {
+      "k": 50,
+      "t": 12.5,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        7,
+        0,
+        0,
+        5
+      ],
+      "fading": false
+    },
+    {
+      "k": 51,
+      "t": 12.75,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        0,
+        3
+      ],
+      "fading": false
+    },
+    {
+      "k": 52,
+      "t": 13,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        9,
+        0,
+        0,
+        3
+      ],
+      "fading": false
+    },
+    {
+      "k": 53,
+      "t": 13.25,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        10,
+        0,
+        0,
+        2
+      ],
+      "fading": false
+    },
+    {
+      "k": 54,
+      "t": 13.5,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        1,
+        8,
+        0,
+        0,
+        3
+      ],
+      "fading": true
+    },
+    {
+      "k": 55,
+      "t": 13.75,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        1,
+        9,
+        0,
+        0,
+        2
+      ],
+      "fading": true
+    },
+    {
+      "k": 56,
+      "t": 14,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        1,
+        9,
+        0,
+        0,
+        2
+      ],
+      "fading": true
+    },
+    {
+      "k": 57,
+      "t": 14.25,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        1,
+        9,
+        0,
+        0,
+        2
+      ],
+      "fading": false
+    },
+    {
+      "k": 58,
+      "t": 14.5,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        2,
+        5,
+        0,
+        0,
+        5
+      ],
+      "fading": true
+    },
+    {
+      "k": 59,
+      "t": 14.75,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        3,
+        4,
+        0,
+        0,
+        5
+      ],
+      "fading": true
+    },
+    {
+      "k": 60,
+      "t": 15,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        3,
+        3,
+        0,
+        0,
+        6
+      ],
+      "fading": true
+    },
+    {
+      "k": 61,
+      "t": 15.25,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        3,
+        3,
+        0,
+        0,
+        6
+      ],
+      "fading": true
+    },
+    {
+      "k": 62,
+      "t": 15.5,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        3,
+        1,
+        0,
+        0,
+        8
+      ],
+      "fading": true
+    },
+    {
+      "k": 63,
+      "t": 15.75,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        2,
+        1,
+        0,
+        0,
+        9
+      ],
+      "fading": true
+    },
+    {
+      "k": 64,
+      "t": 16,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        2,
+        1,
+        0,
+        0,
+        9
+      ],
+      "fading": true
+    },
+    {
+      "k": 65,
+      "t": 16.25,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        1,
+        1,
+        0,
+        0,
+        10
+      ],
+      "fading": false
+    },
+    {
+      "k": 66,
+      "t": 16.5,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        1,
+        0,
+        0,
+        0,
+        11
+      ],
+      "fading": false
+    },
+    {
+      "k": 67,
+      "t": 16.75,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        0,
+        0,
+        0,
+        12
+      ],
+      "fading": false
+    },
+    {
+      "k": 68,
+      "t": 17,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        0,
+        0,
+        0,
+        12
+      ],
+      "fading": false
+    },
+    {
+      "k": 69,
+      "t": 17.25,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        0,
+        0,
+        0,
+        12
+      ],
+      "fading": false
+    },
+    {
+      "k": 70,
+      "t": 17.5,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        0,
+        0,
+        0,
+        12
+      ],
+      "fading": false
+    },
+    {
+      "k": 71,
+      "t": 17.75,
+      "label": "directly above the canopy, 35 m, 27 m/s",
+      "lod": [
+        0,
+        0,
+        0,
+        0,
+        12
+      ],
+      "fading": false
+    },
+    {
+      "k": 72,
+      "t": 18,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 73,
+      "t": 18.25,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 74,
+      "t": 18.5,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": true
+    },
+    {
+      "k": 75,
+      "t": 18.75,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 76,
+      "t": 19,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 77,
+      "t": 19.25,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 78,
+      "t": 19.5,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 79,
+      "t": 19.75,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 80,
+      "t": 20,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 81,
+      "t": 20.25,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 82,
+      "t": 20.5,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 83,
+      "t": 20.75,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 84,
+      "t": 21,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 85,
+      "t": 21.25,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 86,
+      "t": 21.5,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 87,
+      "t": 21.75,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 88,
+      "t": 22,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 89,
+      "t": 22.25,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 90,
+      "t": 22.5,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 91,
+      "t": 22.75,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 92,
+      "t": 23,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 93,
+      "t": 23.25,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 94,
+      "t": 23.5,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    },
+    {
+      "k": 95,
+      "t": 23.75,
+      "label": "vertical descent to 15 m",
+      "lod": [
+        0,
+        12,
+        0,
+        0,
+        0
+      ],
+      "fading": false
+    }
+  ]
+}
