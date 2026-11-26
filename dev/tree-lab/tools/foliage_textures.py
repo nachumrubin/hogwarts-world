@@ -193,13 +193,13 @@ def build():
         layer['t'] = trans
         sheets[lid] = (layer, meta)
         polys = outlines(layer)
-        man['layers'].append({'id': lid, 'source': f'https://ambientcg.com/view?id={src}', 'sprites': meta, 'outlines': polys, 'alphaScale': alpha_scales(layer['a']), **files})
+        man['layers'].append({'id': lid, 'source': f'https://ambientcg.com/view?id={src}', 'sprites': meta, 'outlines': polys, 'alphaScale': alpha_scales(layer['a'], (4, 2)), **files})
         print(lid, 'outline triangles per sprite', [len(p) // 6 for p in polys])
         print(lid, len(meta), files)
     for lid, card in build_cards(sheets):
         files = save(lid, card, card['t'] * (card['a'] > 0.05))
-        man['layers'].append({'id': lid, 'source': 'composited from the sprite layers (tools/foliage_textures.py)', 'grid': [2, 2], 'quadrants': ['shoot', 'shoot', 'shoot', 'clump'],
-                              'hulls': card_hulls(card['a']), 'alphaScale': alpha_scales(card['a']), **files})
+        man['layers'].append({'id': lid, 'source': 'composited from the sprite layers (tools/foliage_textures.py)', 'grid': [2, 2], 'quadrants': ['spray', 'spray', 'clump from above', 'clump from the side'],
+                              'hulls': card_hulls(card['a']), 'alphaScale': alpha_scales(card['a'], (2, 2)), **files})
         print(lid, files)
     json.dump(man, open(os.path.join(OUT, 'foliage.json'), 'w'), indent=1)
 
@@ -247,19 +247,28 @@ def outlines(layer, eps=0.008):
     return out
 
 
-def alpha_scales(a, thr=0.5):
-    """Coverage-preserving alpha mips (Castaño): for each mip level of the box-filtered alpha, the scale that keeps
-    the fraction of texels above the alpha-test threshold equal to level 0's. Without it thin leaves and needles
-    average below the threshold and dissolve with distance."""
-    cov0 = float((a > thr).mean()); out = [1.0]; m = a.astype(np.float64)
+def alpha_scales(a, grid=(1, 1), thr=0.5):
+    """Coverage-preserving alpha mips (Castaño), per atlas cell: for each mip level of the box-filtered alpha, the scale
+    that keeps the fraction of each cell's texels above the alpha-test threshold equal to level 0's. Per cell, because
+    one scale for a whole layer is set by its densest cell (the clump card) and lets sparse cells (a birch spray)
+    dissolve. Returns [[scale per cell] per level]; levels where a cell is under 2 texels repeat the last scales."""
+    gx, gy = grid; N0 = a.shape[0]
+    cells = lambda m: [m[(c // gx) * m.shape[0] // gy:(c // gx + 1) * m.shape[0] // gy, (c % gx) * m.shape[1] // gx:(c % gx + 1) * m.shape[1] // gx] for c in range(gx * gy)]
+    cov0 = [float((c > thr).mean()) for c in cells(a)]
+    out = [[1.0] * (gx * gy)]; m = a.astype(np.float64)
     while m.shape[0] > 1:
         m = m.reshape(m.shape[0] // 2, 2, m.shape[1] // 2, 2).mean(axis=(1, 3))
-        lo, hi = 0.0, 64.0
-        for _ in range(30):
-            mid = (lo + hi) / 2
-            if (np.clip(m * mid, 0, 1) > thr).mean() < cov0: lo = mid
-            else: hi = mid
-        out.append(round(hi, 4))
+        if m.shape[0] // max(gx, gy) < 2: out.append(out[-1]); continue
+        lev = []
+        for c, c0 in zip(cells(m), cov0):
+            if c0 <= 0: lev.append(1.0); continue
+            lo, hi = 0.0, 64.0
+            for _ in range(30):
+                mid = (lo + hi) / 2
+                if (np.clip(c * mid, 0, 1) > thr).mean() < c0: lo = mid
+                else: hi = mid
+            lev.append(round(hi, 4))
+        out.append(lev)
     return out
 
 
@@ -269,7 +278,7 @@ def card_hulls(a, keep=8):
     a fan, in template coordinates (x −0.5…0.5, y 0…1). Fewer empty fragments than the full quad."""
     import cv2
     H = a.shape[0] // 2; out = {}
-    for kind, cells in (('shoot', (0, 1, 2)), ('clump', (3,))):
+    for kind, cells in (('shoot', (0, 1)), ('clump', (2, 3))):
         m = np.zeros((H, H), np.uint8)
         for c in cells:
             cx, cy = (c % 2) * H, (c // 2) * H
@@ -415,7 +424,13 @@ def shoot_card(dst, sheet, lid, r, cx=256, cy=500, scale=1.0, shade=1.0):
 # spray cards (LOD1, and the shaded interior at LOD0): one whole spray at true scale, so leaf size does not jump
 # at the LOD switch. SPRAY[lid] = card height (m), leader length as a fraction of it (framework/foliage.ts sizes the
 # card from the spray's leader with the same fraction).
-SPRAY = {'oak': (1.0, 0.62), 'birch': (0.6, 0.6), 'pine': (0.32, 0.62)}
+# the leader lengths match the generator's mean leader (species shootLen), so the leaves keep their true size when a
+# card is scaled to its spray: oak 0.62 m, birch 0.25 m, pine 0.084 m (its needles reach well past the leader)
+SPRAY = {'oak': (1.0, 0.62), 'birch': (0.42, 0.6), 'pine': (0.24, 0.35)}
+# leaves per card relative to the generator's density for one spray (a spray is two crossed cards, so 0.5 would be
+# the same leaf area). Calibrated so that LOD1's projected crown coverage matches LOD0's at the LOD0/LOD1 switch
+# (tools/evidence/lodcheck.js + tools/lod_metrics.py): minified alpha-tested leaves lose coverage, by species
+CARD_DENSITY = {'oak': 0.85, 'birch': 1.05, 'pine': 1.0}
 
 
 def spray_card(dst, sheet, lid, r):
@@ -464,6 +479,162 @@ def spray_card(dst, sheet, lid, r):
         paste(dst, spr(), p, ang, ln * ppm * 1.05, ws, 0.5 + 0.5 * sh)
 
 
+def paste3d(dst, sp, base, w, a, nb, length_px, ws=1.0, needle=False):
+    """Paste a sprite as a leaf in 3D, projected onto the card (card space: x right, y up, z towards the viewer). `w`,
+    `a`, `nb`: the blade's across, along (towards the tip) and normal unit vectors; `base` in px. The blade is
+    foreshortened by the projection; its normal map is carried into card space; a blade seen from behind is drawn the
+    way the renderer draws a leaf underside (paler, greyer: render/viewer.ts fsFol) with its normal turned to the
+    viewer. Returns nothing when the blade is edge-on."""
+    k = length_px / CH
+    U = np.array([w[0], -w[1]]) * k * ws; V = np.array([a[0], -a[1]]) * k     # image vector per sprite px
+    M = np.array([[U[0], V[0]], [U[1], V[1]]]); det = np.linalg.det(M)
+    if abs(det) < 0.02 * k * k: return
+    Mi = np.linalg.inv(M)
+    corners = [np.array(base) + U * (x - CW / 2) + V * (CH - 1 - y) for x in (0, CW) for y in (0, CH)]
+    xs = [c[0] for c in corners]; ys = [c[1] for c in corners]
+    H, W_ = dst['a'].shape
+    x0, x1 = int(max(0, min(xs) - 2)), int(min(W_, max(xs) + 2)); y0, y1 = int(max(0, min(ys) - 2)), int(min(H, max(ys) + 2))
+    if x1 <= x0 or y1 <= y0: return
+    Y, X = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+    dx, dy = X - base[0], Y - base[1]
+    u = Mi[0, 0] * dx + Mi[0, 1] * dy; v = Mi[1, 0] * dx + Mi[1, 1] * dy
+    sx, sy = CW / 2 + u, CH - 1 - v
+    ok = (sx >= 0) & (sx < CW - 1) & (sy >= 0) & (sy < CH - 1)
+    samp = lambda q: ndimage.map_coordinates(q, [sy, sx], order=1, mode='constant', cval=0)
+    al = samp(sp['a']) * ok
+    if al.max() <= 0: return
+    col = np.stack([samp(sp['col'][..., j]) for j in range(3)], -1)
+    nx, ny, nz = samp(sp['n'][..., 0]), samp(sp['n'][..., 1]), samp(sp['n'][..., 2])
+    # the leaf's own (upper-side) normal in card space, not turned to the viewer, and which side of the blade faces the
+    # card's front (stored in the translucency channel: 1 upper side, 0 underside). The renderer decides per view which
+    # side each texel shows, so a card seen from below shows undersides, as LOD0's leaves do (render/viewer.ts fsFol)
+    # the blade normal perturbed by the scan's normal map the way the renderer does it (render/viewer.ts fsFol:
+    # normalize(Ng + (T nx + B ny) * 0.8))
+    N = np.asarray(nb)[None, None, :] + (nx[..., None] * np.asarray(w) + ny[..., None] * np.asarray(a)) * 0.8
+    N = N / np.maximum(np.linalg.norm(N, axis=-1, keepdims=True), 1e-6)
+    front = 1.0 if nb[2] >= 0 else 0.0
+    if needle: front = 0.5   # a needle fascicle has no upper side: seen equally from both sides
+    region = (slice(y0, y1), slice(x0, x1)); A = al[..., None]
+    dst['col'][region] = col * A + dst['col'][region] * (1 - A)
+    dst['n'][region] = N * A + dst['n'][region] * (1 - A)
+    dst['r'][region] = samp(sp['r']) * al + dst['r'][region] * (1 - al)
+    dst['t'][region] = front * al + dst['t'][region] * (1 - al)
+    dst['a'][region] = al + dst['a'][region] * (1 - al)
+
+
+def _n(v): v = np.asarray(v, np.float64); return v / max(np.linalg.norm(v), 1e-9)
+
+
+def spray3d(lid, r, origin, d0, lead, density=1.0, light=(0.0, 0.0, 1.0)):
+    """Generate one spray (shoots and leaves, card space, metres) as framework/foliage.ts grows it, in 3D, seen along the card normal: leader up the card, laterals
+    spreading sideways and in depth, leaves turned round their shoots at the generator's angles (blades leaning towards
+    the light, which is the card's front), at the generator's leaf density (leaves per metre, sun factor included).
+    Leaves are painted back to front. The atlas stores full card-space normals, so a card is lit like the leaves it
+    stands for."""
+    up, Z = np.array([0.0, 1.0, 0.0]), np.array([0.0, 0.0, 1.0])
+    shoots = []
+    def grow(base, d, L, level):
+        shoots.append((base, d, L, level))
+        nlat = {'oak': (3, 5) if level == 0 else (1, 2) if level == 1 else (0, 0), 'birch': (2, 4) if level == 0 else (0, 1), 'pine': (1, 2) if level == 0 else (0, 0)}[lid]
+        n = int(r.integers(nlat[0], nlat[1] + 1))
+        for j in range(n):
+            t = 0.2 + 0.7 * (j + r.uniform(0, 0.8)) / max(n, 1)
+            lb = base + d * L * t
+            ang = r.uniform(*({'oak': (0.5, 1.0), 'birch': (0.8, 1.3), 'pine': (0.45, 0.85)}[lid]))
+            side = _n(np.cross(d, Z)) * (1 if j % 2 else -1)
+            d2 = _n(d * np.cos(ang) + side * np.sin(ang) + Z * r.uniform(-0.45, 0.45))
+            l2 = L * r.uniform(*({'oak': (0.45, 0.7), 'birch': (0.45, 0.8), 'pine': (0.5, 0.8)}[lid])) * (1 - t * 0.35)
+            if l2 > 0.03: grow(lb, d2, l2, level + 1)
+    grow(np.asarray(origin, np.float64), _n(d0), lead, 0)
+    Lg = np.asarray(light, np.float64)   # light direction in card space (gravity is its opposite)
+    leaves = []
+    # leaf attitudes exactly as framework/foliage.ts sets them. The card's front is the sky (the renderer turns cards
+    # so), so in card space the light direction is +z and gravity −z
+    toLight = {'oak': 0.7, 'birch': 0.5, 'pine': 0.0}[lid]; droop = {'oak': 0.0, 'birch': 0.5, 'pine': 0.0}[lid]
+    rot = lambda v, k, ang: v * np.cos(ang) + np.cross(k, v) * np.sin(ang) + k * np.dot(k, v) * (1 - np.cos(ang))
+    for b, d, L, lv in shoots:
+        side0 = _n(np.cross(d, Z if abs(d[2]) < 0.9 else up))
+        if lid == 'pine':
+            n = max(3, int(L * 260 * CARD_DENSITY[lid] * density))
+            for k in range(n):
+                t = r.random() ** 0.75; along = 1 - t
+                p = b + d * L * along
+                around = rot(side0, d, r.uniform(0, 2 * np.pi))
+                splay = 0.5 + 0.55 * r.random() + 0.25 * along
+                a = _n(d * np.cos(splay) + around * np.sin(splay))
+                nb = rot(around, a, r.random() * np.pi); nb = _n(nb - a * np.dot(nb, a))
+                leaves.append((p, a, nb, r.uniform(0.055, 0.075) * (0.85 + 0.25 * along), 1.0))
+        else:
+            per = {'oak': 18, 'birch': 24}[lid] * 0.8 * CARD_DENSITY[lid] * density
+            n = max(2, int(round(L * per)))
+            sun = 0.6
+            for k in range(n):
+                t = (k + 0.5) / n
+                along = 1 - t if droop > 0 else 1 - t ** 1.15
+                p = b + d * L * along
+                around = rot(side0, d, r.uniform(0, 2 * np.pi))
+                spread = 0.75 + 0.5 * r.random()
+                a = _n(d * np.cos(spread) + around * np.sin(spread))
+                a = _n(a - Lg * droop * (0.6 + 0.6 * r.random()))
+                nb = Lg * toLight * (0.55 + 0.45 * (1 - sun)) + rot(around, a, (r.random() - 0.5) * 1.2) * (1 - toLight * 0.7)
+                nb = _n(nb - a * np.dot(nb, a))
+                ln = (r.uniform(0.085, 0.125) if lid == 'oak' else r.uniform(0.05, 0.075)) * (1.15 - 0.25 * sun)
+                leaves.append((p, a, nb, ln, r.uniform(0.6, 1.0)))
+    return shoots, leaves
+
+
+def render_leaves(dst, sheet, r, shoots, leaves, ppm, to_px, wood=True, needle=False):
+    """Paint generated leaves (and the leaders' wood) into a card, back to front."""
+    lyr, _ = sheet
+    tw = (0.07, 0.058, 0.046)
+    if wood:
+        for b, d, L, lv in shoots:
+            if lv == 0: twig(dst, [to_px(b), to_px(b + d * L)], 1.0, tw)
+    for p, a, nb, ln, ws in sorted(leaves, key=lambda q: q[0][2]):
+        paste3d(dst, cell_sprite(lyr, int(r.integers(0, 8))), to_px(p), _n(np.cross(a, nb)), a, nb, ln * ppm * 1.05, ws, needle)
+
+
+def spray_card3d(dst, sheet, lid, r):
+    """A spray card (LOD1, and shaded interior sprays at LOD0): one spray at true scale, its leader up the card. Leaves
+    keep the generator's attitudes; the atlas stores full card-space normals and the leaf-side share, so a card is lit
+    like the leaves it stands for (render/viewer.ts fsFol)."""
+    H, frac = SPRAY[lid]; ppm = 512 / H
+    shoots, leaves = spray3d(lid, r, (0, 0, 0), (r.uniform(-0.1, 0.1), 1, 0), H * frac * r.uniform(0.92, 1.05))
+    render_leaves(dst, sheet, r, shoots, leaves, ppm, lambda p: (256 + p[0] * ppm, 505 - p[1] * ppm), needle=lid == 'pine')
+
+
+# LOD2 clump cards: a cluster of sprays at true scale; (card edge m, sprays, leaf density per card). A clump is drawn
+# as a tent of three cards and a cap (framework/foliage.ts), so each card carries part of the cluster's leaves
+CLUMP = {'oak': (1.6, 9, 0.52), 'birch': (1.1, 14, 0.75), 'pine': (1.3, 70, 0.42)}
+
+
+def clump_card3d(dst, sheet, lid, r, view='side'):
+    """A clump (LOD2): sprays radiating from a branchlet into a dome (birch: hanging curtains), in 3D, seen from the
+    side, the card's bottom centre at the branchlet's base. Same leaves, attitudes and channels as the spray cards."""
+    E, n, dens = CLUMP[lid]; ppm = 512 / E; H, frac = SPRAY[lid]
+    # the same clump (same seed) from the side (the tent cards; light +y, card bottom at the branchlet) or from above
+    # (the cap card; light +z towards the viewer, the clump centred): world (x, up, z) → card space
+    top = view == 'top'
+    if top: ppm = 512 / (E * 1.35)   # seen from above the sprays spread wider than the side view's edge
+    to_card = (lambda v: np.array([v[0], -v[2], v[1]])) if top else (lambda v: np.asarray(v, np.float64))
+    shoots, leaves = [], []
+    for k in range(n):
+        az = r.uniform(0, 2 * np.pi)
+        if lid == 'birch':   # hanging: sprays start high and fall
+            o = np.array([r.uniform(-0.38, 0.38) * E, r.uniform(0.6, 0.9) * E, r.uniform(-0.2, 0.2) * E])
+            d = _n([r.uniform(-0.25, 0.25), -1.0, r.uniform(-0.25, 0.25)])
+        else:                # a dome: sprays leaving a centre outwards and upwards
+            rr = 0.12 if lid == 'oak' else 0.32   # pine tufts spread over the clump
+            o = np.array([np.cos(az) * r.uniform(0, rr) * E, r.uniform(0.25, 0.45 if lid == 'oak' else 0.75) * E, np.sin(az) * r.uniform(0, rr) * E])
+            el = r.uniform(0.1, 1.2)
+            d = _n([np.cos(az) * np.cos(el), np.sin(el), np.sin(az) * np.cos(el)])
+        # a clump card stands upright (seen from the side): the light is up the card, +y
+        s_, l_ = spray3d(lid, r, to_card(o), to_card(d), H * frac * r.uniform(0.8, 1.05), dens, light=tuple(to_card((0.0, 1.0, 0.0))))
+        shoots += s_; leaves += l_
+    oy = 256 + 0.0 * E * ppm if top else 505
+    render_leaves(dst, sheet, r, shoots, leaves, ppm, lambda p: (256 + p[0] * ppm, oy - p[1] * ppm), wood=False, needle=lid == 'pine')
+
+
 def clump_card(dst, sheet, lid, r):
     """A cluster of shoots on a branchlet (LOD2), the card's bottom centre being the branchlet's base."""
     edge = {'oak': 1.6, 'birch': 1.1, 'pine': 1.3}[lid]
@@ -489,8 +660,9 @@ def build_cards(sheets):
     for lid in ('oak', 'birch', 'pine'):
         r = np.random.default_rng({'oak': 5, 'birch': 6, 'pine': 7}[lid])
         card = {'col': np.zeros((N, N, 3), np.float32), 'a': np.zeros((N, N), np.float32), 'n': np.dstack([np.zeros((N, N)), np.zeros((N, N)), np.ones((N, N))]).astype(np.float32), 'r': np.full((N, N), 0.6, np.float32), 't': np.zeros((N, N), np.float32)}
-        for q in range(3): spray_card(quadrant(card, q), sheets[lid], lid, r)
-        clump_card(quadrant(card, 3), sheets[lid], lid, r)
+        for q in range(2): spray_card3d(quadrant(card, q), sheets[lid], lid, r)
+        clump_card3d(quadrant(card, 2), sheets[lid], lid, np.random.default_rng(77), view='top')
+        clump_card3d(quadrant(card, 3), sheets[lid], lid, np.random.default_rng(77), view='side')
         m = card['a'] > 0.35
         _, (iy, ix) = ndimage.distance_transform_edt(~m, return_indices=True)
         for key in ('col', 'n', 'r', 't'): card[key] = card[key][iy, ix]

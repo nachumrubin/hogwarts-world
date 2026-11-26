@@ -215,16 +215,21 @@ export function growFoliage(sk: Skeleton, f: FoliageSpec): Foliage {
   const put = (arr: number[], p: V3, q: number[], sx: number, sy: number, fold: number, curl: number, cell: number, e: number, v: number, r1 = 1) => arr.push(p[0], p[1], p[2], q[0], q[1], q[2], q[3], sx, sy, fold, curl, cell, e, v, r1, 0);
   // sprays: a spray card (textures: tools/foliage_textures.py spray_card) is the whole leader-and-laterals system at
   // true scale, sized from its leader; a spray whose leader is in deep shade is drawn as that card even at LOD0
-  const leadFrac = f.type === 'pine' ? 0.62 : f.type === 'broad' && f.droop > 0.3 ? 0.6 : 0.62;
+  const leadFrac = f.type === 'pine' ? 0.35 : f.type === 'broad' && f.droop > 0.3 ? 0.6 : 0.62;   // tools/foliage_textures.py SPRAY
   const live = new Map<number, Shoot>(); for (const s of shoots) if (s.level === 0) live.set(s.root, s);
   const interiorRoot = new Set<number>();
   if ((f.interiorCard ?? 0) > 0) for (const [k, s] of live) if (s.exp < f.interiorCard!) interiorRoot.add(k);
   const sprayCard = (arr: number[], s: Shoot, r: () => number, vari: number) => {
     const cardN = norm(add([0, 1, 0], mul(s.out, 0.8)));
-    const ch = (s.len / leadFrac) * (0.95 + 0.1 * r()), cw = ch * (0.85 + 0.3 * r()), cv = Math.floor(r() * 3);
-    put(arr, s.base, frame(s.dir, cardN), cw, ch, 0.05, 0.06, cv, s.exp, vari);
-    // pines and full sprays: a second card across the first, so the spray has depth from every side
-    put(arr, s.base, frame(s.dir, norm(cross(s.dir, cardN))), cw * 0.85, ch, 0.03, 0.04, (cv + 1) % 3, s.exp, vari);
+    const ch = (s.len / leadFrac) * (0.95 + 0.1 * r()), cw = ch * (0.85 + 0.3 * r()), cv = Math.floor(r() * 2);   // atlas cells 0, 1: sprays
+    // two cards in a V about the spray's axis, each turned 40° from the light-facing direction: both keep the
+    // atlas leaves' lean towards the light (a perpendicular cross turned half of them sideways, which darkened LOD1),
+    // and the pair still has depth from the side
+    // the atlas leaves face the card's front, as LOD0's leaves face the light: so the card's front is the sky
+    // direction (world up) made perpendicular to the spray axis (falls back to outwards for a vertical spray)
+    const upP = sub([0, 1, 0], mul(s.dir, s.dir[1])), n0 = len(upP) > 0.2 ? norm(upP) : norm(sub(cardN, mul(s.dir, dot(cardN, s.dir)))), side = norm(cross(s.dir, n0)), c40 = Math.cos(0.7), s40 = Math.sin(0.7);
+    put(arr, s.base, frame(s.dir, add(mul(n0, c40), mul(side, s40))), cw, ch, 0.05, 0.06, cv, s.exp, vari);
+    put(arr, s.base, frame(s.dir, add(mul(n0, c40), mul(side, -s40))), cw * 0.9, ch, 0.05, 0.05, 1 - cv, s.exp, vari);
   };
   for (const s of shoots) {
     const r = rng(f.seed * 7919 + s.seed);
@@ -298,7 +303,9 @@ export function growFoliage(sk: Skeleton, f: FoliageSpec): Foliage {
       const yAx = norm(add(mul(up, Math.cos(lean)), mul(o, Math.sin(lean))));   // the card's long axis leans outwards
       put(clumps, base, frame(yAx, o), size * (j ? 0.9 : 1), size, 0.06, 0, 3, e, v);
     }
-    put(clumps, add(base, [0, size * 0.5, 0]), frame(rotate(out, up, phi), up), size * 0.85, size * 0.8, 0.1, 0, 3, e, v);
+    // the cap: the clump seen from above (atlas cell 2), centred over the clump
+    const capY = rotate(out, up, phi);
+    put(clumps, sub(add(base, [0, size * 0.55, 0]), mul(capY, size * 0.67)), frame(capY, up), size * 1.35, size * 1.35, 0.06, 0, 2, e, v);   // atlas top view: 1.35 × the edge
   }
   const set = (kind: FoliageKind, layer: number, grid: [number, number], a: number[]): FoliageSet => ({ kind, layer, grid, data: pack(a), count: a.length / FI });
   const tri = { leaf: 8, needle: 2, card: 4, twig: 8 } as const;

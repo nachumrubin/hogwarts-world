@@ -39,7 +39,10 @@ export const LIGHTS: LightPreset[] = [
 export interface GpuMesh { vbuf: GPUBuffer; ibuf: GPUBuffer; lbuf: GPUBuffer | null; idx: Uint32Array | null; indexCount: number; lineCount: number; triangles: number; vertices: number; bytes: number }
 /** Bark material of a tree draw (species family). */
 export const MAT = { oak: 0, pine: 1, birch: 2 } as const;
-export interface Draw { mesh: GpuMesh; offset: [number, number, number]; kind: number; castShadow?: boolean; mat?: number; foliage?: GpuFoliage | null; yaw?: number }
+/** uniform slot stride (bytes): the U struct, padded to the 256-byte dynamic-offset alignment */
+export const US = 512;
+/** A draw. `fade` (0…1, default 1) and `fadeOut` cross-fade two LODs of one tree with complementary dither patterns. */
+export interface Draw { mesh: GpuMesh; offset: [number, number, number]; kind: number; castShadow?: boolean; mat?: number; foliage?: GpuFoliage | null; yaw?: number; fade?: number; fadeOut?: boolean }
 
 /** Bark texture layers (tools/textures.py writes textures/manifest.json in this order). Tile = real-world size of
  *  one texture repeat, metres. */
@@ -57,7 +60,16 @@ struct U {
   zen: vec4f,     // zenith colour, ambient scale
   hor: vec4f,     // horizon colour, shadow strength
   env: vec4f,     // studio backdrop, -, -, -
+  fx: vec4f,      // LOD cross-fade: amount (1 = fully shown), 1 = the outgoing side (complementary pattern), -, -
 };
+// LOD transitions: a 4 × 4 ordered-dither pattern splits the pixels between the outgoing and incoming LODs, the two
+// sides exactly complementary, so a tree is never doubled or holed while it fades (render/viewer.ts Draw.fade)
+fn bayer(p: vec2f) -> f32 {
+  let m = array<f32, 16>(0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+  let q = vec2u(p) % vec2u(4u);
+  return (m[q.y * 4u + q.x] + 0.5) / 16.0;
+}
+fn fadeKeep(p: vec2f) -> bool { let b = bayer(p); return select((b < u.fx.x), (b >= u.fx.x), u.fx.y > 0.5); }
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var shadowMap: texture_depth_2d;
 @group(0) @binding(2) var cmp: sampler_comparison;
@@ -389,6 +401,7 @@ fn ggx(N: vec3f, V: vec3f, L: vec3f, rough: f32) -> f32 {
     let fr = 0.04 + 0.96 * pow(1.0 - max(dot(N, V), 0.0), 5.0) * (1.0 - sf.rough) ;
     c += sky * fr * ao * 0.25;
     if (u.env.x < 0.5) { let dd = length(u.cam.xyz - i.wp); c = mix(c, u.hor.xyz * 0.9, 1.0 - exp(-dd * 0.002)); }
+    if (!fadeKeep(i.cp.xy)) { discard; }
     return vec4f(srgb(aces(c * u.mode.w)), 1.0);
   }
   // ---- structural modes (clay, hierarchy): unchanged from the structural phase
@@ -536,30 +549,47 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
     if (mode == 7u) { return vec4f(octEnc(rotY(Ng, -u.cam.w)) * 0.5 + 0.5, 0.5 * mix(0.55, 1.0, exposure), 1.0); }
     let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * Ng.y) * (0.6 + 0.4 * Ng.y) * u.zen.w;
     let c = tw * (sunC * max(dot(Ng, L), 0.0) * sh + sky * mix(0.6, 1.0, exposure));
+    if (!fadeKeep(i.cp.xy)) { discard; }
     return vec4f(srgb(aces(c * u.mode.w)), 1.0);
   }
   // ---- leaves, needles, cards
   let tn = Nt.xy * 2.0 - 1.0;
   var T = normalize(i.tx); var B = normalize(i.ty);
   var N = normalize(Ng + (T * tn.x + B * tn.y) * select(1.0, -1.0, !ff) * 0.8);
+  // spray cards carry the full card-space normals of the leaves they show (tools/foliage_textures.py spray_card3d):
+  // lit exactly like those leaves
+  // spray cards (tools/foliage_textures.py spray_card3d): per texel the leaf's upper-side normal in card space and,
+  // in the translucency channel, the share of leaves whose upper side faces the card's front (mip-averaged). The
+  // visible side of each texel's leaves depends on the view: from the card's back, its upper sides become undersides.
+  // Undersides are paler and transmit, exactly as on LOD0's leaves
+  var under = 0.0;
+  if (k == 5u) {
+    let fr = Nt.w;
+    let Ng0 = normalize(i.n);
+    let Nl = normalize(T * tn.x + B * tn.y + Ng0 * (2.0 * fr - 1.0) * sqrt(max(1.0 - dot(tn, tn), 0.0)) + Ng0 * 1e-3);
+    under = select(fr, 1.0 - fr, ff);
+    N = select(Nl, -Nl, dot(Nl, V) < 0.0);
+  }
   // pigmentation: per-shoot variation (yellower ↔ bluer, lighter ↔ darker); undersides paler, greyer
   var alb = A.rgb * (1.0 + 0.18 * vari) * mix(vec3f(1.0), vec3f(1.12, 1.05, 0.8), clamp(vari, 0.0, 1.0) * 0.5);
   if (!ff && k != 5u) { let g = dot(alb, vec3f(0.3, 0.59, 0.11)); alb = mix(alb, vec3f(g) * vec3f(0.95, 1.05, 0.95), 0.35) * 1.45; }
+  if (k == 5u) { let g = dot(alb, vec3f(0.3, 0.59, 0.11)); alb = mix(alb, mix(alb, vec3f(g) * vec3f(0.95, 1.05, 0.95), 0.35) * 1.45, under); }
   // impostor bake: albedo (with the leaf's translucency in alpha's place, carried by the normal pass), tree-local
   // normal with the crown exposure as occlusion
-  if (mode == 6u) { return vec4f(srgb(alb), alpha); }
-  if (mode == 7u) { return vec4f(octEnc(rotY(N, -u.cam.w)) * 0.5 + 0.5, 0.5 + 0.5 * mix(0.3, 1.0, exposure), alpha); }
+  // (the stored alpha must equal the coverage that alpha-to-coverage gives it: the impostor divides the resolved values by
+  // the resolved alpha. A fractional alpha was stored below its coverage and brightened the impostors by up to 1.5×)
+  let ab = select(0.0, 1.0, alpha >= 0.5);
+  if (mode == 6u) { return vec4f(srgb(alb), ab); }
+  if (mode == 7u) { return vec4f(octEnc(rotY(N, -u.cam.w)) * 0.5 + 0.5, 0.5 + 0.5 * mix(0.3, 1.0, exposure), ab); }
   let rough = clamp(Nt.z * select(1.0, 1.25, !ff), 0.3, 1.0);
-  // a card stands for a shoot's worth of leaves at every angle: about half of them face the sun whichever way the
-  // card faces, and the rest pass light through (lit by its one plane, a card was far darker than the leaves it replaces)
-  var ndl = max(dot(N, L), 0.0);
-  if (k == 5u) { ndl = 0.45 + 0.35 * max(dot(N, L), 0.0); }
+  let ndl = max(dot(N, L), 0.0);
   // transmission: sun through the blade when it lights the far face (thin, so most of the light passes the veins)
-  let back = select(max(-dot(Ng, L), 0.0), 0.35 + 0.3 * max(-dot(Ng, L), 0.0), k == 5u);
+  let back = max(-dot(select(Ng, N, k == 5u), L), 0.0);
   // transmitted light is tested for shadow on the leaf's sunlit side (offset towards the sun), not the visible side:
   // tested on the visible (dark) side every backlit leaf shadowed itself and the crown edge never glowed
   let shT = select(mix(1.0, shadow(i.wp, -Ng), u.hor.w), sh, k == 5u);
-  let transCol = alb * vec3f(1.6, 1.8, 0.6) * Nt.w;
+  // (cards: the translucency channel holds the leaf-side share; their leaves transmit like the scans' mean, 0.72)
+  let transCol = alb * vec3f(1.6, 1.8, 0.6) * select(Nt.w, 0.72, k == 5u);
   // sky light reaching a leaf is attenuated by the crown above it (exposure), but a leaf crown is not a black box:
   // leaves pass on roughly half the light they intercept (reflectance + transmittance ≈ 0.2–0.4 in the green), so
   // the interior also receives light scattered between leaves; and a thin blade transmits the sky above it to its
@@ -573,6 +603,7 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
   c += transCol * skyUp * (0.25 + 0.45 * max(-N.y, 0.0)) * ao;
   c += sunC * sh * ggx(N, V, L, rough) * PI * 0.35;
   if (u.env.x < 0.5) { let dd = length(u.cam.xyz - i.wp); c = mix(c, u.hor.xyz * 0.9, 1.0 - exp(-dd * 0.002)); }
+  if (!fadeKeep(i.cp.xy)) { discard; }
   return vec4f(srgb(aces(c * u.mode.w)), alpha);
 }
 
@@ -633,7 +664,7 @@ export class Viewer {
     const d = this.device;
     const m = d.createShaderModule({ code: SHADER });
     const bgl = d.createBindGroupLayout({ entries: [
-      { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'uniform', hasDynamicOffset: true, minBindingSize: 256 } },
+      { binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: 'uniform', hasDynamicOffset: true, minBindingSize: US } },
       { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'depth' } },
       { binding: 2, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'comparison' } },
       { binding: 3, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float', viewDimension: '2d-array' } },
@@ -657,7 +688,7 @@ export class Viewer {
     this.folPipe = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsFol', buffers: fvb }, fragment: { module: m, entryPoint: 'fsFol', targets: [{ format: this.format }] }, primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: ds, multisample: { count: 4, alphaToCoverageEnabled: true } });
     this.folShadow = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsFolShadow', buffers: fvb }, fragment: { module: m, entryPoint: 'fsFolShadow', targets: [] }, primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'less', depthBias: 2, depthBiasSlopeScale: 2 } });
     this.templates = this.makeTemplates();
-    this.ubuf = d.createBuffer({ size: 256 * 4096, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.ubuf = d.createBuffer({ size: US * 4096, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
     this.shadowSize = shadowSize;
     this.shadowTex = d.createTexture({ size: [shadowSize, shadowSize], format: 'depth32float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
     const dummy = d.createTexture({ size: [1, 1], format: 'depth32float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.RENDER_ATTACHMENT });
@@ -759,7 +790,7 @@ export class Viewer {
    *  layers, mips built on the GPU like the bark's. */
   async loadFoliage(base: string, bust = ''): Promise<TexStats> {
     const t0 = performance.now(), d = this.device;
-    const man = await (await fetch(`${base}foliage.json${bust ? '?v=' + bust : ''}`)).json() as { size: number; layers: { id: string; albedo: string; normal: string; outlines?: number[][]; hulls?: Record<string, number[]>; alphaScale?: number[] }[] };
+    const man = await (await fetch(`${base}foliage.json${bust ? '?v=' + bust : ''}`)).json() as { size: number; layers: { id: string; albedo: string; normal: string; outlines?: number[][]; hulls?: Record<string, number[]>; alphaScale?: number[][]; grid?: [number, number] }[] };
     this.outlines = man.layers.map((l) => l.outlines ?? []);
     this.folTexKey = man.layers.map((l) => `${l.albedo.split('?')[1] ?? ''}${l.normal.split('?')[1] ?? ''}`).join('').slice(0, 64);
     this.hulls = man.layers.map((l) => l.hulls ?? {});
@@ -775,7 +806,7 @@ export class Viewer {
       bmp.close();
     })));
     this.mips(alb, nrm, n, levels);
-    const scaled = this.alphaScaled(alb, n, levels, man.layers.map((l) => l.alphaScale ?? []));
+    const scaled = this.alphaScaled(alb, n, levels, man.layers.map((l) => l.alphaScale ?? []), man.layers.map((l) => l.grid ?? [4, 2]));
     this.folAlb.destroy(); this.folNrm.destroy(); this.folAlb = scaled; this.folNrm = nrm; this.rebind();
     let bytes = 0; for (let l = 0; l < levels; l++) bytes += Math.max(1, S >> l) ** 2 * 4 * n * 2;
     this.folTex = { layers: n, size: S, bytes, download, ms: performance.now() - t0 };
@@ -785,7 +816,7 @@ export class Viewer {
   tex: TexStats | null = null;
   private rebind(): void {
     const d = this.device, av = this.barkAlb.createView({ dimension: '2d-array' }), nv = this.barkNrm.createView({ dimension: '2d-array' });
-    this.bgs = [this.shadowTex, this.dummyDepth].map((t) => d.createBindGroup({ layout: this.bgl, entries: [{ binding: 0, resource: { buffer: this.ubuf, size: 256 } }, { binding: 1, resource: t.createView() }, { binding: 2, resource: this.cmp },
+    this.bgs = [this.shadowTex, this.dummyDepth].map((t) => d.createBindGroup({ layout: this.bgl, entries: [{ binding: 0, resource: { buffer: this.ubuf, size: US } }, { binding: 1, resource: t.createView() }, { binding: 2, resource: this.cmp },
       { binding: 3, resource: av }, { binding: 4, resource: nv }, { binding: 5, resource: this.barkSampler },
       { binding: 6, resource: this.folAlb.createView({ dimension: '2d-array' }) }, { binding: 7, resource: this.folNrm.createView({ dimension: '2d-array' }) }] }));
   }
@@ -817,20 +848,29 @@ export class Viewer {
   /** Coverage-preserving alpha: a copy of the mip chain with each level's alpha scaled (per layer, scales from
    *  tools/foliage_textures.py) so the share of texels passing the alpha test matches level 0 at every distance. */
   alphaCoverage = true;
-  private alphaScaled(src: GPUTexture, layers: number, levels: number, scales: number[][]): GPUTexture {
+  private alphaScaled(src: GPUTexture, layers: number, levels: number, scales: number[][][], grids: [number, number][]): GPUTexture {
     if (!this.alphaCoverage) return src;
     const d = this.device;
     const dst = d.createTexture({ size: [src.width, src.height, layers], format: src.format, mipLevelCount: levels, usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
     const m = d.createShaderModule({ code: /* wgsl */ `
       @group(0) @binding(0) var src: texture_2d<f32>;
-      @group(0) @binding(1) var<uniform> s: vec4f;
+      struct S { c: array<vec4f, 2>, g: vec4f };   // per-cell scales (up to 8), grid (x, y), level size
+      @group(0) @binding(1) var<uniform> s: S;
       @vertex fn vs(@builtin(vertex_index) k: u32) -> @builtin(position) vec4f { let p = vec2f(f32(i32(k & 1u) * 4 - 1), f32(i32(k >> 1u) * 4 - 1)); return vec4f(p, 0.0, 1.0); }
-      @fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f { let t = textureLoad(src, vec2i(p.xy), 0); return vec4f(t.rgb, clamp(t.a * s.x, 0.0, 1.0)); }` });
+      @fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {
+        let t = textureLoad(src, vec2i(p.xy), 0);
+        let cell = vec2u(min(floor(p.xy / s.g.z * s.g.xy), s.g.xy - 1.0));
+        let c = cell.x + cell.y * u32(s.g.x);
+        return vec4f(t.rgb, clamp(t.a * s.c[c / 4u][c % 4u], 0.0, 1.0));
+      }` });
     const pipe = d.createRenderPipeline({ layout: 'auto', vertex: { module: m, entryPoint: 'vs' }, fragment: { module: m, entryPoint: 'fs', targets: [{ format: src.format }] }, primitive: { topology: 'triangle-list' } });
     const enc = d.createCommandEncoder(), ubufs: GPUBuffer[] = [];
     for (let k = 0; k < layers; k++) for (let l = 0; l < levels; l++) {
-      const ub = d.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }); ubufs.push(ub);
-      d.queue.writeBuffer(ub, 0, new Float32Array([scales[k]?.[l] ?? 1, 0, 0, 0]));
+      const ub = d.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }); ubufs.push(ub);
+      const sc = scales[k]?.[l] ?? [], g = grids[k] ?? [1, 1], u = new Float32Array(12);
+      for (let c = 0; c < 8; c++) u[c] = typeof sc === 'number' ? sc : sc[c] ?? 1;
+      u.set([g[0], g[1], Math.max(1, src.width >> l), 0], 8);
+      d.queue.writeBuffer(ub, 0, u);
       const bg = d.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: src.createView({ dimension: '2d', baseArrayLayer: k, arrayLayerCount: 1, baseMipLevel: l, mipLevelCount: 1 }) }, { binding: 1, resource: { buffer: ub } }] });
       const pass = enc.beginRenderPass({ colorAttachments: [{ view: dst.createView({ dimension: '2d', baseArrayLayer: k, arrayLayerCount: 1, baseMipLevel: l, mipLevelCount: 1 }), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
       pass.setPipeline(pipe); pass.setBindGroup(0, bg); pass.draw(3); pass.end();
@@ -891,7 +931,15 @@ export class Viewer {
   }
   destroy(m: GpuMesh): void { m.vbuf.destroy(); m.ibuf.destroy(); m.lbuf?.destroy(); this.geometryBytes -= m.bytes; }
 
-  setDraws(d: Draw[]): void { this.draws = d; this.shadowDirty = true; }
+  /** The shadow map is redrawn only when what casts shadows changed (not for a cross-fade's dither amounts). */
+  private shadowKey = '';
+  private meshIds = new WeakMap<object, number>(); private nextId = 1;
+  private idOf(o: object | null | undefined): number { if (!o) return 0; let k = this.meshIds.get(o); if (!k) { k = this.nextId++; this.meshIds.set(o, k); } return k; }
+  setDraws(d: Draw[]): void {
+    this.draws = d;
+    const key = d.filter((m) => m.castShadow !== false).map((m) => `${this.idOf(m.mesh)}:${this.idOf(m.foliage)}:${m.offset.join(',')}:${m.yaw ?? 0}`).join('|');
+    if (key !== this.shadowKey) { this.shadowKey = key; this.shadowDirty = true; }
+  }
 
   /** Fit the sun shadow map around a box. */
   fitShadow(min: [number, number, number], max: [number, number, number]): void {
@@ -905,17 +953,17 @@ export class Viewer {
       a0 = Math.min(a0, a); a1 = Math.max(a1, a); b0 = Math.min(b0, b); b1 = Math.max(b1, b); c0 = Math.min(c0, c); c1 = Math.max(c1, c);
     }
     const hw = (a1 - a0) / 2, hh = (b1 - b0) / 2, ca = (a0 + a1) / 2, cb = (b0 + b1) / 2, dz = c1 - c0 + 2;
-    this.shadowVP.set([r[0] / hw, up[0] / hh, f[0] / dz, 0, r[1] / hw, up[1] / hh, f[1] / dz, 0, r[2] / hw, up[2] / hh, f[2] / dz, 0, -ca / hw, -cb / hh, -(c0 - 1) / dz, 1]);
-    this.shadowDirty = true;
+    const next = [r[0] / hw, up[0] / hh, f[0] / dz, 0, r[1] / hw, up[1] / hh, f[1] / dz, 0, r[2] / hw, up[2] / hh, f[2] / dz, 0, -ca / hw, -cb / hh, -(c0 - 1) / dz, 1];
+    if (next.some((v, k) => Math.abs(v - this.shadowVP[k]) > 1e-9)) { this.shadowVP.set(next); this.shadowDirty = true; }
   }
 
-  private writeU(slot: number, vp: Float32Array, cam: number[], kind: number, off: number[], mat = 0, fol: [number, number, number] = [0, 0, 0], yaw = 0) {
+  private writeU(slot: number, vp: Float32Array, cam: number[], kind: number, off: number[], mat = 0, fol: [number, number, number] = [0, 0, 0], yaw = 0, fade = 1, fadeOut = false) {
     const L = this.light, s = L.sun, sl = Math.hypot(s[0], s[1], s[2]);
-    const u = new Float32Array(64);
+    const u = new Float32Array(68);
     u.set(vp, 0); u.set(this.shadowVP, 16); u.set([cam[0], cam[1], cam[2], yaw], 32); u.set([s[0] / sl, s[1] / sl, s[2] / sl, L.intensity], 36);
     u.set([this.bakeMode ?? MODES.indexOf(this.mode), mat, this.tex ? 1 : 0, L.exposure], 40); u.set([off[0], off[1], off[2], kind], 44);
-    u.set([...L.sunColor, kind === 4 || kind === 5 || kind === 8 ? this.alphaBoost.leaf : kind === 7 ? this.alphaBoost.needle : L.fill], 48); u.set([...L.zenith, L.ambient], 52); u.set([...L.horizon, this.shadowOff ? 0 : L.shadow], 56); u.set([L.studio ? 1 : 0, fol[0], fol[1], fol[2]], 60);
-    this.device.queue.writeBuffer(this.ubuf, slot * 256, u);
+    u.set([...L.sunColor, (kind === 5 && fol[0] === 5) || kind === 7 ? this.alphaBoost.needle : kind === 4 || kind === 5 || kind === 8 ? this.alphaBoost.leaf : L.fill], 48); u.set([...L.zenith, L.ambient], 52); u.set([...L.horizon, this.shadowOff ? 0 : L.shadow], 56); u.set([L.studio ? 1 : 0, fol[0], fol[1], fol[2]], 60); u.set([fade, fadeOut ? 1 : 0, 0, 0], 64);
+    this.device.queue.writeBuffer(this.ubuf, slot * US, u);
   }
 
   private target(w: number, h: number, old: Target | null): Target {
@@ -927,27 +975,29 @@ export class Viewer {
 
   /** impostor bake: 6 = unlit albedo, 7 = tree-local normal + occlusion (null: the display mode) */
   bakeMode: number | null = null;
+  /** draw the extra passes (impostors) in bake modes too: diagnostics of their albedo and normals */
+  extraInBake = false;
   /** extra passes drawn after the foliage (impostors): main pass and shadow pass */
   extra: { main: (pass: GPURenderPassEncoder) => { calls: number; tris: number }; shadow: (pass: GPURenderPassEncoder) => void } | null = null;
   private encode(enc: GPUCommandEncoder, view: GPUTextureView, tg: Target, vp: Float32Array, cam: number[], draws: Draw[], timed: boolean): number {
     const bake = this.bakeMode !== null;
     // uniform slots: 0 global, then one per draw, then one per foliage set
     this.writeU(0, vp, cam, 0, [0, 0, 0]);
-    draws.forEach((m, k) => this.writeU(1 + k, vp, cam, m.kind, m.offset, m.mat ?? 0, m.kind === 1 ? [this.woodland ? 1 : 0, 0, 0] : [0, 0, 0], m.yaw ?? 0));
+    draws.forEach((m, k) => this.writeU(1 + k, vp, cam, m.kind, m.offset, m.mat ?? 0, m.kind === 1 ? [this.woodland ? 1 : 0, 0, 0] : [0, 0, 0], m.yaw ?? 0, m.fade ?? 1, m.fadeOut ?? false));
     const fslots: { draw: Draw; set: GpuFoliage['sets'][number]; slot: number }[] = [];
     let next = 1 + draws.length;
     for (const m of draws) if (m.foliage) for (const set of m.foliage.sets) {
       if (next >= 4096) throw new Error('too many draws');
-      this.writeU(next, vp, cam, KIND[set.kind], m.offset, m.mat ?? 0, [set.layer, set.grid[0], set.grid[1]], m.yaw ?? 0);
+      this.writeU(next, vp, cam, KIND[set.kind], m.offset, m.mat ?? 0, [set.layer, set.grid[0], set.grid[1]], m.yaw ?? 0, m.fade ?? 1, m.fadeOut ?? false);
       fslots.push({ draw: m, set, slot: next++ });
     }
     if (this.shadowDirty && !bake && !this.shadowOff) {
       const p = enc.beginRenderPass({ colorAttachments: [], depthStencilAttachment: { view: this.shadowTex.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' } });
       p.setPipeline(this.shadowPipe);
-      draws.forEach((m, k) => { if (m.kind === 1 || m.castShadow === false) return; p.setBindGroup(0, this.bgs[1], [(1 + k) * 256]); p.setVertexBuffer(0, m.mesh.vbuf); p.setIndexBuffer(m.mesh.ibuf, 'uint32'); p.drawIndexed(m.mesh.indexCount); });
+      draws.forEach((m, k) => { if (m.kind === 1 || m.castShadow === false) return; p.setBindGroup(0, this.bgs[1], [(1 + k) * US]); p.setVertexBuffer(0, m.mesh.vbuf); p.setIndexBuffer(m.mesh.ibuf, 'uint32'); p.drawIndexed(m.mesh.indexCount); });
       // foliage casts alpha-tested shadows
       p.setPipeline(this.folShadow);
-      for (const f of fslots) { const t = this.templates[f.set.tmpl]; p.setBindGroup(0, this.bgs[1], [f.slot * 256]); p.setVertexBuffer(0, t.buf); p.setVertexBuffer(1, f.set.buf, f.set.offset); p.draw(t.count, f.set.count); }
+      for (const f of fslots) { const t = this.templates[f.set.tmpl]; p.setBindGroup(0, this.bgs[1], [f.slot * US]); p.setVertexBuffer(0, t.buf); p.setVertexBuffer(1, f.set.buf, f.set.offset); p.draw(t.count, f.set.count); }
       this.extra?.shadow(p);
       p.end(); this.shadowDirty = false;
     }
@@ -960,7 +1010,7 @@ export class Viewer {
     let calls = 0, tris = 0, verts = 0;
     const wire = this.mode === 'wire';
     draws.forEach((m, k) => {
-      pass.setBindGroup(0, this.bgs[0], [(1 + k) * 256]); pass.setVertexBuffer(0, m.mesh.vbuf);
+      pass.setBindGroup(0, this.bgs[0], [(1 + k) * US]); pass.setVertexBuffer(0, m.mesh.vbuf);
       const lb = wire ? this.lines(m.mesh) : null;
       if (lb) { pass.setPipeline(this.wire); pass.setIndexBuffer(lb, 'uint32'); pass.drawIndexed(m.mesh.lineCount); }
       else { pass.setPipeline(this.pipe); pass.setIndexBuffer(m.mesh.ibuf, 'uint32'); pass.drawIndexed(m.mesh.indexCount); }
@@ -968,9 +1018,9 @@ export class Viewer {
     });
     if (!wire) {
       pass.setPipeline(this.folPipe);
-      for (const f of fslots) { const t = this.templates[f.set.tmpl]; pass.setBindGroup(0, this.bgs[0], [f.slot * 256]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, f.set.buf, f.set.offset); pass.draw(t.count, f.set.count); calls++; tris += t.tris * f.set.count; }
+      for (const f of fslots) { const t = this.templates[f.set.tmpl]; pass.setBindGroup(0, this.bgs[0], [f.slot * US]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, f.set.buf, f.set.offset); pass.draw(t.count, f.set.count); calls++; tris += t.tris * f.set.count; }
     }
-    if (!wire && !bake && this.extra) { const e = this.extra.main(pass); calls += e.calls; tris += e.tris; }
+    if (!wire && (!bake || this.extraInBake) && this.extra) { const e = this.extra.main(pass); calls += e.calls; tris += e.tris; }
     if (!bake) { pass.setPipeline(this.sky); pass.setBindGroup(0, this.bgs[0], [0]); pass.draw(3); calls++; }
     pass.end();
     if (timed) { this.drawCalls = calls; this.tris = tris; this.verts = verts; }
@@ -1051,9 +1101,10 @@ export class Viewer {
     const tg = this.target(w, h, null);
     const color = d.createTexture({ size: [w, h], format: this.format, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
     const enc = d.createCommandEncoder();
-    this.shadowDirty = true; // the draw list may differ from the screen's
+    const same = draws === this.draws;   // the screen's own draw list: its shadow map stays valid
+    if (!same) this.shadowDirty = true;
     this.encode(enc, color.createView(), tg, vp, cam, draws, false);
-    this.shadowDirty = true;
+    if (!same) this.shadowDirty = true;
     const bpr = Math.ceil(w * 4 / 256) * 256;
     const buf = d.createBuffer({ size: bpr * h, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
     enc.copyTextureToBuffer({ texture: color }, { buffer: buf, bytesPerRow: bpr }, [w, h]);
@@ -1112,11 +1163,11 @@ export class Viewer {
     for (const m of draws) {
       if (m.kind === 1) continue;
       this.writeU(slot, vp, cam, m.kind, m.offset, m.mat ?? 0, [0, 0, 0], m.yaw ?? 0);
-      pass.setPipeline(this.countPipes.bark); pass.setBindGroup(0, this.bgs[0], [slot * 256]); pass.setVertexBuffer(0, m.mesh.vbuf); pass.setIndexBuffer(m.mesh.ibuf, 'uint32'); pass.drawIndexed(m.mesh.indexCount); slot++;
+      pass.setPipeline(this.countPipes.bark); pass.setBindGroup(0, this.bgs[0], [slot * US]); pass.setVertexBuffer(0, m.mesh.vbuf); pass.setIndexBuffer(m.mesh.ibuf, 'uint32'); pass.drawIndexed(m.mesh.indexCount); slot++;
       if (m.foliage) for (const set of m.foliage.sets) {
         this.writeU(slot, vp, cam, KIND[set.kind], m.offset, m.mat ?? 0, [set.layer, set.grid[0], set.grid[1]], m.yaw ?? 0);
         const t = this.templates[set.tmpl];
-        pass.setPipeline(this.countPipes.fol); pass.setBindGroup(0, this.bgs[0], [slot * 256]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, set.buf, set.offset); pass.draw(t.count, set.count); slot++;
+        pass.setPipeline(this.countPipes.fol); pass.setBindGroup(0, this.bgs[0], [slot * US]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, set.buf, set.offset); pass.draw(t.count, set.count); slot++;
       }
     }
     pass.end();

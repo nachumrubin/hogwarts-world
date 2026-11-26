@@ -33,7 +33,7 @@ const PINE_NEEDLES: FoliageSpec = {
   type: 'pine', spriteLayer: 2, cardLayer: 5, seed: 37, maxR: 0.035, zone: 1.15, spacing: 0.06, shootLen: [0.06, 0.09], diverge: 0.15,
   perShoot: [20, 28], leafLen: [0.06, 0.08], leafy: 1, toLight: 0, droop: 0, extinction: 0.35, sideLight: 1, shedBelow: 0.12, density: 1,
   spray: { levels: 1, laterals: [0, 2], latLen: [0.5, 0.85], latAngle: [0.45, 0.85], volume: 1 }, upturn: 0.5, fullness: 1, interiorCard: 0.25,
-  twigR: 0, card: [0.16, 0.16], clump: 1.3, clumpCell: 1.0,
+  twigR: 0, card: [0.16, 0.16], clump: 0.8, clumpCell: 1.0,
 };
 
 

@@ -9,6 +9,9 @@ lobed oak leaves, paired Scots pine needles, small serrated birch leaves on pend
 Phase 4.1 (crown realism and scalability): fuller crowns from recursive twig sprays, spray cards for the shaded
 interior and LOD1, recalibrated leaf lighting, packed instances, projected-size LOD with octahedral impostors, woodland
 stands of 12 / 50 / 200 trees and an in-lab hardware benchmark (see "Crowns, LOD and benchmark").
+Phase 4.2 (LOD visual consistency): every lower-detail representation is now measured against LOD0 at its switch;
+spray cards are generated in 3D from the generator's own rules and lit like the leaves, the distance chain is
+LOD0 → LOD1 → impostor with hysteresis and dithered cross-fades (see "LOD consistency" below).
 Phase 3's photoscanned bark is unchanged. The **Materials** mode is the default; clay, silhouette, wireframe,
 normals and hierarchy are unchanged. An optional **woodland floor** environment sits beside the neutral plot. No
 wind and no seasons yet.
@@ -165,7 +168,7 @@ first visit to a deployed build pays the generation time.
 * **Instances:** 20 bytes each (positions unorm16 in a ±40 m frame, quaternion snorm8, log-coded width), one shared
   GPU buffer per specimen and LOD. **Cards** use hull-fitted outlines instead of quads. **Alpha** mips preserve
   each level's coverage (measured offline per layer) so leaves and needles do not dissolve with distance.
-* **LOD:** chosen per tree from its projected height on screen (LOD0 ≥ 700 px, LOD1 ≥ 240 px, LOD2 ≥ 110 px, then the
+* **LOD:** chosen per tree from its projected height on screen (Phase 4.2: LOD0 ≥ 700 px, LOD1 ≥ 140 px, then the
   impostor), frustum-culled; LOD0 buffers are resident only while a tree near the camera uses them.
 * **Impostors** (`src/render/impostor.ts`): 9 × 9 hemi-octahedral frames of 112 px per specimen (albedo with coverage,
   tree-local normal and occlusion), three frames blended and sampled along the view ray, so the tree never turns
@@ -177,6 +180,24 @@ first visit to a deployed build pays the generation time.
   map, frames; records adapter, GPU timestamps (where the browser has them), frame time median and p95, draw calls,
   triangles, instances, resident memory and the LOD distribution, and downloads JSON. Software adapters are flagged:
   SwiftShader timings are not GPU performance.
+
+## LOD consistency (Phase 4.2)
+
+* **Reference:** LOD0. `tools/evidence/lodcheck.js` renders both sides of every switch from one camera at the switch
+  size (lit and silhouette); `tools/lod_metrics.py` gives crown coverage, silhouette overlap, foliage luminance, ΔE,
+  triangles, instance memory and overdraw. Results: `review/lod/`, `review/CHANGES-lod-phase.md`.
+* **Spray cards** (LOD1 and the shaded interior at LOD0) are generated per species in 3D by the generator's rules and
+  projected onto the card; the atlas stores each texel's leaf normal (card space) and which leaf side faces the
+  card, so the shader shows undersides from below and lights cards exactly like leaves.
+* **Chain:** LOD0 (≥ 700 px tall) → LOD1 (≥ 140 px) → impostor; the clump cards (LOD2) were measured against this
+  and left out of the distance chain (`lodPolicy.px = [700, 240, 110]` restores them). The LOD menu still shows
+  LOD2 for single specimens.
+* **Transitions:** ±12 % hysteresis on every threshold; changes cross-fade over 0.6 s with complementary dither
+  patterns (never doubled, never holed).
+* **Impostors** are baked from LOD1 (`textures/impostor.*.webp`, refreshed with `tools/evidence/bake-impostors.js` +
+  `tools/impostor_atlas.py`) and shaded with the leaves' own model.
+* **Recordings:** `review/lod/lod-ground.mp4`, `review/lod/lod-aerial.mp4` (`tools/evidence/video.js`,
+  `tools/lod_video.py`).
 
 ## Bark materials
 

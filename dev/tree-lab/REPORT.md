@@ -1,4 +1,4 @@
-# Tree Lab: technical report (crown phase 4.1)
+# Tree Lab: technical report (LOD consistency phase 4.2)
 
 Branch `world-v2-webgpu`. Starting checkpoint `9c024fe`; structural finishing pass `e4f3010`; bark phase `b4fe25e`
 (`review/CHANGES-bark-phase.md`); phase 4, summer foliage, on top of `c78db29` (`review/CHANGES-foliage-phase.md`:
@@ -6,7 +6,10 @@ sources, growth model, the three-way proof of concept, rendering, LOD and the st
 Phase 4.1, crown realism and foliage scalability, on top of `72e8685` (`review/CHANGES-crown-phase.md`: recursive
 sprays, lighting calibration, density experiments, rendering efficiency, LOD2 and impostors, the hardware benchmark,
 evidence, deficiencies). The specimens, their growth, bark meshes and bark materials are unchanged (leafless renders
-pixel-identical to Phase 4). No wind, no seasons.
+pixel-identical to Phase 4). Phase 4.2, LOD visual consistency, on top of `e1a69a6`
+(`review/CHANGES-lod-phase.md`: diagnosis, 3D-generated spray cards lit like leaves, the A/B chain decision, impostor
+fixes, per-boundary measurements for all five specimens, transitions and recordings). LOD0, skeletons and bark are
+unchanged. No wind, no seasons.
 
 Public build: https://nachumrubin.github.io/hogwarts-world/dev/tree-lab/ (deployed with the Creature Lab;
 see "Public build" in README.md).
@@ -136,7 +139,8 @@ about GPU performance, so I haven't quoted them. Real figures need a run in Chro
 
 ## Outstanding defects
 
-Crown phase 4.1: section 8 of `review/CHANGES-crown-phase.md` (chiefly the LOD0 → LOD1 luminance step and the
+LOD phase 4.2: section 8 of `review/CHANGES-lod-phase.md` (overhead LOD1 coverage, impostor coverage for the
+oaks, the pine's LOD0 → LOD1 colour). Crown phase 4.1: section 8 of `review/CHANGES-crown-phase.md` (chiefly the LOD0 → LOD1 luminance step and the
 impostors' slightly brighter colour). Foliage phase: section 8 of `review/CHANGES-foliage-phase.md`. Bark phase: section 7 of `review/CHANGES-bark-phase.md`.
 
 Structural, from section 4 of `review/CHANGES-finishing-pass.md`:
@@ -154,4 +158,4 @@ Interface screenshots: `review/lab-ui.png` (desktop) and `review/lab-mobile.png`
 the frame actually presented to the canvas, read back from the GPU, because headless page screenshots of
 WebGPU canvases are unreliable.
 
-Stopped here, before wind and seasons, for your review of Phase 4.1.
+Stopped here, before wind and seasons, for your review of Phase 4.2.

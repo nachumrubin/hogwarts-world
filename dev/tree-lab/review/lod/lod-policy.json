@@ -1,0 +1,192 @@
+[
+  {
+    "stand": 12,
+    "camera": "ground",
+    "policy": "A",
+    "lod": [
+      0,
+      5,
+      6,
+      0,
+      1
+    ],
+    "triangles": 1232083,
+    "foliageInstances": 183538,
+    "instanceBytes": 3670760,
+    "drawCalls": 25,
+    "fragments": 1714829,
+    "rasterizedPerFoliagePixel": 18.27864116994969,
+    "foliageCoverage": 0.18097222222222223
+  },
+  {
+    "stand": 12,
+    "camera": "ground",
+    "policy": "B",
+    "lod": [
+      0,
+      11,
+      0,
+      0,
+      1
+    ],
+    "triangles": 2567597,
+    "foliageInstances": 383250,
+    "instanceBytes": 7665000,
+    "drawCalls": 25,
+    "fragments": 1762705,
+    "rasterizedPerFoliagePixel": 18.3504237023465,
+    "foliageCoverage": 0.18529706790123457
+  },
+  {
+    "stand": 50,
+    "camera": "ground",
+    "policy": "A",
+    "lod": [
+      2,
+      17,
+      27,
+      0,
+      4
+    ],
+    "triangles": 8466098,
+    "foliageInstances": 1555600,
+    "instanceBytes": 31112000,
+    "drawCalls": 98,
+    "fragments": 3876276,
+    "rasterizedPerFoliagePixel": 18.60365423471763,
+    "foliageCoverage": 0.4019309413580247
+  },
+  {
+    "stand": 50,
+    "camera": "ground",
+    "policy": "B",
+    "lod": [
+      2,
+      42,
+      0,
+      2,
+      4
+    ],
+    "triangles": 13790644,
+    "foliageInstances": 2340756,
+    "instanceBytes": 46815144,
+    "drawCalls": 95,
+    "fragments": 4190603,
+    "rasterizedPerFoliagePixel": 19.699255860743012,
+    "foliageCoverage": 0.4103568672839506
+  },
+  {
+    "stand": 200,
+    "camera": "ground",
+    "policy": "A",
+    "lod": [
+      1,
+      16,
+      66,
+      81,
+      36
+    ],
+    "triangles": 7409401,
+    "foliageInstances": 1013611,
+    "instanceBytes": 20273192,
+    "drawCalls": 172,
+    "fragments": 4207166,
+    "rasterizedPerFoliagePixel": 20.47362427734413,
+    "foliageCoverage": 0.3963966049382716
+  },
+  {
+    "stand": 200,
+    "camera": "ground",
+    "policy": "B",
+    "lod": [
+      1,
+      50,
+      0,
+      113,
+      36
+    ],
+    "triangles": 14310855,
+    "foliageInstances": 2110945,
+    "instanceBytes": 42220256,
+    "drawCalls": 108,
+    "fragments": 4352659,
+    "rasterizedPerFoliagePixel": 21.921568726203187,
+    "foliageCoverage": 0.383016975308642
+  },
+  {
+    "stand": 50,
+    "camera": "aerial",
+    "policy": "A",
+    "lod": [
+      0,
+      0,
+      33,
+      17,
+      0
+    ],
+    "triangles": 743619,
+    "foliageInstances": 123857,
+    "instanceBytes": 2477344,
+    "drawCalls": 70,
+    "fragments": 1189482,
+    "rasterizedPerFoliagePixel": 14.47128814054212,
+    "foliageCoverage": 0.1585570987654321
+  },
+  {
+    "stand": 50,
+    "camera": "aerial",
+    "policy": "B",
+    "lod": [
+      0,
+      13,
+      0,
+      37,
+      0
+    ],
+    "triangles": 2974000,
+    "foliageInstances": 415663,
+    "instanceBytes": 8313704,
+    "drawCalls": 30,
+    "fragments": 474040,
+    "rasterizedPerFoliagePixel": 13.211817168338907,
+    "foliageCoverage": 0.06921296296296296
+  },
+  {
+    "stand": 200,
+    "camera": "aerial",
+    "policy": "A",
+    "lod": [
+      0,
+      0,
+      24,
+      176,
+      0
+    ],
+    "triangles": 556045,
+    "foliageInstances": 94796,
+    "instanceBytes": 1898032,
+    "drawCalls": 52,
+    "fragments": 669020,
+    "rasterizedPerFoliagePixel": 15.930185489439722,
+    "foliageCoverage": 0.08101273148148148
+  },
+  {
+    "stand": 200,
+    "camera": "aerial",
+    "policy": "B",
+    "lod": [
+      0,
+      5,
+      0,
+      195,
+      0
+    ],
+    "triangles": 1042904,
+    "foliageInstances": 158039,
+    "instanceBytes": 3163120,
+    "drawCalls": 14,
+    "fragments": 163268,
+    "rasterizedPerFoliagePixel": 15.227382950941989,
+    "foliageCoverage": 0.02068287037037037
+  }
+]

@@ -7,6 +7,8 @@
 import { SHADER, type Viewer, type Draw } from './viewer.ts';
 
 export const IMP_N = 9, IMP_FRAME = 112, IMP_SIZE = IMP_N * IMP_FRAME;
+/** self-shadowing exponent (see fsImp) */
+export const IMP_SELF = 0.6;
 type V3 = [number, number, number];
 export interface ImpostorSpec { id: string; layer: number; center: V3; radius: number; ms: number; loaded?: boolean }
 
@@ -40,6 +42,7 @@ function ortho(c: V3, R: number, d: V3): Float32Array {
 }
 
 const WGSL = /* wgsl */ `
+const IMP_SELF = ${IMP_SELF};
 const IN = ${IMP_N}.0;
 const IPAD = ${PAD};
 @group(1) @binding(0) var impAlb: texture_2d_array<f32>;
@@ -51,6 +54,7 @@ struct IOut {
   @builtin(position) cp: vec4f, @location(0) wp: vec3f,
   @location(1) uv0: vec2f, @location(2) uv1: vec2f, @location(3) uv2: vec2f, @location(4) w: vec3f,
   @location(5) @interpolate(flat) layer: i32, @location(6) @interpolate(flat) yaw: f32, @location(7) @interpolate(flat) rad: f32,
+  @location(8) @interpolate(flat) fade: vec2f,
 };
 fn hemiOct(d: vec3f) -> vec2f { let p = d.xz / (abs(d.x) + abs(d.y) + abs(d.z)); return vec2f(p.x + p.y, p.x - p.y); }
 fn frameDir(g: vec2f) -> vec3f {
@@ -88,7 +92,7 @@ fn impVert(i: IIn, toView: vec3f, vp: mat4x4f, persp: bool) -> IOut {
   let ray = select(f, normalize(wp - u.cam.xyz), persp);
   let pl = rotY(wp - c, -yaw) / R; let v = rotY(ray, -yaw);
   o.uv0 = frameUV(g0, pl, v); o.uv1 = frameUV(g1, pl, v); o.uv2 = frameUV(g2, pl, v); o.w = w;
-  o.cp = vp * vec4f(wp, 1.0); o.wp = wp; o.layer = layer; o.yaw = yaw; o.rad = R;
+  o.cp = vp * vec4f(wp, 1.0); o.wp = wp; o.layer = layer; o.yaw = yaw; o.rad = R; o.fade = i.x.zw;
   return o;
 }
 @vertex fn vsImp(i: IIn) -> IOut {
@@ -102,39 +106,54 @@ fn impSample(i: IOut) -> array<vec4f, 2> {
   return array<vec4f, 2>(a, n);
 }
 fn impAlpha(a: f32, uv: vec2f) -> f32 {
-  return clamp((a - 0.5) / max(fwidth(a), 1e-4) + 0.5, 0.0, 1.0);
+  // the same mip-aware alpha as the leaves (render/viewer.ts folAlpha, leaf boost): far impostors keep their coverage
+  let d = max(length(dpdx(uv)), length(dpdy(uv))) * ${IMP_SIZE}.0;
+  let aa = a * (1.0 + 0.15 * max(log2(max(d, 1e-4)), 0.0));
+  return clamp((aa - 0.5) / max(fwidth(aa), 1e-4) + 0.5, 0.0, 1.0);
 }
 @fragment fn fsImpShadow(i: IOut) { let s = impSample(i); if (s[0].a < 0.5) { discard; } }
 @fragment fn fsImp(i: IOut) -> @location(0) vec4f {
   let s = impSample(i); let A = s[0]; let Nn = s[1];
   let alpha = impAlpha(A.a, i.uv0);
+  if (u32(u.mode.x + 0.5) == 2u) { return vec4f(0.0, 0.0, 0.0, alpha); }   // silhouette mode
   // the atlas holds coverage-weighted (resolved MSAA) values: divide by coverage
   let cov = max(A.a, 1e-3); let ncov = max(Nn.a, 1e-3);
   let ab = A.rgb / cov;
+  // albedo as the geometry showed it from this frame's direction (undersides already paler): the frames are view
+  // directions, so which side of each leaf is seen is geometry, not lighting
   let alb = select(pow((ab + 0.055) / 1.055, vec3f(2.4)), ab / 12.92, ab <= vec3f(0.04045));
-  let N = rotY(octDec(Nn.xy / ncov * 2.0 - 1.0), i.yaw);
-  // b: bark and twigs 0…0.5 (occlusion × 0.5), leaves 0.5…1 (0.5 + occlusion × 0.5)
+  let N = rotY(octDec(Nn.xy / ncov * 2.0 - 1.0), i.yaw);   // the visible face's normal
+  if (u32(u.mode.x + 0.5) == 6u) { return vec4f(srgb(alb), alpha); }   // albedo view (the bake modes' counterpart)
+  if (u32(u.mode.x + 0.5) == 7u) { return vec4f(octEnc(rotY(N, -i.yaw)) * 0.5 + 0.5, Nn.z / ncov, alpha); }
+  // b: bark and twigs 0…0.5 (occlusion × 0.5), leaves 0.5…1 (0.5 + crown occlusion × 0.5, occlusion = mix(0.3, 1, exposure))
   let bz = clamp(Nn.z / ncov, 0.0, 1.0); let leaf = smoothstep(0.42, 0.58, bz);
   let occ = select(bz * 2.0, bz * 2.0 - 1.0, bz > 0.5);
+  let expo = mix(clamp(occ, 0.0, 1.0), clamp((occ - 0.3) / 0.7, 0.0, 1.0), leaf);
   let L = normalize(u.sun.xyz); let V = normalize(u.cam.xyz - i.wp);
   let sunC = u.sunc.xyz * u.sun.w;
-  // shadows from other trees: tested half a crown towards the sun (the quad is not the crown's surface; the crown's own
-  // shading is in the baked occlusion)
-  let sh = mix(1.0, shadow(i.wp + L * i.rad, L), u.hor.w);
-  // leaves: the spray-card volume response (render/viewer.ts fsFol, k == 5), so the impostor matches the LOD it replaces
-  let ndl = mix(max(dot(N, L), 0.0), 0.45 + 0.35 * max(dot(N, L), 0.0), leaf);
-  let back = mix(max(-dot(N, L), 0.0), 0.35 + 0.3 * max(-dot(N, L), 0.0), leaf);
+  // shadows from other trees: tested a crown radius towards the sun (the quad is not the crown's surface)
+  let shO = mix(1.0, shadow(i.wp + L * i.rad, L), u.hor.w);
+  // the crown's shadow on itself (the geometry gets it from the shadow map): a leaf's chance of direct sun follows
+  // its sky exposure; IMP_SELF is that exponent, measured against LOD2 (tools/lod_metrics.py)
+  let sh = shO * mix(1.0, pow(expo, IMP_SELF), leaf * u.hor.w);
+  // from here on the leaf shading of render/viewer.ts fsFol, term for term
+  let ndl = max(dot(N, L), 0.0); let back = max(-dot(N, L), 0.0);
+  let ao = mix(mix(0.55, 1.0, expo), occ, 1.0 - leaf);
   let skyUp = mix(u.hor.xyz, u.zen.xyz, 0.75) * u.zen.w;
   let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * N.y) * (0.65 + 0.35 * N.y) * u.zen.w;
   let bounce = vec3f(0.10, 0.10, 0.06) * (0.5 - 0.5 * N.y) * u.zen.w;
-  let trans = alb * vec3f(1.6, 1.8, 0.6) * 0.7 * leaf;
-  // direct sun inside a crown is mostly shadowed by the crown itself (the geometry gets this from the shadow map): the
-  // baked sky exposure, squared, stands in for it
-  let selfSh = occ * occ * occ;
-  var c = alb * (sunC * ndl * sh * mix(0.2, 1.0, selfSh) + (sky + bounce) * mix(0.5, 1.0, occ) + skyUp * (1.0 - occ) * 0.3)
-        + sunC * sh * trans * back * (0.5 + 0.8 * pow(max(dot(V, -L), 0.0), 3.0)) * selfSh
-        + trans * skyUp * 0.25 * occ;
+  let scatter = (skyUp * (1.0 - expo) * 0.3 + sunC * (1.0 - sh) * expo * 0.06) * leaf;
+  let transCol = alb * vec3f(1.6, 1.8, 0.6) * 0.72 * leaf;
+  var c = alb * (sunC * ndl * sh + (sky + bounce) * ao + scatter) + sunC * sh * transCol * back * (0.5 + 0.8 * pow(max(dot(V, -L), 0.0), 3.0));
+  c += transCol * skyUp * (0.25 + 0.45 * max(-N.y, 0.0)) * ao;
+  // the leaves' gloss: an atlas texel averages many leaves' normals (smoother than any one leaf), so its highlight is
+  // spread by the normal's lost length (Toksvig), as the geometry's leaves would scatter it
+  let nlen = clamp(length(Nn.xy / ncov * 2.0 - 1.0) * 0.0 + 1.0, 0.0, 1.0);
+  c += sunC * sh * ggx(N, V, L, 0.9) * PI * 0.35 * leaf * nlen;
   if (u.env.x < 0.5) { let dd = length(u.cam.xyz - i.wp); c = mix(c, u.hor.xyz * 0.9, 1.0 - exp(-dd * 0.002)); }
+  // LOD cross-fade (instance fade, outgoing flag): the complementary dither of render/viewer.ts fadeKeep
+  let b = bayer(i.cp.xy);
+  if (select((b >= i.fade.x), (b < i.fade.x), i.fade.y > 0.5)) { discard; }
   return vec4f(srgb(aces(c * u.mode.w)), alpha);
 }`;
 
@@ -145,7 +164,7 @@ export class Impostors {
   private bg!: GPUBindGroup; private bg0: GPUBindGroup[] = [];
   private viewer: Viewer; private levels: number;
   /** current instances: x, y, z, yaw, layer, scale, 0, 0 per tree */
-  private inst: GPUBuffer | null = null; count = 0;
+  private inst: GPUBuffer | null = null; count = 0; private key = '';
   bytes = 0;
   constructor(viewer: Viewer, layers = 5) {
     this.viewer = viewer; const d = viewer.device;
@@ -226,15 +245,17 @@ export class Impostors {
     this.setSpec(s);
     return s;
   }
-  /** Set the impostor instances: [x, y, z, yaw, layer, scale] per tree. */
+  /** Set the impostor instances: [x, y, z, yaw, layer, scale, fade (1), outgoing (0/1)] per tree. */
   setInstances(list: number[][]): void {
     const d = this.viewer.device;
     this.count = list.length;
-    if (!list.length) return;
-    const a = new Float32Array(list.length * 8); list.forEach((t, k) => a.set([t[0], t[1], t[2], t[3], t[4], t[5] ?? 1, 0, 0], k * 8));
+    if (!list.length) { if (this.key !== '') { this.key = ''; this.viewer.shadowDirty = true; } return; }
+    const a = new Float32Array(list.length * 8); list.forEach((t, k) => a.set([t[0], t[1], t[2], t[3], t[4], t[5] ?? 1, t[6] ?? 1, t[7] ?? 0], k * 8));
     if (!this.inst || this.inst.size < a.byteLength) { this.inst?.destroy(); this.inst = d.createBuffer({ size: Math.max(256, a.byteLength * 2), usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST }); }
     d.queue.writeBuffer(this.inst, 0, a);
-    this.viewer.shadowDirty = true;
+    // shadows change with the trees, not with a cross-fade's dither amounts
+    const key = list.map((t) => t.slice(0, 6).join(',') + (t[7] && (t[6] ?? 1) >= 0.5 ? 'x' : '')).join('|');
+    if (key !== this.key) { this.key = key; this.viewer.shadowDirty = true; }
   }
   private draw(pass: GPURenderPassEncoder, shadow: boolean): { calls: number; tris: number } {
     if (!this.count || !this.inst) return { calls: 0, tris: 0 };

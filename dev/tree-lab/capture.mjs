@@ -47,6 +47,9 @@ if (process.env.STAND === '1') {
 // window.__b64); it returns { 'file name': data URL | JSON-able value }, written to <outDir>
 if (process.env.RUN) {
   const code = readFileSync(process.env.RUN, 'utf8');
+  if (process.env.ARGS) await page.evaluate((x) => { window.__args = JSON.parse(x); }, process.env.ARGS);
+  // window.__emit(name, dataUrl | value): write a file immediately (long scripts keep their output if stopped)
+  await page.exposeFunction('__emit', (name, v) => { mkdirSync(`${out}/${name}`.replace(/\/[^/]*$/, ''), { recursive: true }); if (typeof v === 'string' && v.startsWith('data:')) writeFileSync(`${out}/${name}`, Buffer.from(v.split(',')[1], 'base64')); else writeFileSync(`${out}/${name}`, typeof v === 'string' ? v : JSON.stringify(v, null, 2)); });
   const r = await page.evaluate(`(async () => { ${code}\n })()`);
   for (const [name, v] of Object.entries(r)) {
     mkdirSync(`${out}/${name}`.replace(/\/[^/]*$/, ''), { recursive: true });

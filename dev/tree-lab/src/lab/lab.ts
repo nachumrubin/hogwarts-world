@@ -83,12 +83,27 @@ export class Lab {
    *  has moved, at most 4 times a second, so the shadow map is not redrawn every frame) */
   private lastLod = { t: 0, eye: [1e9, 0, 0] as number[], vp: '' };
   private standLod(eye: V3, vp: Float32Array, t: number): void {
-    const moved = Math.hypot(eye[0] - this.lastLod.eye[0], eye[1] - this.lastLod.eye[1], eye[2] - this.lastLod.eye[2]) > 1 || this.lastLod.vp !== vp.slice(0, 3).join();
-    if (!moved || t - this.lastLod.t < 250) return;
+    // re-assigned when the camera has moved (at most 10 times a second), and every frame while trees cross-fade
+    const moved = Math.hypot(eye[0] - this.lastLod.eye[0], eye[1] - this.lastLod.eye[1], eye[2] - this.lastLod.eye[2]) > 0.5 || this.lastLod.vp !== vp.slice(0, 3).join();
+    if (!this.scene.fading && (!moved || t - this.lastLod.t < 100)) return;
+    const dt = Math.min(0.25, (t - (this.lastLod.t || t)) / 1000);
     this.lastLod = { t, eye: [...eye], vp: vp.slice(0, 3).join() };
     this.scene.eye = eye; this.scene.cullVP = vp; this.scene.lodPolicy.screenH = this.canvas.height;
-    this.scene.apply(0);
+    this.scene.apply(0, dt);
+    if (this.scene.fading) this.invalidate();
     this.store.evictLod0(this.viewer, performance.now());
+  }
+  /** One step of the stand's LOD state for a scripted camera (videos, tests): cross-fades advance by dt seconds. */
+  lodStep(eye: V3, target: V3, w: number, h: number, dt: number, policyH = h): Float32Array {
+    const vp = viewProj(eye, target, FOV, w / h, 0.05, 3000);
+    // policyH: the screen height the LOD thresholds are evaluated for (a small recording can choose LODs as at 1080p)
+    this.scene.eye = eye; this.scene.cullVP = vp; this.scene.lodPolicy.screenH = policyH;
+    this.scene.apply(0, dt);
+    return vp;
+  }
+  /** Render the current draws from a camera offscreen (scripted frames). */
+  async frame(eye: V3, target: V3, vp: Float32Array, w: number, h: number): Promise<Blob> {
+    return this.exclusive(async () => { this.hold++; try { return await this.viewer.renderImage(w, h, vp, eye); } finally { this.hold--; } });
   }
 
   // ---------------------------------------------------------------- impostors, benchmark
@@ -112,7 +127,8 @@ export class Lab {
       }
       this.onStatus(`Baking impostor: ${this.store.get(id).def.name}…`, true);
       await this.exclusive(async () => {
-        const draws: Draw[] = [{ mesh: this.store.gpu(this.viewer, id, 1), offset: [0, 0, 0], kind: KIND.tree, mat: MAT[e.def.material], foliage: this.store.foliage(this.viewer, id, 1, 'hybrid'), yaw: 0 }];
+        const src = this.impostorSource[id] ?? 1;
+        const draws: Draw[] = [{ mesh: this.store.gpu(this.viewer, id, src), offset: [0, 0, 0], kind: KIND.tree, mat: MAT[e.def.material], foliage: this.store.foliage(this.viewer, id, src, 'hybrid'), yaw: 0 }];
         const saved = this.viewer.mode; this.viewer.mode = 'lit';
         this.impostors.bake(id, SPECIES.findIndex((d) => d.id === id), draws, center, radius);
         this.viewer.mode = saved;
@@ -138,10 +154,12 @@ export class Lab {
     if (!this.impMan) { try { this.impMan = await (await fetch(`textures/impostors.json?v=${COMMIT}`)).json(); } catch { this.impMan = {}; } }
     return this.impMan!;
   }
+  /** which LOD each specimen's impostor is baked from (1 = spray cards, matched to LOD0; 0 = LOD0 itself) */
+  impostorSource: Record<string, number> = {};
   /** What an impostor atlas depends on: the specimen's generated foliage and skeleton, and the foliage textures. */
   fingerprint(id: string): string {
     const b = this.store.get(id).built!, f = b.foliage;
-    return [f.stats.leaves, f.stats.shoots, f.lods[1].instances, f.lods[1].triangles, b.lods[1].i.length, ...b.bounds.min.map((x) => x.toFixed(3)), ...b.bounds.max.map((x) => x.toFixed(3)), this.viewer.folTexKey].join(':');
+    return [this.impostorSource[id] ?? 1, f.stats.leaves, f.stats.shoots, f.lods[1].instances, f.lods[1].triangles, b.lods[1].i.length, ...b.bounds.min.map((x) => x.toFixed(3)), ...b.bounds.max.map((x) => x.toFixed(3)), this.viewer.folTexKey].join(':');
   }
   /** The woodland stand of n trees (12: the review stand; 50 and 200: generated, for the benchmark). */
   async standOf(n: number): Promise<void> {

@@ -239,8 +239,10 @@ export class LabScene {
   /** an explicit tree list for stand mode (benchmark: one specimen with the stand's LOD machinery) */
   custom: { id: string; x: number; z: number; yaw: number }[] | null = null;
   /** projected-size LOD: screen height (px) and the crown heights (px) above which LOD0, LOD1 and LOD2 are used;
-   *  below the last, the tree's impostor (when baked; LOD2 otherwise) */
-  lodPolicy = { screenH: 900, px: [700, 240, 110] };
+   *  below the last, the tree's impostor (when baked; LOD2 otherwise). Phase 4.2 chain (B): LOD0 → LOD1 → impostor;
+   *  the LOD2 clump cards were measured against it and dropped from the distance chain (CHANGES-lod-phase.md §3).
+   *  [700, 240, 110] restores the four-step chain (A). */
+  lodPolicy = { screenH: 900, px: [700, 140, 140] };
   /** frustum (view-projection) for culling in stand mode; null = draw everything */
   cullVP: Float32Array | null = null;
   impostors: Impostors | null = null;
@@ -251,6 +253,7 @@ export class LabScene {
   set(ids: string[], lod: number, stand = false): void {
     this.stand = stand;
     this.placed = stand ? standLayout(this.store, this.standN, this.custom) : layout(this.store, ids);
+    this.resetTransitions();
     this.box = unionBox(this.placed.map((p) => p.box));
     const pad = 12;
     const gbox: Box = { min: [this.box.min[0] - pad, 0, this.box.min[2] - pad], max: [this.box.max[0] + pad, 0, this.box.max[2] + pad] };
@@ -260,31 +263,65 @@ export class LabScene {
     if (!this.pole) { const p = poleMesh(); this.pole = this.viewer.upload(p.v, p.i); }
     this.apply(lod);
   }
-  apply(lod: number): void {
+  /** LOD transitions in stand mode: hysteresis band (± share of each threshold) and cross-fade duration (s) */
+  transition = { hysteresis: 0.12, fade: 0.6 };
+  /** per placed tree: current LOD, the LOD fading out, fade progress 0…1 */
+  private lodState = new Map<number, { lod: number; prev: number; t: number }>();
+  /** true while any tree is cross-fading (the live view then re-applies every frame) */
+  fading = false;
+  resetTransitions(): void { this.lodState.clear(); this.fading = false; }
+  /** Rebuild the draw list. In stand mode with an eye, each tree's LOD follows its projected height with hysteresis;
+   *  given `dt` (s), changes cross-fade over `transition.fade` seconds, otherwise they switch at once (shots). */
+  apply(lod: number, dt?: number): void {
     const draws: Draw[] = [{ mesh: this.ground!, offset: [0, 0, 0], kind: KIND.ground }];
     this.lodCounts = [0, 0, 0, 0, 0];
     const imp: number[][] = [];
     const planes = this.stand && this.cullVP ? frustum(this.cullVP) : null;
     const k = this.lodPolicy.screenH / (2 * Math.tan(FOV_Y / 2));
-    for (const p of this.placed) {
+    const P = this.lodPolicy.px, h = this.transition.hysteresis;
+    let fading = false;
+    const add = (p: Placed, l: number, fade: number, fadeOut: boolean, shadow: boolean) => {
+      if (l === 3) { imp.push([p.offset[0], p.offset[1], p.offset[2], p.yaw ?? 0, SPECIES.findIndex((d) => d.id === p.id), 1, fade, fadeOut ? 1 : 0]); return; }
+      if (l === 0) this.store.get(p.id).used0 = performance.now();
+      draws.push({ mesh: this.store.gpu(this.viewer, p.id, l), offset: p.offset, kind: KIND.tree, mat: MAT[this.store.get(p.id).def.material], foliage: this.showFoliage ? this.store.foliage(this.viewer, p.id, l, this.rep) : null, yaw: p.yaw ?? 0, fade, fadeOut, castShadow: shadow });
+    };
+    this.placed.forEach((p, idx) => {
       let l = lod;
       if (this.stand && this.eye) {
         const b = this.store.get(p.id).built!.bounds, H = b.max[1], c: V3 = [p.offset[0], H * 0.5, p.offset[2]];
         const r = Math.max(H * 0.5, (b.max[0] - b.min[0]) * 0.5, (b.max[2] - b.min[2]) * 0.5) + 2;
-        if (planes && planes.some((q) => q[0] * c[0] + q[1] * c[1] + q[2] * c[2] + q[3] < -r)) { this.lodCounts[4]++; continue; }
+        if (planes && planes.some((q) => q[0] * c[0] + q[1] * c[1] + q[2] * c[2] + q[3] < -r)) { this.lodCounts[4]++; return; }
         const px = (H / Math.max(Math.hypot(this.eye[0] - c[0], this.eye[1] - c[1], this.eye[2] - c[2]), 1)) * k;
-        const P = this.lodPolicy.px;
-        l = px >= P[0] ? 0 : px >= P[1] ? 1 : px >= P[2] ? 2 : this.impostors?.has(p.id) ? 3 : 2;
+        const hasImp = this.impostors?.has(p.id) ?? false;
+        const base = (x: number) => (x >= P[0] ? 0 : x >= P[1] ? 1 : x >= P[2] ? 2 : hasImp ? 3 : 2);
+        const st = this.lodState.get(idx);
+        l = base(px);
+        if (st && l !== st.lod) {
+          // hysteresis: move to finer detail only once past the threshold by h, to coarser only once below it by h
+          const t2 = l < st.lod ? base(px / (1 + h)) : base(px / (1 - h));
+          l = l < st.lod ? Math.min(st.lod, t2) : Math.max(st.lod, t2);
+        }
+        if (!st) this.lodState.set(idx, { lod: l, prev: -1, t: 1 });
+        else if (l !== st.lod) { st.prev = st.lod; st.lod = l; st.t = dt === undefined ? 1 : 0; }
+        else if (st.t < 1) st.t = dt === undefined ? 1 : Math.min(1, st.t + dt / this.transition.fade);
+        const s2 = this.lodState.get(idx)!;
+        this.lodCounts[l]++;
+        if (s2.t < 1 && s2.prev >= 0) {
+          fading = true;
+          add(p, s2.prev, s2.t, true, s2.t < 0.5); add(p, l, s2.t, false, s2.t >= 0.5);
+          return;
+        }
+        add(p, l, 1, false, true);
+        return;
       }
       this.lodCounts[l]++;
-      if (l === 3) { imp.push([p.offset[0], p.offset[1], p.offset[2], p.yaw ?? 0, SPECIES.findIndex((d) => d.id === p.id), 1]); continue; }
-      if (l === 0) this.store.get(p.id).used0 = performance.now();
-      draws.push({ mesh: this.store.gpu(this.viewer, p.id, l), offset: p.offset, kind: KIND.tree, mat: MAT[this.store.get(p.id).def.material], foliage: this.showFoliage ? this.store.foliage(this.viewer, p.id, l, this.rep) : null, yaw: p.yaw ?? 0 });
-      if (this.stand) continue;
+      add(p, l, 1, false, true);
+      if (this.stand) return;
       const def = this.store.get(p.id).def, fz = def.figure ?? [def.crownR * 0.25 + 3, 2.5];
       const fx = p.offset[0] + fz[0], fzz = p.offset[2] + fz[1];
       draws.push({ mesh: this.figure!, offset: [fx, groundAt(fz[0], fz[1]), fzz], kind: KIND.figure });
-    }
+    });
+    this.fading = fading;
     const first = this.placed[0], fdef = this.store.get(first.id).def, ff = fdef.figure ?? [4, 2.5];
     draws.push({ mesh: this.pole!, offset: [first.offset[0] + ff[0] + 1.2, -0.05, first.offset[2] + ff[1] + 0.4], kind: KIND.pole });
     this.impostors?.setInstances(this.stand ? imp : []);
