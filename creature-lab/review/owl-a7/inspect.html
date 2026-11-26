@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Barn Owl A7 · Animation Inspector</title>
+<link rel="stylesheet" href="review.css">
+<main>
+  <header>
+    <div><a href="index.html">Barn Owl A7</a><h1>Animation inspector</h1></div>
+    <a href="../../index.html?specimen=owl">Creature Lab ↗</a>
+  </header>
+  <section class="player" aria-label="Owl animation">
+    <div class="stage"><canvas id="owl" aria-label="Rendered barn owl"></canvas><span id="state">Perched</span></div>
+    <div class="transport">
+      <button id="back" aria-label="Step backward one frame" title="Step backward (←)">−1</button>
+      <button id="play" aria-label="Play animation">Play</button>
+      <button id="next" aria-label="Step forward one frame" title="Step forward (→)">+1</button>
+      <label>Speed <select id="speed"><option value="1">1×</option><option value=".5">½×</option><option value=".25">¼×</option></select></label>
+      <output for="timeline" id="clock"></output>
+    </div>
+    <label class="scrub"><span>Timeline</span><input type="range" id="timeline" min="0" step="1"></label>
+    <nav id="chapters" aria-label="Behavior chapters"></nav>
+    <div class="views">
+      <label>View <select id="view"><option value="quarter">Three-quarter</option><option value="front">Front</option><option value="side">Side</option><option value="perch">Perch close-up</option><option value="feet">Foot close-up</option></select></label>
+      <label>Detail <select id="lod"><option value="0">LOD 0</option><option value="1">LOD 1</option><option value="2">LOD 2</option></select></label>
+      <label><input id="wings" type="checkbox"> Wing joints</label>
+      <label><input id="contact" type="checkbox"> Foot contact</label>
+    </div>
+  </section>
+  <section id="diagnostics" hidden aria-label="Foot contact measurements">
+    <h2>Perch clearance</h2>
+    <p>Minimum signed distance in millimetres from the skinned vertices to the tapered A6 perch. Negative values indicate seating into the surface.</p>
+    <table><thead><tr><th>Surface</th><th>Left</th><th>Right</th></tr></thead><tbody id="clearance"></tbody></table>
+  </section>
+</main>
+<script type="module" src="inspect.js"></script>
+</html>

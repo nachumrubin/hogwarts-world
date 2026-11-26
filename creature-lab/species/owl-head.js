@@ -39,7 +39,9 @@ function frontDepth(x,y){
   const cheek=.0043*gauss((Math.abs(x)-.032)/.018,(y+.015)/.02);
   const notch=.013*gauss(x/.014,(y-.033)/.019);
   const radius=Math.hypot(x/(.050+.009*clamp(y/.044,-1,1)),(y+notch)/.046);
-  const ruff=.0019*Math.exp(-(((radius-.93)/.21)**2));
+  // A shallow raised ruff traces the lower heart and paired upper lobes.
+  const edge=.0010*gauss((radius-.94)/.11,0);
+  const ruff=.0019*gauss((radius-.93)/.21,0)+edge;
   const brow=.0023*gauss((Math.abs(x)-.023)/.018,(y-.022)/.011);
   return .048*cosine**.69+cosine*(ridge+cheek+ruff+brow-.0076*hollow-.38*notch);
 }
@@ -145,5 +147,5 @@ export function owlFace(owl){
   const bill=[[-.013,-.0014,.0035,.0027],[-.021,.0007,.0034,.0029],
     [-.026,.0024,.0024,.0024],[-.030,.0020,.0011,.0015],[-.032,.0003,.0003,.0004]];
   owl.loft(owl.head,0xaa907d,bill.map(([y,lift,w,h])=>[0,faceHeight(0,y),frontDepth(0,y)+lift,w,h]));
-  return closure=>{for(const lid of lids)lid.morphTargetInfluences[0]=closure};
+  return (left,right=left)=>{lids[0].morphTargetInfluences[0]=left;lids[1].morphTargetInfluences[0]=right};
 }

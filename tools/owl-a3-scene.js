@@ -28,10 +28,10 @@ function reset(){
   for(const bird of birds)scene.add(bird.root);
 }
 function step(action,ctx){t+=1/60;for(const bird of birds)bird.update(1/60,t,action,ctx)}
-function aim(view){
+function aim(view,version=0){
   const [center,dir,h]=views[view],wide=h*width/height;
   camera.left=-wide/2;camera.right=wide/2;camera.top=h/2;camera.bottom=-h/2;camera.near=.01;camera.far=12;
-  const root=birds[0].root,target=V(center).applyQuaternion(root.quaternion).add(root.position);
+  const root=birds[version].root,target=V(center).applyQuaternion(root.quaternion).add(root.position);
   camera.position.copy(target).addScaledVector(V(dir).normalize().applyQuaternion(root.quaternion),2);camera.lookAt(target);camera.updateProjectionMatrix();
 }
 function capture(view,mode,bar){
@@ -50,7 +50,9 @@ function capture(view,mode,bar){
   return c.toDataURL('image/jpeg',.94).split(',')[1];
 }
 window.plate=([view,mode])=>{
-  reset();for(let i=0;i<120;i++)step(view==='flying'?'Fly':['above','below'].includes(view)?'Unfold':'Perch');
+  reset();
+  const frames=baseline===6&&!['above','below','flying'].includes(view)?0:120;
+  for(let i=0;i<frames;i++)step(view==='flying'?'Fly':['above','below'].includes(view)?'Unfold':'Perch');
   return capture(view,['silhouette','flying'].includes(view)?'silhouette':mode,true);
 };
 window.frame=([action,i])=>{
@@ -64,26 +66,44 @@ window.measure=(reverse=false)=>{
     reset();birds.forEach((b,i)=>{b.root.visible=i===version;b.setLOD(lod)});
     const bird=birds[version];for(let j=0;j<180;j++)step('Fly');
     scene.overrideMaterial=null;perch.visible=false;
-    const times=[];
+    const times=[],updates=[];
     for(let i=0;i<44;i++){
       // Advance the shared camera clock outside the timed section.
       if(version===1)birds[0].update(1/60,t+1/60,'Fly');
-      const start=performance.now();bird.update(1/60,t+=1/60,'Fly');aim('flight');
+      const start=performance.now();
+      bird.update(1/60,t+=1/60,'Fly');
+      const updateMs=performance.now()-start;
+      aim('flight',baseline===6?version:0);
       renderer.render(scene,camera);gl.readPixels(320,250,1,1,gl.RGBA,gl.UNSIGNED_BYTE,readback);
-      if(i>=12)times.push(performance.now()-start);
+      if(i>=12){
+        times.push(performance.now()-start);
+        updates.push(updateMs);
+      }
     }
-    times.sort((a,b)=>a-b);
+    times.sort((a,b)=>a-b);updates.sort((a,b)=>a-b);
     let textureBytes=0;
     for(const map of bird.maps){
       let w=map.image.width,h=map.image.height;
       for(;;){textureBytes+=4*w*h;if(w===1&&h===1)break;w=Math.max(1,w>>1);h=Math.max(1,h>>1)}
     }
+    let vertices=0,geometryBytes=0,morphBytes=0;
+    const seen=new Set();
+    bird.root.traverse(o=>{
+      if(!o.isMesh || seen.has(o.geometry))return;
+      const g=o.geometry;
+      seen.add(g);
+      vertices+=g.attributes.position.count;
+      geometryBytes+=g.index?.array.byteLength??0;
+      for(const attr of Object.values(g.attributes))geometryBytes+=attr.array.byteLength;
+      for(const attrs of Object.values(g.morphAttributes))for(const attr of attrs)morphBytes+=attr.array.byteLength;
+    });
     rows.push({revision:'A.'+(version+baseline),lod,triangles:renderer.info.render.triangles,
-      samples:times,calls:renderer.info.render.calls,textureBytes,medianMs:times[16],p95Ms:times[30]});
+      vertices,geometryBytes,morphBytes,samples:times,updateSamples:updates,calls:renderer.info.render.calls,textureBytes,medianMs:(times[15]+times[16])/2,p95Ms:times[30],medianAnimationMs:(updates[15]+updates[16])/2});
   }
   reset();const bounds=()=>birds.map(b=>new T.Box3().setFromObject(b.root,true).getSize(new T.Vector3()).toArray());
   const perched=bounds();for(let i=0;i<180;i++)step('Unfold');
-  return {width,height,perched,spread:bounds(),rows,renderer:gl.getParameter(gl.getExtension('WEBGL_debug_renderer_info').UNMASKED_RENDERER_WEBGL)};
+  const adapter=gl.getExtension('WEBGL_debug_renderer_info');
+  return {width,height,perched,spread:bounds(),rows,renderer:adapter?gl.getParameter(adapter.UNMASKED_RENDERER_WEBGL):'Unidentified'};
 };
 
 window.tractPlate=()=>{

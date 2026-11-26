@@ -6,12 +6,12 @@ export function batchArticulatedParts(owl,parts){
   owl.root.updateMatrixWorld(true);
   const sources=parts.map(({mesh,make,levels})=>{
     const matrix=mesh.matrixWorld.clone(),index=bones.indexOf(mesh.parent),color=mesh.material.color.clone();
-    mesh.removeFromParent();levels.forEach(g=>g.dispose());return {matrix,index,color,make,rectrix:mesh.userData.rectrix};
+    mesh.removeFromParent();levels.forEach(g=>g.dispose());return {matrix,index,color,make,rectrix:mesh.userData.rectrix,contact:mesh.userData.owlContact};
   });
   const discarded=new Set(parts);owl.parts=owl.parts.filter(p=>!discarded.has(p));
   const skin=owl.mesh(owl.root,0xfefefe,l=>{
-    const xyz=[],normal=[],rgb=[],indices=[],weights=[],joints=[];
-    for(const {make,matrix,index,color,rectrix} of sources){
+    const xyz=[],normal=[],rgb=[],indices=[],weights=[],joints=[],contact=[];
+    for(const {make,matrix,index,color,rectrix,contact:surface} of sources){
       const g=make(l).applyMatrix4(matrix),offset=xyz.length/3;
       xyz.push(...g.attributes.position.array);normal.push(...g.attributes.normal.array);
       for(let i=0;i<g.attributes.position.count;i++){
@@ -23,12 +23,13 @@ export function batchArticulatedParts(owl,parts){
         }
         rgb.push(color.r*value,color.g*value,color.b*value);joints.push(index,0,0,0);weights.push(1,0,0,0);
       }
+      if(surface)contact.push({...surface,first:offset,end:xyz.length/3});
       for(const i of g.index.array)indices.push(i+offset);g.dispose();
     }
     const g=new T.BufferGeometry();
     for(const [name,values,n] of [['position',xyz,3],['normal',normal,3],['color',rgb,3],['skinWeight',weights,4]])
       g.setAttribute(name,new T.Float32BufferAttribute(values,n));
-    g.setAttribute('skinIndex',new T.Uint16BufferAttribute(joints,4));g.setIndex(indices);return g;
+    g.setAttribute('skinIndex',new T.Uint16BufferAttribute(joints,4));g.setIndex(indices);g.userData.owlContact=contact;return g;
   },T.SkinnedMesh);
   skin.material.vertexColors=true;skin.bind(new T.Skeleton(bones));
   // Both feet and the tail stay within this root-local flight envelope.

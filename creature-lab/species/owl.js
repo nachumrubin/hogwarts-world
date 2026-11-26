@@ -6,13 +6,15 @@ import {guideMap,releaseGuideMap,owlFace} from './owl-head.js';
 import {batchArticulatedParts} from './owl-batch.js';
 import {breastPlumage} from './owl-plumage.js';
 
-const clamp=T.MathUtils.clamp;
-const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
+import {OwlMotion, owlBlink, owlStroke, clamp, ease, mix} from './owl-motion.js';
+
+const yawAxis=new T.Vector3(0,1,0);
 const cream=0xf1e5d1;
 export const actions={Perch:'Perched idle',Look:'Track target',Unfold:'Unfold wings',Fold:'Fold wings',Takeoff:'Leave perch',Fly:'Powered flight',Glide:'Glide',Bank:'Bank and turn',Land:'Land and grip'};
 
 function foot(owl,s){
   const carrier=joint(owl.root),ankle=joint(carrier,s*.021,.0795,-.001);
+  const mark=(region,index)=>{owl.parts[index].mesh.userData.owlContact={region,side:s<0?0:1}};
   owl.loft(ankle,cream,[[0,.049,-.017,.015,.019],[0,.010,-.022,.020,.024],[0,-.015,-.021,.016,.019],[0,-.033,-.007,.012,.014],[0,-.049,.004,.007,.009],[0,-.064,.012,.0045,.005]]);
   const legPlumes=[];
   for(let i=0;i<16;i++){
@@ -23,14 +25,15 @@ function foot(owl,s){
     const a=i*2.40,x=Math.cos(a),z=Math.sin(a),r=.009+.0014*Math.sin(i*3);
     const upper=i%3===0;
     const start=upper?[x*.020,.012,-.022+z*.023]:[x*.016,-.015,-.018+z*.019];
-    const end=upper?[x*.014,-.036+.005*Math.cos(i),-.005+z*.015]:[x*r,-.052-.012*(.5+.5*Math.sin(i*9)),.007+z*r];
+    const end=upper?[x*.015,-.039+.005*Math.cos(i),-.007+z*.017]:[x*r,-.052-.012*(.5+.5*Math.sin(i*9)),.007+z*r];
     legPlumes.push([start,end,upper?.0056:.0037,[x,0,z]]);
   }
   plumage(owl,ankle,0xe7dbca,legPlumes);
   const digit=(parent,color,rows)=>owl.mesh(parent,color,l=>sweep(rows,[14,10,7][l]));
   const pad=joint(ankle,0,-.064,.012),toes=[];
-  owl.oval(pad,0xbba89c,0,0,0,.007,.004,.009);
+  owl.oval(pad,0xbba89c,0,0,0,.007,.004,.009);mark('pad',owl.parts.length-1);
   for(const [yaw,length] of [[-.38,.033],[.31,.038],[2.58,.032],[-2.87,.028]]){
+    const first=owl.parts.length;
     const toe=joint(pad);toe.rotation.y=yaw*s;toe.position.x=.0028*Math.sin(yaw)*s;
     const knuckle=joint(toe);
     // Transverse scutes rise along the phalanx and flatten into the pad.
@@ -61,18 +64,47 @@ function foot(owl,s){
     }
     knuckle.rotation.x=0;tip.rotation.x=0;
     digit(tip,0x4b4038,horn);
-    toes.push([knuckle,tip,length]);
+    mark('toeBase',first);mark('toeTip',first+1);mark('claw',first+2);
+    toes.push({knuckle,tip,length,toe,restYaw:toe.rotation.y});
   }
-  return (air,grip,reach)=>{
-    carrier.position.copy(owl.body.position).multiplyScalar(air);
-    carrier.quaternion.identity().slerp(owl.body.quaternion,air);
-    ankle.rotation.x=air*(.91-1.28*reach);
-    for(const [a,b,length] of toes){
-      const curl=clamp(grip+(length-.033)*16*grip*(1-grip),0,1);
-      a.rotation.x=.04+.18*curl+.12*air*(1-reach);
-      b.rotation.x=.05+.51*curl+.28*air*(1-reach);
+  const support=new T.Vector3(),flight=new T.Vector3(),orientation=new T.Quaternion();
+  return {pad,carrier,pose(p){
+    const lag=s<0?0:.026;
+    const lift=p.launch?ease((p.age-.365-lag)/.51):p.air;
+    const exit=p.launch?ease((p.age-.36-lag)/.26):1;
+    const brakeReach=p.land?ease((p.approach-.45)/.36):0;
+    const approach=p.land?ease((p.approach-.85)/.15):0;
+    const closing=p.land?ease((p.touchdownAge+.10)/.17):0;
+    // In the last part of the approach the foot follows the perch frame.
+    // The carrier locks before the pectoral girdle settles.
+    const release=p.launch?ease((p.age-.29-lag)/.115):1;
+    const extend=p.launch?1-ease((p.age-.46-lag)/.30):brakeReach;
+    const grip=p.launch?1-release+.40*ease((p.age-.61)/.28):p.land?mix(.40*(1-brakeReach),1,closing):p.air>.01?.40:1;
+    const open=p.launch?release*(1-ease((p.age-.57)/.21)):p.land?brakeReach*(1-closing):0;
+    orientation.copy(owl.root.quaternion).invert();
+    support.copy(owl.origin).sub(owl.root.position);
+    support.y+=p.launch?.046*ease((p.age-.32-lag)/.22):p.land?.045*(1-closing):0;
+    support.applyQuaternion(orientation);
+    flight.copy(owl.body.position);
+    if(p.launch){
+      carrier.position.copy(support).lerp(flight,exit);
+    }else if(p.land){
+      carrier.position.copy(flight).lerp(support,approach);
+    }else if(p.air>.01){
+      carrier.position.copy(flight).multiplyScalar(p.air);
+    }else{
+      carrier.position.copy(support);
     }
-  };
+    carrier.quaternion.copy(orientation).slerp(owl.body.quaternion,lift*(1-approach)*exit);
+    ankle.rotation.x=lift*(.87-1.34*extend)*(1-approach)*exit;
+    for(const {knuckle,tip,length,toe,restYaw} of toes){
+      const curl=clamp(grip+(length-.033)*16*grip*(1-grip));
+      knuckle.rotation.x=.04+.18*curl+.11*lift*(1-extend)*(1-approach)*exit;
+      tip.rotation.x=.05+.51*curl+.20*lift*(1-extend)*(1-approach)*exit;
+      toe.rotation.y=restYaw+Math.sin(restYaw)*.18*open;
+    }
+  }};
+
 }
 
 export class Owl extends Specimen{
@@ -99,73 +131,58 @@ export class Owl extends Specimen{
     this.wings=[-1,1].map(s=>owlWing(this,s,this.maps[2]));
     start=this.parts.length;this.feet=[-1,1].map(s=>foot(this,s));
     articulated.push(...this.parts.slice(start));batchArticulatedParts(this,articulated);
-    this.open=0;this.air=0;this.bank=0;this.yaw=0;this.pitch=0;this.phase=0;this.route=0;
-    this.update(0,0,'Perch');
+    this.headFrame=new T.Quaternion();
+    this.resetMotion();
+  }
+  resetMotion(){
+    this.motion=new OwlMotion();
+    this.motion.step('Perch',{},this.origin);
+    this.motion.age=0;
+    this.applyPose(this.motion.pose);
   }
   update(dt,t,action,context={}){
-    if(action!==this.action){this.action=action;this.elapsed=0;this.startAir=this.air;this.startOpen=this.open;
-      this.approachStart=this.route;this.approachDuration=clamp((2*Math.PI-this.route)/1.18,1.30,2.12);
-    }
-    this.elapsed+=dt;
-    const e=this.elapsed,launch=action==='Takeoff';
-    const land=action==='Land'||(['Perch','Fold','Look','Unfold'].includes(action)&&this.startAir>.03);
-    const progress=clamp(e/this.approachDuration,0,1);
-    const flying=['Fly','Glide','Bank'].includes(action),tracking=action==='Look';
-    const targetAir=land?this.startAir*(1-smooth((progress-.34)/.66)):launch?this.startAir+(1-this.startAir)*smooth((e-.25)/.98):Number(flying);
-    const targetOpen=launch?this.startOpen+(1-this.startOpen)*smooth(e/.56):land?this.startOpen+(Number(action==='Unfold')-this.startOpen)*smooth((e-this.approachDuration+.06)/.79):Number(flying||action==='Unfold');
-    const blend=1-Math.exp(-dt*5);
-    this.air+=(targetAir-this.air)*(launch||land?1:blend);
-    this.open+=(targetOpen-this.open)*(launch||land?1:blend);
-    this.bank+=((action==='Bank'?.48*Math.sin(.86*e):0)-this.bank)*blend;
-    // A level circuit carries the specimen through the roost. Landing
-    // completes the current arc and decelerates into the original perch.
-    if(land&&this.approachStart>0){
-      const u=progress*(2-progress);
-      this.route=progress===1?0:this.approachStart+(2*Math.PI-this.approachStart)*u;
-    }else if(launch||flying)this.route=(this.route+dt*this.air*(action==='Bank'?1.18:.94))%(2*Math.PI);
-    else this.route=0;
-    this.root.rotation.y=this.route;
+    this.applyPose(this.motion.advance(dt,action,context,this.origin));
+  }
+  applyPose(p){
+    const {t,air,open,bank,route,brake,breath,shift,power,trim}=p;
+    this.air=air;this.open=open;this.bank=bank;this.route=route;
+    const radial=2.4;
     this.root.position.copy(this.origin);
-    this.root.position.x+=2.4*(1-Math.cos(this.route));
-    this.root.position.z+=2.4*Math.sin(this.route);
-    this.root.position.y+=this.air*.42*Math.sin(this.route*.5);
-    this.phase+=dt*Math.PI*2*(2.55+.09*Math.sin(t*.9));
-    const powered=action==='Fly'||launch||land;
-    const trim=.028*Math.sin(1.17*t)+.013*Math.sin(2.09*t+.7);
-    const stroke=powered?.48*Math.sin(this.phase)+.042*Math.sin(2*this.phase-.35):this.bank*.055+this.air*trim;
-    const recovery=powered?(1+Math.cos(this.phase))/2:0;
-    const compression=land?.010*Math.sin(Math.PI*clamp((e-this.approachDuration)/.27,0,1)):0;
-    const drive=launch?.021*Math.sin(Math.PI*clamp((e-.19)/.29,0,1)):0;
-    const squat=launch?.014*Math.sin(Math.PI*clamp(e/.28,0,1))-drive:compression;
-    const flare=land?Math.sin(Math.PI*smooth((progress-.38)/.62)):0;
-    const breath=(1-this.air)*Math.sin(t*2.06+.14*Math.sin(t*.61));
-    this.breast.scale.set(1+.007*breath,1+.006*breath,1+.005*breath);
-    this.neck.position.y=.202+.0016*breath;
-    this.neck.position.z=.028+.002*Math.sin(t*.84)*(1-this.air);
-
-    const heave=this.air*(powered?.033*Math.sin(this.phase-.70):.009*Math.sin(1.17*t));
-    this.body.rotation.set(this.air*.96-.32*flare+heave,this.bank*.66,this.bank,'YXZ');
-    this.body.position.set(this.bank*.08,this.air*.31-squat+this.air*(powered?.008*Math.cos(this.phase-.43):trim*.035),this.air*.12);
-
-    let yaw=.075*Math.sin(t*.75),pitch=.025*Math.sin(t*.93);
-    if(tracking){
-      const target=context.stimulus||context.playerPosition;
-      if(target){const dx=target.x-this.root.position.x,dz=target.z-this.root.position.z;
-        const bearing=Math.atan2(dx,dz)-this.route;
-        yaw=clamp(Math.atan2(Math.sin(bearing),Math.cos(bearing)),-2.05,2.05);pitch=-clamp(Math.atan2(target.y-this.root.position.y-.25,Math.hypot(dx,dz)),-.45,.45);
-      }else yaw=1.05*Math.tanh(2*Math.sin(t*1.12));
+    this.root.position.x+=radial*(1-Math.cos(route));
+    this.root.position.z+=radial*Math.sin(route);
+    this.root.position.y+=.24*Math.sin(route*.5)**2;
+    this.root.quaternion.setFromAxisAngle(yawAxis,route);
+    this.breast.scale.set(1+.008*breath,1+.005*breath,1+.006*breath);
+    this.neck.position.y=.202+.0009*breath;
+    this.neck.position.z=.028;
+    this.body.rotation.set(.96*air-.27*brake+.031*p.bounce,-.07*bank,bank+.025*shift,'YXZ');
+    this.body.position.set(.012*shift,air*.31-p.crouch-p.settle+.011*p.bounce,air*.12);
+    // Share yaw across the cervical chain and remove the torso's roll
+    // and pitching from the head frame as the body banks or beats.
+    const trackPitch=p.pitch+.07*brake-.01*p.bounce;
+    const trackRoll=p.tilt-.035*p.yaw-.20*bank;
+    this.headFrame.copy(this.body.quaternion).multiply(this.trunk.quaternion).invert();
+    for(const [node,share] of [[this.neck,.34],[this.atlas,.38],[this.head,.28]]){
+      node.rotation.set(trackPitch*share,p.yaw*share,trackRoll*share,'YXZ');
     }
-    this.yaw+=(yaw-this.yaw)*blend;this.pitch+=(pitch-this.pitch)*blend;
-    const tilt=(tracking?.14:.028)*Math.sin(1.27*t)-.055*this.yaw;
-    for(const [node,share] of [[this.neck,.35],[this.atlas,.38],[this.head,.27]])
-      node.rotation.set((this.pitch-this.air*.88-heave*.84+.19*flare)*share,this.yaw*share,tilt*share-this.bank*.69*share,'YXZ');
-    const blink=Math.min(1,Math.abs((t+1.37)%3.89-.15)/.085);
-    this.blink(1-smooth(blink));
-    this.wings.forEach((pose,i)=>pose(this.open,this.open*(stroke+(i?1:-1)*this.bank*.24),recovery,this.body.rotation.x,powered?Math.cos(this.phase)*this.open:0));
-    this.tail.rotation.set(-.18*this.air-.28*flare+.034*this.air*Math.sin(this.phase-.64),this.bank*.42+.038*this.air*Math.sin(t*2.2),-.15*this.bank);
-    for(const {shaft,t:spread} of this.rectrices)shaft.rotation.y=-spread*(.16+this.air*(.22+.31*flare)+Math.abs(this.bank)*.3);
-    const grip=land?smooth((progress-.93)/.07):launch?1-smooth((e-.16)/.16):1-this.air;
-    this.feet.forEach(pose=>pose(this.air,grip,land?smooth((progress-.30)/.44):launch?1-smooth((e-.24)/.40):0));
+    // Retain the accepted A6 forward rest angle and make the flight
+    // direction the orientation reference for the chain.
+    this.headFrame.multiply(this.trunk.quaternion);
+    this.neck.quaternion.premultiply(this.headFrame);
+    this.blink(owlBlink(t,0),owlBlink(t,1));
+    this.wings.forEach((wing,i)=>{
+      const side=i?1:-1;
+      const wave=owlStroke(p.phase+side*(.018+.009*Math.sin(t*1.9)));
+      const anticipation=p.launch?.34*ease((p.age-.17)/.19)*(1-ease((p.age-.37)/.22)):0;
+      const stroke=open*(wave.stroke*power+anticipation+.25*brake+side*.31*bank+trim*air);
+      const trimFlex=p.glide*air*(.085+.8*trim+side*.18*bank);
+      const lag=owlStroke(p.phase-.10+side*.023).load*power+trimFlex;
+      wing(open,stroke,wave.recovery*power+.42*brake,this.body.rotation.x,lag,
+        power*(.36*wave.recovery+.24*wave.load)+.36*brake+side*.27*bank+open*.055*shift);
+    });
+    this.tail.rotation.set(-.15*air+.39*brake+.050*p.bounce,bank*.54+.20*trim*air,-.35*bank+.04*shift);
+    for(const {shaft,t:spread} of this.rectrices)shaft.rotation.y=-spread*(.16+.23*air+.34*brake+.21*Math.abs(bank));
+    this.feet.forEach(foot=>foot.pose(p));
   }
   dispose(){this.maps.splice(0).forEach(releaseGuideMap);super.dispose()}
 }

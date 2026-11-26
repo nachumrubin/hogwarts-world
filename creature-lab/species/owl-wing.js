@@ -55,13 +55,14 @@ const restRanges=[
   [.005,.14,.43,.66],[.055,.25,.67,.86],[.27,.44,.79,1]
 ];
 function wingSurface(lod,seg){
-  const p=[],rest=[],bend=[],uv=[],rgb=[],idx=[];
+  const p=[],rest=[],bend=[],fan=[],ventral=[],uv=[],rgb=[],idx=[];
   const length=bones[seg][0].length(),inv=folded[seg].clone().invert();
   const color=new T.Color(),convert=v=>v.sub(restOrigin[seg]).applyQuaternion(inv);
   const web=lod===2?[-1,0,1]:[-1,-.49,0,.52,1];
-  function vertex(point,tucked,warp,u,v,c){
+  function vertex(point,tucked,warp,u,v,c,spread=0,mark=0){
     p.push(...point.toArray());rest.push(...tucked.toArray());bend.push(...point.clone().add(warp).toArray());
-    uv.push(u,v);rgb.push(c.r,c.g,c.b);
+    fan.push(point.x+spread,point.y+spread*.17,point.z+spread*.51);
+    ventral.push(mark);uv.push(u,v);rgb.push(c.r,c.g,c.b);
   }
   function strip(base,rows,cols){
     for(let j=1;j<=rows;j++)for(let k=1;k<cols;k++){
@@ -100,6 +101,8 @@ function wingSurface(lod,seg){
       const base=p.length/3;
       color.setHex(0xfffcf5);
       color.multiplyScalar(.94+.06*Math.sin(i*2.2+seg));
+      const mark=.22+.60*(.5+.5*Math.sin(i*2.71+seg*1.96+row*4.37));
+      const tilt=primary&&!covert?(t-.44)*.031:0;
       const tileColumn=(i*3+Math.floor(i/3)+seg+row)%4,tileRow=seg===0?2:Math.min(2,row);
       for(let j=0;j<=steps;j++){
         const u=(1-Math.cos(Math.PI*j/steps))/2;
@@ -127,7 +130,7 @@ function wingSurface(lod,seg){
           pos.y+=.0026*arch-.0031*k*exposed-.0038*u**3*(primary?t:0);
           const flex=(.003+.003*seg+.012*t*seg)*u*u*factor;
           vertex(pos,tucked,V(-.23*flex,flex*(1+.30*k),-.55*flex),
-            (tileColumn+.5+.47*k)/4,(tileRow+.025+.95*u)/4,color);
+            (tileColumn+.5+.47*k)/4,(tileRow+.025+.95*u)/4,color,tilt*u**2,mark);
         }
       }
       strip(base,steps,web.length);
@@ -136,10 +139,11 @@ function wingSurface(lod,seg){
   }
   const g=new T.BufferGeometry();g.userData.tracts=tracts;
   g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
-  g.setAttribute('color',new T.Float32BufferAttribute(rgb,3));g.setIndex(idx);g.computeVertexNormals();
+  g.setAttribute('color',new T.Float32BufferAttribute(rgb,3));
+  g.setAttribute('ventralMark',new T.Float32BufferAttribute(ventral,1));g.setIndex(idx);g.computeVertexNormals();
   const normals=g.attributes.normal;
   g.morphTargetsRelative=true;g.morphAttributes.position=[];g.morphAttributes.normal=[];
-  for(const pose of [rest,bend]){
+  for(const pose of seg===2?[rest,bend,fan]:[rest,bend]){
     const end=new T.BufferGeometry();end.setAttribute('position',new T.Float32BufferAttribute(pose,3));end.setIndex(g.index);end.computeVertexNormals();
     g.morphAttributes.normal.push(new T.Float32BufferAttribute(end.attributes.normal.array.map((v,i)=>v-normals.array[i]),3));
     g.morphAttributes.position.push(new T.Float32BufferAttribute(pose.map((v,i)=>v-p[i]),3));end.dispose();
@@ -156,9 +160,16 @@ export function owlWing(owl,s,map){
     // the mirrored mount when choosing the GL front face.
     mesh.material.onBeforeCompile=shader=>{
       // The fourth row of the shared atlas carries the ventral pigmentation.
-      shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',
-        T.ShaderChunk.map_fragment.replace('map, vMapUv',
-          'map, gl_FrontFacing ? vec2(vMapUv.x, 0.75 + 0.25 * fract(vMapUv.y * 4.0)) : vMapUv'));
+      shader.vertexShader='attribute float ventralMark; varying float owlVentralMark;\n'+shader.vertexShader
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nowlVentralMark = ventralMark;');
+      shader.fragmentShader='varying float owlVentralMark;\n'+shader.fragmentShader
+        .replace('#include <map_fragment>', `
+          #ifdef USE_MAP
+            vec2 atlasUV=gl_FrontFacing ? vec2(vMapUv.x,0.75+0.25*fract(vMapUv.y*4.0)) : vMapUv;
+            vec4 vane=texture2D(map,atlasUV);
+            if(gl_FrontFacing)vane.rgb=mix(vec3(0.84,0.79,0.69),vane.rgb,owlVentralMark);
+            diffuseColor*=vane;
+          #endif`);
       // Thin pale vanes transmit some dorsal illumination. The contribution
       // follows the actual incident lights and vanishes in an unlit scene.
       shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
@@ -174,16 +185,20 @@ export function owlWing(owl,s,map){
     joints.push(bone);layers.push(mesh);
   }
   const q=new T.Quaternion(),previous=new T.Quaternion(),base=new T.Quaternion(),e=new T.Euler();
-  return (open,stroke,recovery,pitch,lag)=>{
+  const pose=(open,stroke,recovery,pitch,lag,fan)=>{
     mount.scale.x=s*(1-.206*open);mount.rotation.x=-pitch*open;mount.rotation.z=s*.47*Math.sin(Math.PI*open);
     previous.identity();
     joints.forEach((bone,i)=>{
       const spread=clamp(open-.11*i*Math.sin(Math.PI*open),0,1);
       base.copy(folded[i]).slerp(extended[i],spread);
-      q.setFromEuler(e.set(i*.085*lag,i*.15*recovery*open,stroke*(1+i*.10)-i*.09*recovery*open-i*.16*lag,'ZYX')).multiply(base);
+      q.setFromEuler(e.set(i*.18*lag,i*.22*recovery*open,
+        stroke*(1+i*.09)-i*.11*recovery*open-i*.21*lag,'ZYX')).multiply(base);
       bone.quaternion.copy(previous).invert().multiply(q);previous.copy(q);
       layers[i].morphTargetInfluences[0]=1-spread;
       layers[i].morphTargetInfluences[1]=open*lag;
+      if(i===2)layers[i].morphTargetInfluences[2]=open*fan;
     });
   };
+  pose.joints=joints;
+  return pose;
 }
