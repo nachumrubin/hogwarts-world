@@ -48,3 +48,9 @@ All five inherited animation tests passed. The comparison against A8 commit `f27
 The historical A7 to A8 LOD0 regression was 122.2 to 151.8 ms on SwiftShader. In the new matched experiment, three-run medians were 132.3 ms for A7, 145.8 ms for A8 and 152.9 ms for A8.1. A8 with transmission disabled measured 143.3 ms, with relief disabled 147.5 ms, and with edge discard disabled 162.2 ms. The ranges overlap. These measurements show no repeatable recovery of the historical regression. Removing discard simplifies the shader and changed less than 0.3% of visible owl pixels by more than 8/255 in each test view. Transmission affected 77.85% of underside pixels by that threshold and remains necessary for the pale backlit appearance. Relief stays available on close plumage. The facial correction is baked into pigment and adds no runtime lookup or texture memory. The A8 LOD2 material configuration remains in place.
 
 The comparison gallery includes the full timings, feature-removal image measurements and matched renders. Hardware frame times remain unmeasured. The isolated benchmark drew all five population sizes in a low-resolution software smoke check. Its hardware mode correctly refused that adapter.
+
+## Baseline freeze
+
+The final dedicated Barn Owl baseline is commit `9af5a07f44a0dcfb8027cb24273b0a227970d09d`, preserved on `barn-owl-a8.1`. The Creature Lab integration carries that commit and publishes the original comparison ZIP alongside the report.
+
+The unresolved hero LOD0 frame-time regression and population budgets remain open pending hardware GPU validation. [Engineering issue #2](https://github.com/nachumrubin/hogwarts-world/issues/2)
