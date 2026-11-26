@@ -1,8 +1,9 @@
-// Served by capture-owl-a3.py. Both revisions use the A.2 root to frame a take.
+// Served by capture-owl-a3.py. Both revisions use the baseline root to frame a take.
 import * as T from '/creature-lab/vendor/three.module.js';
-import {Owl as A2} from '/creature-lab/species/a2-owl.js';
-import {Owl as A3} from '/creature-lab/species/owl.js';
+import {Owl as BaselineOwl} from '/creature-lab/species/a2-owl.js';
+import {Owl as RevisedOwl} from '/creature-lab/species/owl.js';
 import {studioLights} from '/creature-lab/inspection.js';
+const baseline=2;
 const width=640,height=500,renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
 renderer.setSize(width,height);renderer.setClearColor(0xb3b8b6);
 const scene=new T.Scene(),camera=new T.OrthographicCamera(),V=v=>new T.Vector3(...v);
@@ -22,7 +23,7 @@ const views={
 };
 let birds,t;
 function reset(){
-  birds?.forEach(b=>b.dispose());birds=[new A2(),new A3()];t=0;
+  birds?.forEach(b=>b.dispose());birds=[new BaselineOwl(),new RevisedOwl()];t=0;
   for(const bird of birds)scene.add(bird.root);
 }
 function step(action,ctx){t+=1/60;for(const bird of birds)bird.update(1/60,t,action,ctx)}
@@ -39,7 +40,7 @@ function capture(view,mode,bar){
   g.fillStyle='#25312e';g.fillRect(0,0,c.width,34);g.font='18px system-ui';g.fillStyle='#f1ede4';
   for(let i=0;i<2;i++){
     birds.forEach((b,j)=>b.root.visible=i===j);renderer.render(scene,camera);
-    g.drawImage(renderer.domElement,i*width,34);g.fillText('A.'+(i+2),i*width+18,23);
+    g.drawImage(renderer.domElement,i*width,34);g.fillText('A.'+(i+baseline),i*width+18,23);
     if(bar){const m=views[view][2]>.60?.1:views[view][2]>.20?.05:.01;
       g.fillStyle='#2c322e';g.fillRect(i*width+15,height+14,m*height/views[view][2],2);
       g.font='14px system-ui';g.fillText(Math.round(m*100)+' cm',i*width+15,height+9);
@@ -76,7 +77,7 @@ window.measure=()=>{
       let w=map.image.width,h=map.image.height;
       for(;;){textureBytes+=4*w*h;if(w===1&&h===1)break;w=Math.max(1,w>>1);h=Math.max(1,h>>1)}
     }
-    rows.push({revision:'A.'+(version+2),lod,triangles:renderer.info.render.triangles,
+    rows.push({revision:'A.'+(version+baseline),lod,triangles:renderer.info.render.triangles,
       calls:renderer.info.render.calls,textureBytes,medianMs:times[16],p95Ms:times[30]});
   }
   reset();const bounds=()=>birds.map(b=>new T.Box3().setFromObject(b.root,true).getSize(new T.Vector3()).toArray());

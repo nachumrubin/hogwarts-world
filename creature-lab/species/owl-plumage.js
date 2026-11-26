@@ -12,17 +12,17 @@ export function breastPlumage(lod){
       -.036+y*.093+z*.058-.002*t*t+.013*skirt+lift*(.73*y+.68*z));
   }
   for(let i=0;i<coords.count;i++)surface(coords.getX(i),coords.getY(i),coords.getZ(i));
-  const count=[148,64,0][lod];
+  const count=[232,98,24][lod];
   for(let i=0;i<count;i++){
-    const u=(i*.61803398875)%1,v=.22+.57*((i*.754877666)%1);
-    const length=.045+.023*(.5+.5*Math.sin(i*6.83));
-    const width=.007+.003*(.5+.5*Math.sin(i*3.18));
+    const u=(i*.61803398875)%1,v=.15+.70*((i*.754877666)%1);
+    const length=.053+.028*(.5+.5*Math.sin(i*6.83));
+    const width=.012+.006*(.5+.5*Math.sin(i*3.18));
     const drift=.009*Math.cos(2*Math.PI*u),start=p.length/3;
     for(const along of [0,.58,1])for(const across of [-1,0,1]){
       const s=u+drift*along+width*across*(1-.83*along**2);
       const t=v-length*along+.002*across;
       const theta=(1-t)*Math.PI,phi=s*2*Math.PI;
-      const lift=-.00065+.0019*along-.00035*Math.abs(across);
+      const lift=-.0014+.0040*along+.0013*Math.sin(Math.PI*along)*(1-across*across)-.00085*Math.abs(across);
       surface(-Math.cos(phi)*Math.sin(theta),Math.cos(theta),Math.sin(phi)*Math.sin(theta),lift);
       tex.push(s,t);
     }
@@ -36,11 +36,16 @@ export function breastPlumage(lod){
   // Blend a lifted hem into the smooth tract beneath it. Coplanar thin
   // edges should catch only a little more light than the adjacent down.
   const normal=g.attributes.normal,baseCount=coords.count,base=normal.array;
+  const vane=new T.Vector3(),underlying=new T.Vector3();
   for(let i=baseCount;i<normal.count;i++){
     const col=Math.round(tex[2*i]*g.parameters.widthSegments);
     const row=Math.round((1-tex[2*i+1])*g.parameters.heightSegments);
     const n=3*(row*(g.parameters.widthSegments+1)+(col%g.parameters.widthSegments+g.parameters.widthSegments)%g.parameters.widthSegments);
-    normal.setXYZ(i,base[n],base[n+1],base[n+2]);
+    const hem=.36;
+    vane.fromBufferAttribute(normal,i);underlying.fromArray(base,n);
+    if(vane.dot(underlying)<0)vane.negate();
+    vane.multiplyScalar(hem).addScaledVector(underlying,1-hem).normalize();
+    normal.setXYZ(i,vane.x,vane.y,vane.z);
   }
   return g;
 }

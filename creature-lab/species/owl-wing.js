@@ -89,13 +89,13 @@ function wingSurface(lod,seg){
     for(let i=0;i<count;i++){
       const t=(i+.35)/count,jitter=Math.sin(i*7.43+seg*2.11+row*2.39);
       const primary=seg===2;
-      const angle=primary?-1.20+1.13*t+.018*jitter:-1.49+.33*t+.035*Math.sin(t*3+seg);
+      const angle=primary?-1.16+1.01*t+.024*jitter:-1.49+.33*t+.035*Math.sin(t*3+seg);
       const dir=V(Math.cos(angle),0,Math.sin(angle)).applyQuaternion(extended[seg].clone().invert());
       const side=V(-dir.z,0,dir.x).normalize();
-      const taper=primary?.185+.069*Math.sin(Math.PI*t*.90)-.024*t**5:.145+.037*Math.sin(Math.PI*(.10+.80*t));
+      const taper=primary?.177+.075*Math.sin(Math.PI*t*.91)-.033*t**4:.145+.037*Math.sin(Math.PI*(.10+.80*t));
       const factor=[1,.73,.49,.32][row]*(1+.048*jitter);
       const scapular=seg===0&&row===0;
-      const depth=scapular?.008:.001+row*.0021;
+      const depth=scapular?.010:.001+row*.0026;
       const root=V(length*(t+.015*jitter),depth+.002*(1-t),.007-.011*t+.003*row);
       const base=p.length/3;
       color.setHex(0xfffcf5);
@@ -105,19 +105,27 @@ function wingSurface(lod,seg){
         const u=(1-Math.cos(Math.PI*j/steps))/2;
         const width=(.88+.25*u)*(primary?.032-.004*t:.027)*(covert?1.08:1)*(.98+.08*jitter)
           *Math.sin(Math.PI*u)**(.43+.15*t)+.00028;
-        const curve=(.008+.003*jitter)*u*u*(primary?1+t:.60)+.0025*Math.sin(Math.PI*u)*(1-t);
-        const startQ=scapular?.022+.19*t:q0+(q1-q0)*t-.008*row;
-        const endQ=scapular?.44+.28*t+.014*jitter:startQ+(q2+(q3-q2)*t-startQ)*factor;
+        const curve=(.013+.004*jitter)*u*u*(primary?1+t:.76)+.0025*Math.sin(Math.PI*u)*(1-t);
+        const startQ=scapular?.006+.18*t:q0+(q1-q0)*t-.008*row;
+        const endQ=scapular?.70-.12*t+.027*jitter:startQ+(q2+(q3-q2)*t-startQ)*factor;
         for(const k of web){
           const lateral=k*width*(k>0?.68+.15*(1-t):1);
           const pos=root.clone().addScaledVector(dir,u*taper*factor).addScaledVector(side,lateral+curve);
           pos.y+=(.0038+.0009*jitter)*Math.sin(Math.PI*u)*(1-k*k)-.006*u*u-.004*k*u*t+(.0022*jitter)*u**3;
           const q=startQ+(endQ-startQ)*u;
-          const tract=scapular?.025+.33*t:seg===0?.04+.48*t:seg===1?.21+.68*t:.27+.64*t;
-          const v=tract+.075*u+.021*jitter-.016*row+.034*Math.sin(Math.PI*u)*(1-t);
-          const tucked=convert(flank(q,v+k*width*(covert?4.7:4.2),
-            depth*.57-.0024*(1-u)**3+.0018*u+.0011*(1-k*k)*Math.sin(Math.PI*u)+.0007*(.5-t)+.0004*jitter*u));
-          const flex=(.002+.002*seg+.007*t*seg)*u*u*factor;
+          const tract=scapular?-.045+.45*t:seg===0?.08+.52*t:seg===1?.23+.65*t:.31+.60*t;
+          const v=tract+(scapular?.25:.075)*u+.021*jitter-.016*row+.034*Math.sin(Math.PI*u)*(1-t);
+          // The rachis rises out of a buried root. The exposed vane arches
+          // over its neighbour and rolls down at the margin, even in repose.
+          const exposed=Math.sin(Math.PI*u*.82);
+          const arch=(1-k*k)*exposed;
+          const shingle=(.0019*k+.0034*(1-k*k))*exposed;
+          const tier=scapular?.0083:.0008+row*.0022;
+          const tucked=convert(flank(q+.009*k*exposed,
+            v+k*width*(covert?3.7:3.4)+.044*u*u,
+            tier-.0032*(1-u)**2+.0017*u+shingle+.00065*jitter*u));
+          pos.y+=.0026*arch-.0031*k*exposed-.0038*u**3*(primary?t:0);
+          const flex=(.003+.003*seg+.012*t*seg)*u*u*factor;
           vertex(pos,tucked,V(-.23*flex,flex*(1+.30*k),-.55*flex),
             (tileColumn+.5+.47*k)/4,(tileRow+.025+.95*u)/4,color);
         }
@@ -157,10 +165,11 @@ export function owlWing(owl,s,map){
     mount.scale.x=s*(1-.206*open);mount.rotation.x=-pitch*open;mount.rotation.z=s*.47*Math.sin(Math.PI*open);
     previous.identity();
     joints.forEach((bone,i)=>{
-      base.copy(folded[i]).slerp(extended[i],open);
-      q.setFromEuler(e.set(i*.05*lag,i*.12*recovery,stroke*(1+i*.11)-i*.085*recovery-i*.10*lag,'ZYX')).multiply(base);
+      const spread=clamp(open-.11*i*Math.sin(Math.PI*open),0,1);
+      base.copy(folded[i]).slerp(extended[i],spread);
+      q.setFromEuler(e.set(i*.085*lag,i*.15*recovery*open,stroke*(1+i*.10)-i*.09*recovery*open-i*.16*lag,'ZYX')).multiply(base);
       bone.quaternion.copy(previous).invert().multiply(q);previous.copy(q);
-      layers[i].morphTargetInfluences[0]=1-open;
+      layers[i].morphTargetInfluences[0]=1-spread;
       layers[i].morphTargetInfluences[1]=open*lag;
     });
   };
