@@ -6,16 +6,22 @@ export function batchArticulatedParts(owl,parts){
   owl.root.updateMatrixWorld(true);
   const sources=parts.map(({mesh,make,levels})=>{
     const matrix=mesh.matrixWorld.clone(),index=bones.indexOf(mesh.parent),color=mesh.material.color.clone();
-    mesh.removeFromParent();levels.forEach(g=>g.dispose());return {matrix,index,color,make};
+    mesh.removeFromParent();levels.forEach(g=>g.dispose());return {matrix,index,color,make,rectrix:mesh.userData.rectrix};
   });
   const discarded=new Set(parts);owl.parts=owl.parts.filter(p=>!discarded.has(p));
   const skin=owl.mesh(owl.root,0xfefefe,l=>{
     const xyz=[],normal=[],rgb=[],indices=[],weights=[],joints=[];
-    for(const {make,matrix,index,color} of sources){
+    for(const {make,matrix,index,color,rectrix} of sources){
       const g=make(l).applyMatrix4(matrix),offset=xyz.length/3;
       xyz.push(...g.attributes.position.array);normal.push(...g.attributes.normal.array);
       for(let i=0;i<g.attributes.position.count;i++){
-        rgb.push(color.r,color.g,color.b);joints.push(index,0,0,0);weights.push(1,0,0,0);
+        let value=1;
+        if(rectrix!==undefined){
+          const u=Math.floor(i/3)/(g.attributes.position.count/3-1);
+          const band=Math.sin(Math.PI*(3*u+.06*Math.sin(rectrix)+.06*Math.abs(i%3-1)));
+          value=.95-.26*Math.exp(-band*band/.15)+(i%3===1?.035:0);
+        }
+        rgb.push(color.r*value,color.g*value,color.b*value);joints.push(index,0,0,0);weights.push(1,0,0,0);
       }
       for(const i of g.index.array)indices.push(i+offset);g.dispose();
     }

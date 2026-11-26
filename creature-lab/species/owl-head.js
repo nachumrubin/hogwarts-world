@@ -1,5 +1,6 @@
 import * as T from '../vendor/three.module.js';
 import {unzlibSync} from '../vendor/fflate.js';
+import {bodyRGB} from './owl-body-albedo.js';
 import {wingRGB} from './owl-wing-albedo.js';
 import {headRGB} from './owl-head-albedo.js';
 
@@ -7,17 +8,26 @@ const clamp=T.MathUtils.clamp;
 const gauss=(x,y)=>Math.exp(-x*x-y*y);
 const eyeX=.0235,eyeY=.002;
 const pixelCache=new Map();
+const sharedTextures=new Map();
 export function guideMap(kind){
-  const isHead=kind==='head',width=isHead?512:256;
+  const existing=sharedTextures.get(kind);
+  if(existing){existing.users++;return existing.map}
+  const width=kind==='head'?1024:512,height=kind==='body'?384:512;
   if(!pixelCache.has(kind)){
-    const rgb=unzlibSync(Uint8Array.from(atob(isHead?headRGB:wingRGB),c=>c.charCodeAt(0)));
-    const rgba=new Uint8Array(width*256*4);
+    const rgb=unzlibSync(Uint8Array.from(atob({head:headRGB,body:bodyRGB,wing:wingRGB}[kind]),c=>c.charCodeAt(0)));
+    const rgba=new Uint8Array(width*height*4);
     for(let i=0,j=0;i<rgb.length;i+=3,j+=4){rgba[j]=rgb[i];rgba[j+1]=rgb[i+1];rgba[j+2]=rgb[i+2];rgba[j+3]=255}
     pixelCache.set(kind,rgba);
   }
-  const map=new T.DataTexture(pixelCache.get(kind),width,256);map.colorSpace=T.SRGBColorSpace;
+  const map=new T.DataTexture(pixelCache.get(kind),width,height);map.colorSpace=T.SRGBColorSpace;
   map.generateMipmaps=true;map.minFilter=T.LinearMipmapLinearFilter;map.magFilter=T.LinearFilter;
-  map.wrapS=T.RepeatWrapping;map.needsUpdate=true;return map;
+  map.name=kind;map.wrapS=T.RepeatWrapping;map.needsUpdate=true;
+  sharedTextures.set(kind,{map,users:1});return map;
+}
+
+export function releaseGuideMap(map){
+  const entry=sharedTextures.get(map.name);
+  if(entry&&entry.map===map&&--entry.users===0){sharedTextures.delete(map.name);map.dispose()}
 }
 
 // The orbital fossae and tapering median feather ridge belong to one
@@ -70,7 +80,7 @@ function orbit(l,s,lids){
         const cover=[1,.90,.52,0][j],endY=y-dy*cover-.0007*cover;
         closed.push(x,endY,frontDepth(x,endY)+.0006+.0034*cover);
         const phi=Math.atan2(x/.0595,Math.sqrt(Math.max(0,1-(x/.0595)**2-(y/.057)**2)));
-        const texel=4*(Math.floor((.5+phi/(2*Math.PI))*512)+512*Math.min(255,Math.floor((1-Math.acos(y/.057)/Math.PI)*256)));
+        const texel=4*(Math.floor((.5+phi/(2*Math.PI))*1024)+1024*Math.min(511,Math.floor((1-Math.acos(y/.057)/Math.PI)*512)));
         const pixels=pixelCache.get('head');
         const nearby=new T.Color().setRGB(pixels[texel]/255,pixels[texel+1]/255,pixels[texel+2]/255,T.SRGBColorSpace);
         color.setHex([0x48332b,0x644d41,0x997f6c,0xd8cbbd][j]).lerp(nearby,[0,.15,.68,1][j]);
@@ -86,7 +96,8 @@ function orbit(l,s,lids){
   return geometry(p,idx,colors,lids?closed:null);
 }
 export function owlFace(owl){
-  owl.mesh(owl.head,0xfffefd,cranium).material.map=owl.maps[1];
+  const crown=owl.mesh(owl.head,0xfffefd,cranium);
+  crown.material.map=owl.maps[1];crown.material.roughness=.96;
   const lids=[];
   for(const s of [-1,1]){
     const eye=owl.mesh(owl.head,0xffffff,l=>orbit(l,s,false));eye.material.vertexColors=true;eye.material.roughness=.22;

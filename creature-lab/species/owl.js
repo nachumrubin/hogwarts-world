@@ -2,9 +2,9 @@ import * as T from '../vendor/three.module.js';
 import {Specimen,joint,sweep} from './form.js';
 import {feather,plumage} from './avian.js';
 import {owlWing} from './owl-wing.js';
-import {guideMap,owlFace} from './owl-head.js';
+import {guideMap,releaseGuideMap,owlFace} from './owl-head.js';
 import {batchArticulatedParts} from './owl-batch.js';
-import {bodyPlumageMap} from './owl-plumage.js';
+import {breastPlumage} from './owl-plumage.js';
 
 const clamp=T.MathUtils.clamp;
 const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
@@ -21,7 +21,10 @@ function foot(owl,s){
   }
   for(let i=0;i<31;i++){
     const a=i*2.40,x=Math.cos(a),z=Math.sin(a),r=.009+.0014*Math.sin(i*3);
-    legPlumes.push([[x*.012,-.026,-.002+z*.014],[x*r,-.049-.010*(.5+.5*Math.sin(i*9)),.007+z*r],.0026,[x,0,z]]);
+    const upper=i%3===0;
+    const start=upper?[x*.015,.010,-.010+z*.017]:[x*.012,-.026,-.002+z*.014];
+    const end=upper?[x*.012,-.027+.004*Math.cos(i),-.001+z*.013]:[x*r,-.049-.010*(.5+.5*Math.sin(i*9)),.007+z*r];
+    legPlumes.push([start,end,upper?.0039:.0026,[x,0,z]]);
   }
   plumage(owl,ankle,0xe7dbca,legPlumes);
   const digit=(parent,color,rows)=>owl.mesh(parent,color,l=>sweep(rows,[14,10,7][l]));
@@ -46,26 +49,18 @@ function foot(owl,s){
 
 export class Owl extends Specimen{
   constructor(){
-    super();this.maps=[bodyPlumageMap(),guideMap('head'),guideMap('wing')];
+    super();this.maps=[guideMap('body'),guideMap('head'),guideMap('wing')];
     // The rump lies aft of the hock and the breast projects ahead of it.
     // The narrowed upper pole continues inside the cervical plumage.
-    this.breast=this.mesh(this.body,0xfffffe,l=>{
-      const g=new T.SphereGeometry(1,[48,30,18][l],[32,20,12][l]),p=g.attributes.position;
-      for(let i=0;i<p.count;i++){
-        const x=p.getX(i),y=p.getY(i),z=p.getZ(i),t=(1+y)/2;
-        const skirt=Math.max(0,z)**2*clamp((.68-y)/.8,0,1);
-        p.setXYZ(i,x*(.051+.022*t+.004*skirt),y*.090-.048*z+.151-.028*skirt,
-          -.036+y*.093+z*.058-.002*t*t+.013*skirt);
-      }
-      g.computeVertexNormals();return g;
-    });this.breast.material.map=this.maps[0];
+    this.breast=this.mesh(this.body,0xfffffe,breastPlumage);
+    this.breast.material.map=this.maps[0];this.breast.material.roughness=.96;
     const articulated=[];
     let start=this.parts.length;
     this.tail=joint(this.body,0,.103,-.081);this.rectrices=[];
     for(let i=0;i<12;i++){
       const t=(i-5.5)/5.5,shaft=joint(this.tail,t*.012,-.002*Math.abs(t),0);
       const blade=feather(this,shaft,0xd4b48b,[0,0,0],[0,-.046,-.108+.009*t*t],.011,[0,1,-.6]);
-      this.rectrices.push({shaft,t});blade.rotation.z=.03*t;
+      blade.userData.rectrix=i;this.rectrices.push({shaft,t});blade.rotation.z=.03*t;
     }
     articulated.push(...this.parts.slice(start));
     this.neck=joint(this.body,0,.202,.028);this.atlas=joint(this.neck,0,.022,.006);
@@ -139,5 +134,5 @@ export class Owl extends Specimen{
     const grip=land?smooth((progress-.88)/.12):launch?1-smooth((e-.16)/.16):1-this.air;
     this.feet.forEach(pose=>pose(this.air,grip,land?smooth((progress-.34)/.43):0));
   }
-  dispose(){this.maps.forEach(m=>m.dispose());super.dispose()}
+  dispose(){this.maps.splice(0).forEach(releaseGuideMap);super.dispose()}
 }
