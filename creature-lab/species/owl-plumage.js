@@ -8,7 +8,7 @@ export function breastPlumage(lod){
   function surface(x,y,z,lift=0){
     const t=(1+y)/2,skirt=Math.max(0,z)**2*T.MathUtils.clamp((.68-y)/.8,0,1);
     p.push(x*(.051+.022*t+.004*skirt+lift),
-      y*.090-.048*z+.151-.028*skirt+lift*(.68*y-.73*z),
+      y*.090-.048*z+.151-.023*skirt+lift*(.68*y-.73*z),
       -.036+y*.093+z*.058-.002*t*t+.013*skirt+lift*(.73*y+.68*z));
   }
   for(let i=0;i<coords.count;i++)surface(coords.getX(i),coords.getY(i),coords.getZ(i));

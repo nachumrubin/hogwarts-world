@@ -25,7 +25,7 @@ function flank(q,v,height){
   const long=.78-1.66*q,theta=.13+2.23*v,r=Math.sqrt(Math.max(0,1-long*long));
   const x=r*Math.sin(theta),z=-r*Math.cos(theta),t=(long+1)/2;
   const skirt=Math.max(0,z)**2*clamp((.68-long)/.8,0,1);
-  const body=V(x*(.051+.022*t+.004*skirt),long*.090-.048*z+.151-.028*skirt,
+  const body=V(x*(.051+.022*t+.004*skirt),long*.090-.048*z+.151-.023*skirt,
     -.036+long*.093+z*.058-.002*t*t+.013*skirt);
   const distal=T.MathUtils.smoothstep(q,.52,1);
   const rear=V(.020+.012*(1-q)+.009*Math.sin(Math.PI*v),
@@ -38,7 +38,7 @@ function flank(q,v,height){
     const det=.090*.058+.048*.093;
     let a=long,b=z,belly=skirt;
     for(let i=0;i<3;i++){
-      const dy=body.y-.151+.028*belly,dz=body.z+.036+.002*((1+a)/2)**2-.013*belly;
+      const dy=body.y-.151+.023*belly,dz=body.z+.036+.002*((1+a)/2)**2-.013*belly;
       a=(.058*dy+.048*dz)/det;b=(-.093*dy+.090*dz)/det;
       belly=Math.max(0,b)**2*clamp((.68-a)/.8,0,1);
     }
@@ -89,11 +89,11 @@ function wingSurface(lod,seg){
     for(let i=0;i<count;i++){
       const t=(i+.35)/count,jitter=Math.sin(i*7.43+seg*2.11+row*2.39);
       const primary=seg===2;
-      const angle=primary?-1.16+1.01*t+.024*jitter:-1.49+.33*t+.035*Math.sin(t*3+seg);
+      const angle=primary?-1.19+1.10*t+.024*jitter:-1.49+.33*t+.035*Math.sin(t*3+seg);
       const dir=V(Math.cos(angle),0,Math.sin(angle)).applyQuaternion(extended[seg].clone().invert());
       const side=V(-dir.z,0,dir.x).normalize();
-      const taper=primary?.177+.075*Math.sin(Math.PI*t*.91)-.033*t**4:.145+.037*Math.sin(Math.PI*(.10+.80*t));
-      const factor=[1,.73,.49,.32][row]*(1+.048*jitter);
+      const taper=primary?.175+.082*Math.sin(Math.PI*t*.93)-.031*t**4:.143+.040*Math.sin(Math.PI*(.14+.69*t));
+      const factor=[1,.73,.49,.32][row]*(1+(covert?.065:.021)*jitter);
       const scapular=seg===0&&row===0;
       const depth=scapular?.010:.001+row*.0026;
       const root=V(length*(t+.015*jitter),depth+.002*(1-t),.007-.011*t+.003*row);
@@ -103,25 +103,25 @@ function wingSurface(lod,seg){
       const tileColumn=(i*3+seg+row)%4,tileRow=seg===0?2:Math.min(2,row);
       for(let j=0;j<=steps;j++){
         const u=(1-Math.cos(Math.PI*j/steps))/2;
-        const width=(.88+.25*u)*(primary?.032-.004*t:.027)*(covert?1.08:1)*(.98+.08*jitter)
+        const width=(.88+.25*u)*(primary?.032-.004*t:.027)*(covert?1.08:1)*(.98+.095*jitter)*(primary?1-.17*t*u:1)
           *Math.sin(Math.PI*u)**(.43+.15*t)+.00028;
         const curve=(.013+.004*jitter)*u*u*(primary?1+t:.76)+.0025*Math.sin(Math.PI*u)*(1-t);
         const startQ=scapular?.006+.18*t:q0+(q1-q0)*t-.008*row;
-        const endQ=scapular?.70-.12*t+.027*jitter:startQ+(q2+(q3-q2)*t-startQ)*factor;
+        const endQ=scapular?.75-.18*t+.033*jitter:startQ+(q2+(q3-q2)*t-startQ)*factor;
         for(const k of web){
           const lateral=k*width*(k>0?.68+.15*(1-t):1);
           const pos=root.clone().addScaledVector(dir,u*taper*factor).addScaledVector(side,lateral+curve);
           pos.y+=(.0038+.0009*jitter)*Math.sin(Math.PI*u)*(1-k*k)-.006*u*u-.004*k*u*t+(.0022*jitter)*u**3;
           const q=startQ+(endQ-startQ)*u;
           const tract=scapular?-.045+.45*t:seg===0?.08+.52*t:seg===1?.23+.65*t:.31+.60*t;
-          const v=tract+(scapular?.25:.075)*u+.021*jitter-.016*row+.034*Math.sin(Math.PI*u)*(1-t);
+          const v=tract+(scapular?.32:.075)*u+.021*jitter-.016*row+.034*Math.sin(Math.PI*u)*(1-t);
           // The rachis rises out of a buried root. The exposed vane arches
           // over its neighbour and rolls down at the margin, even in repose.
           const exposed=Math.sin(Math.PI*u*.82);
           const arch=(1-k*k)*exposed;
           const shingle=(.0019*k+.0034*(1-k*k))*exposed;
           const tier=scapular?.0083:.0008+row*.0022;
-          const tucked=convert(flank(q+.009*k*exposed,
+          const tucked=convert(flank(q+.009*k*exposed+.012*jitter*u*u,
             v+k*width*(covert?3.7:3.4)+.044*u*u,
             tier-.0032*(1-u)**2+.0017*u+shingle+.00065*jitter*u));
           pos.y+=.0026*arch-.0031*k*exposed-.0038*u**3*(primary?t:0);
@@ -147,7 +147,7 @@ function wingSurface(lod,seg){
   return g;
 }
 export function owlWing(owl,s,map){
-  const mount=joint(owl.body,s*shoulder.x,shoulder.y,shoulder.z);
+  const mount=joint(owl.trunk,s*shoulder.x,shoulder.y,shoulder.z);
   const joints=[],layers=[];
   for(let i=0;i<3;i++){
     const bone=joint(i?joints[i-1]:mount,i?bones[i-1][0].length():0);
@@ -156,7 +156,18 @@ export function owlWing(owl,s,map){
     // the mirrored mount when choosing the GL front face.
     mesh.material.onBeforeCompile=shader=>{
       shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',
-        '#include <color_fragment>\nif(gl_FrontFacing) diffuseColor.rgb = mix(vec3(0.83,0.77,0.65), diffuseColor.rgb, 0.22);');
+        '#include <color_fragment>\nif(gl_FrontFacing) diffuseColor.rgb = mix(vec3(0.97,0.94,0.87), diffuseColor.rgb, 0.14);');
+      // Thin pale vanes transmit some dorsal illumination. The contribution
+      // follows the actual incident lights and vanishes in an unlit scene.
+      shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+        #if NUM_DIR_LIGHTS > 0
+        if(gl_FrontFacing){
+          for(int i=0;i<NUM_DIR_LIGHTS;i++){
+            float backLight=max(0.0,-dot(normal,directionalLights[i].direction));
+            reflectedLight.indirectDiffuse+=0.72*RECIPROCAL_PI*backLight*directionalLights[i].color*diffuseColor.rgb;
+          }
+        }
+        #endif`);
     };
     joints.push(bone);layers.push(mesh);
   }

@@ -43,8 +43,18 @@ streak=6.8*fiber+3.8*np.sin(347*angle+220*radius+4*np.sin(17*angle))
 streak+=3.2*np.sin(2.4*bundle+1260*radius)
 disc=np.hypot(X/(.052+.004*np.clip(Y/.044,-1,1)),(Y+.005*np.exp(-(X/.013)**2))/.046)
 # Soft warm ends in the outermost row of the ruff.
-streak-=8*np.exp(-((disc-.98-.012*fiber)/.058)**2)
+streak-=3*np.exp(-((disc-.98-.012*fiber)/.058)**2)
 keep=np.clip((px-border+2.5*fiber)/10+.36,0,1)*np.clip((Z-.20)*4.5,0,1)*np.clip((269-py)/10,0,1)
-c=mix(crown,c*.81+np.array([33,32,32])+streak[:,:,None],keep)
+# Lift the photographed shadow on the lower ruff. The runtime lights
+# supply the mandibular shadow as the head turns.
+lower=np.clip((-Y+.008)/.050,0,1)
+fringe=np.clip((disc-.63)/.39,0,1)
+lift=np.clip((1-Z)*.60+.70*lower,0,.85)*fringe
+ivory=np.array([231,218,196])+streak[:,:,None]*.62
+face=mix(c*.81+np.array([33,32,32])+streak[:,:,None],ivory,lift)
+ruffBlend=np.clip((Z+.15)*1.5,0,1)*lower*fringe*.65
+throat=np.clip((-Y+.010)/.047,0,1)*np.clip((Z+.57)*1.7,0,1)
+nape=mix(crown,np.array([208,192,167])+noise[:,:,None],.74*throat)
+c=mix(mix(nape,ivory,ruffBlend),face,keep)
 raw=zlib.compress(np.uint8(np.clip(c,0,255)).tobytes(),9)
 (d/'species/owl-head-albedo.js').write_text("// Feather colour guide adapted from Steven Ward, Barn Owl, Lancashire (CC BY 2.0).\n// Cropped, mirrored and remapped; photographic eyes and bill removed.\n// https://commons.wikimedia.org/wiki/File:Barn_Owl,_Lancashire.jpg\nexport const headRGB='"+base64.b64encode(raw).decode()+"';\n")

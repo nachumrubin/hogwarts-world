@@ -14,10 +14,14 @@ BASE = '747847b3640250ce291faa5903adf55bbb0d75e9'
 OUT = ROOT / 'creature-lab/review/owl-a3'
 parser = argparse.ArgumentParser()
 parser.add_argument('pass_name', choices=['preview', 'stills', 'motion', 'measure', 'tracts', 'all'])
-parser.add_argument('--revision',type=int,choices=[3,4],default=3)
+parser.add_argument('--revision',type=int,choices=[3,4,5],default=3)
 args = parser.parse_args()
 current = args.revision
-if current == 4:
+a4="f7217e34cb9f6e3fa3d0c2d18b533229eaa0aaa3"
+if current == 5:
+    BASE = a4
+    OUT = OUT.with_name("owl-a5")
+elif current == 4:
     BASE = 'd90871514cc4e57eb02c79a1722e277080fade4f'
     OUT = OUT.with_name('owl-a4')
 OUT.mkdir(exist_ok=True)
@@ -37,26 +41,29 @@ with sync_playwright() as pw:
     scene = (ROOT/'tools/owl-a3-scene.js').read_text().replace('const baseline=2;',f'const baseline={current-1};')
     page.route('**/owl-a3-scene.js', lambda r: r.fulfill(content_type='text/javascript',body=scene))
     modules = ['owl','owl-head','owl-wing','owl-plumage','owl-batch','owl-head-albedo','owl-wing-albedo']
-    if current == 4:
+    if current >= 4:
         modules.append('owl-body-albedo')
-    else:
+    if current < 5:
         # Retain reproducibility of the historical A.2/A.3 plates.
-        for name in modules+['owl-body-albedo']:
-            original=subprocess.check_output(['git','show',f'd908715:creature-lab/species/{name}.js'],cwd=ROOT,text=True)
+        target = 'd908715' if current == 3 else a4
+        for name in set(modules+['owl-body-albedo']):
+            original=subprocess.check_output(['git','show',f'{target}:creature-lab/species/{name}.js'],cwd=ROOT,text=True)
             page.route(f'**/species/{name}.js',lambda route, request, s=original: route.fulfill(content_type='text/javascript',body=s))
     for name in modules:
         source = subprocess.check_output(['git','show',f'{BASE}:creature-lab/species/{name}.js'],cwd=ROOT,text=True)
         for dependency in modules:
             source = source.replace(f"'./{dependency}.js'", f"'./a2-{dependency}.js'")
         page.route(f'**/a2-{name}.js',lambda route, request, s=source: route.fulfill(content_type='text/javascript',body=s))
+    page.on('console',lambda m: print(m.text,flush=True) if m.type=='error' else None)
     page.on('pageerror',lambda error: print(error,flush=True))
     page.goto(f'http://127.0.0.1:{server.server_port}/owl-compare')
     page.wait_for_function('window.plate !== undefined')
     if args.pass_name in ['stills','preview','all']:
         names = 'front side rear quarter face breast folded above below silhouette flying'.split()
         if current == 4: names = 'front side rear quarter face folded breast talons above below'.split()
+        if current == 5: names = 'front side rear quarter face folded talons above below headFront headSide'.split()
         for view in names:
-            for mode in (['material'] if args.pass_name=='preview' or view in ['silhouette','flying'] else ['material','clay']):
+            for mode in (['silhouette'] if view.startswith('head') else ['material'] if args.pass_name=='preview' or view in ['silhouette','flying'] else ['material','clay']):
                 frame = page.evaluate('plate',[view,mode])
                 (OUT/f'{view}-{mode}.jpg').write_bytes(base64.b64decode(frame))
         print('Stills complete',flush=True)

@@ -39,9 +39,18 @@ function frontDepth(x,y){
   const cheek=.003*gauss((Math.abs(x)-.032)/.018,(y+.015)/.02);
   const notch=.013*gauss(x/.014,(y-.033)/.019);
   const radius=Math.hypot(x/(.050+.009*clamp(y/.044,-1,1)),(y+notch)/.046);
-  const ruff=.0046*Math.exp(-(((radius-.93)/.21)**2));
+  const ruff=.0019*Math.exp(-(((radius-.93)/.21)**2));
   const brow=.0023*gauss((Math.abs(x)-.023)/.018,(y-.022)/.011);
-  return .048*cosine**.87+cosine*(ridge+cheek+ruff+brow-.0085*hollow-.38*notch);
+  return .048*cosine**.69+cosine*(ridge+cheek+ruff+brow-.0085*hollow-.38*notch);
+}
+// A broad superorbital shelf narrows to the chin. The paired crown lobes
+// share the same continuous surface as the orbital sockets and lower ruff.
+function faceWidth(y){
+  return 1+.065*gauss((y-.020)/.023,0)-.46*clamp((-y-.006)/.045,0,1);
+}
+function faceHeight(x,y){
+  const forehead=clamp((y-.020)/.034,0,1);
+  return y-.006*forehead**2-.0012*forehead*gauss(x/.014,0);
 }
 function cranium(l){
   const g=new T.SphereGeometry(1,[96,64,40][l],[60,40,24][l]);
@@ -51,7 +60,10 @@ function cranium(l){
     const depth=z>=0?frontDepth(x,y):.056*z;
     const chin=clamp((-y-.014)/.043,0,1),ruff=.00062*chin*Math.sin(97*uv.getX(i)*Math.PI+14*uv.getY(i));
     const nape=Math.max(0,-z)*clamp((.032-y)/.059,0,1);
-    pos.setXYZ(i,x*(1-.34*chin+.09*nape)+ruff,y-ruff-.025*nape,depth-.017*nape);
+    const mantle=Math.max(0,1-Math.max(0,z))*(.4+.6*chin);
+    const hackle=Math.max(0,-z)**1.5*gauss((y-.012)/.031,0);
+    pos.setXYZ(i,x*(faceWidth(y)+.14*nape)+ruff,
+      faceHeight(x,y)-ruff-.039*nape-.007*mantle,depth-.029*nape-.005*mantle-.023*hackle);
     // Three's sphere seam lies at -X; use a continuous longitude there and repeat.
     uv.setX(i,uv.getX(i)+.25);
   }
@@ -69,8 +81,8 @@ function cranium(l){
       const width=.0019*across*(1-.87*along**2);
       const x=sign*(eyeX+reach*dx-width*dy),y=eyeY+reach*dy*(dy<0?1.30:1.13)+width*dx;
       const front=Math.sqrt(Math.max(0,1-(x/.0595)**2-(y/.057)**2));
-      const chin=clamp((-y-.014)/.043,0,1);
-      points.push(x*(1-.34*chin),y,frontDepth(x,y)-.00060+.00104*along+.00026*(1-across*across)*Math.sin(Math.PI*along));
+      const mantle=(1-front)*(.4+.6*clamp((-y-.014)/.043,0,1));
+      points.push(x*faceWidth(y),faceHeight(x,y)-.007*mantle,frontDepth(x,y)-.005*mantle-.00060+.00104*along+.00026*(1-across*across)*Math.sin(Math.PI*along));
       tex.push(.5+Math.atan2(x/.0595,front)/(2*Math.PI),1-Math.acos(y/.057)/Math.PI);
     }
     for(let j=1;j<3;j++)for(let k=1;k<3;k++){
@@ -101,10 +113,11 @@ function orbit(l,s,lids){
       const x=s*(eyeX+dx),y=eyeY+slant+dy;
       // Lower lid rises and upper lid descends to the same gently tilted seam.
       const z=frontDepth(x,y)+(lids?.00018+.00094*(1-j/3):.00049+.0021*(1-r*r));
-      p.push(x,y,z);
+      const mantle=(1-Math.sqrt(Math.max(0,1-(x/.0595)**2-(y/.057)**2)))*.4;
+      p.push(x*faceWidth(y),faceHeight(x,y)-.007*mantle,z-.005*mantle);
       if(lids){
         const cover=[1,.90,.52,0][j],endY=y-dy*cover-.0007*cover;
-        closed.push(x,endY,frontDepth(x,endY)+.0006+.0034*cover);
+        closed.push(x*faceWidth(endY),faceHeight(x,endY)-.007*mantle,frontDepth(x,endY)-.005*mantle+.0006+.0034*cover);
         const phi=Math.atan2(x/.0595,Math.sqrt(Math.max(0,1-(x/.0595)**2-(y/.057)**2)));
         const texel=4*(Math.floor((.5+phi/(2*Math.PI))*1024)+1024*Math.min(511,Math.floor((1-Math.acos(y/.057)/Math.PI)*512)));
         const pixels=pixelCache.get('head');
@@ -129,6 +142,6 @@ export function owlFace(owl){
     const eye=owl.mesh(owl.head,0xffffff,l=>orbit(l,s,false));eye.material.vertexColors=true;eye.material.roughness=.22;
     const lid=owl.mesh(owl.head,0xfffffc,l=>orbit(l,s,true));lid.material.vertexColors=true;lids.push(lid);
   }
-  owl.loft(owl.head,0xaa8c72,[[0,-.013,.049,.0035,.0028],[0,-.022,.048,.0038,.0033],[0,-.026,.048,.0024,.0028],[0,-.031,.046,.0012,.0016],[0,-.033,.043,.00036,.00045]]);
+  owl.loft(owl.head,0xaa8c72,[[0,-.013,.049,.0035,.0028],[0,-.022,.048,.0038,.0033],[0,-.026,.048,.0024,.0028],[0,-.031,.046,.0012,.0016],[0,-.032,.044,.00036,.00045]]);
   return closure=>{for(const lid of lids)lid.morphTargetInfluences[0]=closure};
 }
