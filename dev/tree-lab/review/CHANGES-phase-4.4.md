@@ -146,9 +146,10 @@ brightening, which darkens most from above, where the leaves are seen at the dee
 before the colour mips: pine backlit +65.8%, eye +20.0%, overhead +13.7%; Oak B backlit +23.1%, eye +9.4%.)
 
 **Remaining overhead defects** (after both corrections and the §3 model):
-- Oak A and Oak C overhead luminance pass. Their overhead coverage remains about −6 points: the projected-area
-  correction is in place, and the residual is in the angular matrix.
-- Birch overhead luminance is +8.0% (was +15.7%).
+- Oak A overhead now passes luminance (−6.6% → −3.9%); Oak C overhead is −5.4% (was −7.6%), just outside.
+- Both keep about −6 points of overhead coverage: the projected-area correction is in place, and the residual is in the
+  angular matrix.
+- Birch overhead luminance is +8.2% (was +15.7%).
 
 Overlap: birch curtains overlap strongly, and the area correction is off for the birch (Phase 4.3, measured). No
 density was changed.
@@ -214,19 +215,133 @@ impostor (`bakesize.js`; LOD1 against LOD1, its own envelope):
 
 ## 7. Results
 
-PROTOCOL_TABLE
+The 20 protocol measurements, with cameras, light, exposure, resolution and metric definitions identical to Phase 4.2
+and 4.3. Plates: `review/lod/before-after-<specimen>.jpg` (4.2 · 4.3 · 4.4, both sides of each switch). Raw:
+`review/lod/lod-metrics.json`.
+
+Coverage within ±5 points: 14 of 20; luminance within ±5 %: 13 of 20.
+
+| specimen | boundary | view | Δ coverage 4.2 → 4.3 → now (pts) | Δ luminance 4.2 → 4.3 → now | fractional Δ coverage now (diagnostic) | ΔE now | IoU now | triangles | instance bytes | verdict |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Oak A | LOD0 → LOD1 (700 px) | eye | -2.4 → -3.5 → -3.5 | +1.1 % → +2.2 % → -2.3 % | -3.8 | 0.9 | 0.69 | 2,123,801 → 230,630 | 4.20 → 0.53 MB | pass |
+| Oak A | LOD0 → LOD1 (700 px) | over | -10.2 ✗ → -5.8 ✗ → -5.8 ✗ | -8.5 ✗ % → -6.6 ✗ % → -3.9 % | -6.0 | 1.9 | 0.67 | 2,123,801 → 230,630 | 4.20 → 0.53 MB | fail |
+| Oak A | LOD1 → impostor (140 px) | eye | +10.9 ✗ → +8.8 ✗ → +8.8 ✗ | -5.2 ✗ % → +1.9 % → -1.0 % | +5.3 | 0.7 | 0.55 | 230,630 → 2 | 0.53 → 0.00 MB | fail |
+| Oak A | LOD1 → impostor (140 px) | over | +11.9 ✗ → +8.9 ✗ → +8.9 ✗ | -4.3 % → -3.1 % → -6.3 ✗ % | +8.3 | 1.4 | 0.66 | 230,630 → 2 | 0.53 → 0.00 MB | fail |
+| Oak B | LOD0 → LOD1 (700 px) | eye | -0.8 → -2.6 → -2.6 | +8.5 ✗ % → +6.6 ✗ % → +0.9 % | -2.5 | 0.4 | 0.74 | 2,315,340 → 291,734 | 4.57 → 0.72 MB | pass |
+| Oak B | LOD0 → LOD1 (700 px) | over | -8.7 ✗ → -3.5 → -3.5 | -6.6 ✗ % → -5.6 ✗ % → -3.0 % | -3.5 | 1.3 | 0.72 | 2,315,340 → 291,734 | 4.57 → 0.72 MB | pass |
+| Oak B | LOD1 → impostor (140 px) | eye | +9.8 ✗ → +8.7 ✗ → +8.7 ✗ | -2.8 % → +6.5 ✗ % → +4.6 % | +6.0 | 1.0 | 0.65 | 291,734 → 2 | 0.72 → 0.00 MB | fail |
+| Oak B | LOD1 → impostor (140 px) | over | +7.4 ✗ → +3.9 → +3.9 | -2.2 % → -1.7 % → -4.2 % | +3.8 | 1.0 | 0.71 | 291,734 → 2 | 0.72 → 0.00 MB | pass |
+| Oak C | LOD0 → LOD1 (700 px) | eye | -2.4 → -3.2 → -3.2 | +7.1 ✗ % → +4.2 % → -3.4 % | -3.7 | 0.9 | 0.71 | 1,266,368 → 134,908 | 2.56 → 0.32 MB | pass |
+| Oak C | LOD0 → LOD1 (700 px) | over | -11.4 ✗ → -6.3 ✗ → -6.3 ✗ | -7.6 ✗ % → -7.6 ✗ % → -5.4 ✗ % | -7.3 | 1.9 | 0.65 | 1,266,368 → 134,908 | 2.56 → 0.32 MB | fail |
+| Oak C | LOD1 → impostor (140 px) | eye | +7.1 ✗ → +0.2 → +0.1 | +0.2 % → +9.1 ✗ % → +7.8 ✗ % | +1.8 | 1.9 | 0.60 | 134,908 → 2 | 0.32 → 0.00 MB | fail |
+| Oak C | LOD1 → impostor (140 px) | over | +7.4 ✗ → -1.8 → -1.7 | +1.2 % → +2.5 % → +1.1 % | +1.4 | 0.3 | 0.57 | 134,908 → 2 | 0.32 → 0.00 MB | pass |
+| Scots pine | LOD0 → LOD1 (700 px) | eye | -6.6 ✗ → -5.0 → -5.0 | -20.8 ✗ % → +5.1 ✗ % → -8.2 ✗ % | -5.1 | 1.9 | 0.89 | 1,468,041 → 271,163 | 11.84 → 0.71 MB | fail |
+| Scots pine | LOD0 → LOD1 (700 px) | over | -10.3 ✗ → -4.3 → -4.3 | -40.0 ✗ % → +7.0 ✗ % → -1.7 % | -4.8 | 1.1 | 0.89 | 1,468,041 → 271,163 | 11.84 → 0.71 MB | pass |
+| Scots pine | LOD1 → impostor (140 px) | eye | +1.5 → -4.2 → -4.2 | -2.2 % → +19.6 ✗ % → +17.4 ✗ % | -2.7 | 3.9 | 0.63 | 271,163 → 2 | 0.71 → 0.00 MB | fail |
+| Scots pine | LOD1 → impostor (140 px) | over | -5.7 ✗ → -16.9 ✗ → -16.9 ✗ | +0.8 % → +7.4 ✗ % → +3.5 % | -7.1 | 1.5 | 0.42 | 271,163 → 2 | 0.71 → 0.00 MB | fail |
+| Silver birch | LOD0 → LOD1 (700 px) | eye | +1.1 → +1.1 → +1.1 | -1.9 % → +4.5 % → -3.6 % | +0.4 | 2.2 | 0.72 | 1,736,574 → 240,482 | 3.74 → 0.82 MB | pass |
+| Silver birch | LOD0 → LOD1 (700 px) | over | -1.8 → -1.8 → -1.8 | +1.0 % → +15.7 ✗ % → +8.2 ✗ % | -2.1 | 1.8 | 0.79 | 1,736,574 → 240,482 | 3.74 → 0.82 MB | fail |
+| Silver birch | LOD1 → impostor (140 px) | eye | +4.9 → +0.7 → +0.9 | -0.9 % → +7.5 ✗ % → +6.7 ✗ % | +0.5 | 1.6 | 0.77 | 240,482 → 2 | 0.82 → 0.00 MB | fail |
+| Silver birch | LOD1 → impostor (140 px) | over | +8.2 ✗ → +2.8 → +2.8 | +4.7 % → +2.4 % → +0.5 % | +5.2 | 1.1 | 0.82 | 240,482 → 2 | 0.82 → 0.00 MB | pass |
+
+Summary, Phase 4.2 → 4.3 → 4.4:
+
+| | 4.2 | 4.3 | 4.4 |
+|---|---|---|---|
+| coverage within ±5 points | 7 of 20 | 14 of 20 | 14 of 20 |
+| luminance within ±5% | 12 of 20 | 8 of 20 | 13 of 20 |
+
+* **Passing in 4.3 and failing now:** one measurement, the Oak A impostor overhead (luminance −3.1% → −6.3%). The
+  "no previously passing case becomes failing" target is **not** met.
+* **Passing in 4.2 and still failing:**
+  - impostor luminance at eye level: pine +17.4%, Oak C +7.8%, birch +6.7%;
+  - Oak A impostor overhead: −6.3%;
+  - birch LOD0 → LOD1 overhead: +8.2%.
 
 ## 8. Angular acceptance matrix
 
 All five specimens, both switches, elevations 0, 15, 30, 45, 60, 75 and 90°, azimuths 2.7 rad (backlit) and −0.44 rad
 (opposite): 140 boundary measurements, plus the 20 protocol views. Matched cameras, light, exposure and projected size.
 
-ANGULAR_TABLE
+Worst cases per specimen and switch (16 views each: the 2 protocol views, 7 elevations × 2 azimuths; every view and
+the fractional diagnostic in `review/lod/lod-angular.md`, raw `lod-angular.json`):
+
+| specimen | boundary | views | worst Δ coverage (view) | worst Δ luminance (view) | views passing |
+|---|---|---|---|---|---|
+| Oak A | LOD0 → LOD1 (700 px) | 16 | -9.2 (e45@2.7) | +4.8 % (e15@2.7) | 4 of 16 |
+| Oak A | LOD1 → impostor (140 px) | 16 | +15.8 (e15@-0.4) | -18.7 % (e0@2.7) | 0 of 16 |
+| Oak B | LOD0 → LOD1 (700 px) | 16 | -7.5 (e45@2.7) | +8.0 % (e15@2.7) | 9 of 16 |
+| Oak B | LOD1 → impostor (140 px) | 16 | +13.4 (e15@2.7) | -14.0 % (e0@2.7) | 1 of 16 |
+| Oak C | LOD0 → LOD1 (700 px) | 16 | -9.0 (e45@-0.4) | -6.4 % (e60@-0.4) | 5 of 16 |
+| Oak C | LOD1 → impostor (140 px) | 16 | +5.2 (e90@2.7) | +7.8 % (eye) | 13 of 16 |
+| Scots pine | LOD0 → LOD1 (700 px) | 16 | -5.8 (e45@2.7) | -8.2 % (eye) | 10 of 16 |
+| Scots pine | LOD1 → impostor (140 px) | 16 | -16.9 (over) | +17.4 % (eye) | 4 of 16 |
+| Silver birch | LOD0 → LOD1 (700 px) | 16 | -2.3 (e60@-0.4) | +14.0 % (e60@2.7) | 5 of 16 |
+| Silver birch | LOD1 → impostor (140 px) | 16 | +5.4 (e60@-0.4) | +6.7 % (eye) | 10 of 16 |
+
+| | LOD0 → LOD1 | LOD1 → impostor | all |
+|---|---|---|---|
+| angular views passing (coverage and luminance) | 27 of 70 | 25 of 70 | 52 of 140 |
+
+coverage within ±5 points: 71 of 140; luminance within ±5%: 90 of 140.
+
+* **Backlit failures that started this phase:** resolved at LOD0 → LOD1 (pine backlit 0° −0.4%, Oak B +4.1%). The worst
+  LOD0 → LOD1 luminance error is now the birch at 60° backlit (+14.0%).
+* **Impostors under backlight:** Oak A −18.7%, Oak B −14.0% at 0°.
 
 ## 9. Transitions
 
-REVERSAL_TEXT
+* **Deterministic mid-fade reversal** (`tools/evidence/reversal.js`, `review/lod/reversal/`):
+  - Setup: one tree, 60 frames a second, LOD chosen as on a 1080p screen.
+  - Path: the camera recedes until the fade starts, keeps going for 0.1 s, then returns fast enough to cross back over the
+    hysteresis band before the fade ends (60 m/s at LOD0 ↔ LOD1, 150 m/s at LOD1 ↔ impostor).
+  - Both reversed mid-fade, at 0.52 s and 0.75 s.
+  - Visible weights summed to 1 exactly and changed by at most one frame's step (0.0278 = dt / fade) through the
+    reversal, so the blend was continuous.
+  - The shadow caster was the side with more weight on every frame: no wrong caster, and no stale shadow map.
+* **Unit tests** (`tests/treelab-lod.test.ts`) still cover reversal arithmetic, the third-LOD case, hysteresis and caster
+  complementarity.
+* **Existing transition paths** (200-tree stand, `review/lod/transitions/`): unchanged, with zero stale shadow frames on
+  all seven paths. The orbit has one reversal within a second (one tree).
+* **Tracked, not expanded** (as the brief asked):
+  - off-frustum shadow casters;
+  - redundant shadow-map redraws;
+  - paused fades for culled trees.
 
 ## 10. Deficiencies and the remaining architectural limitations
 
-DEFICIENCIES
+The targets are **not** met:
+- protocol: coverage 14 of 20, luminance 13 of 20, both 9 of 20;
+- angular: 52 of 140;
+- one measurement that passed in 4.3 fails (Oak A impostor overhead luminance).
+
+Remaining limitations, each with what was measured:
+
+1. **Impostor bake resolution (architectural).**
+   - The atlas draws each tree at 52–90 px (its bounding sphere across a 112-texel frame), against 140 px at the switch.
+   - Verified: LOD1 itself shows the impostors' extra coverage at that size (+7 to +11 points).
+   - Baking at the switch size's mip level fixes the coverage but moves luminance out of bounds.
+   - A frame large enough to draw the tree at its switch size costs about 7× the atlas memory.
+   - It also leaves backlit impostor luminance (Oak A −18.7%, Oak B −14.0% at 0°) and +13 to +16 points of oak impostor
+     coverage at low elevations.
+2. **Sparse pine impostor (architectural, alpha-to-coverage).**
+   - Unsharpened coverage keeps the mean, but the pine impostor looks semi-transparent and washed out at its switch (see
+     the plates).
+   - Its luminance difference (+17.4% eye) includes sky seen through partly covered pixels.
+   - Its threshold coverage fails (−17 points overhead, about 60% of it threshold sensitivity; integrated −7).
+   - A silhouette-preserving representation of sparse needles (sharpened alpha with coverage-preserving thresholds per
+     frame, or more frames) is the next step. No species-specific sharpening was added without evidence.
+3. **Card V geometry at mid elevations.** LOD1 coverage is −7.5 to −9.2 points at 45° for the oaks (backlit and opposite
+   alike). The projected-area correction is per texel and cannot fill the gap between the two cards of a V seen
+   obliquely.
+4. **Birch overhead and backlit:** +8.2% overhead, +14.0% at 60° backlit, LOD0 → LOD1. The area correction is off for the
+   birch (curtain overlap, Phase 4.3), and no further mechanism was demonstrated.
+5. **LOD0 changed at distance.** Two corrections of LOD0's own atlas filtering (§2, §4) change LOD0 at its switch distance
+   by −16% to +29%; it is unchanged close up. This needs your decision: it can be reverted (sprite atlas and
+   `viewer.folPremultMips`), but then the backlit and overhead errors return, and the LOD1 model would have to copy a
+   filtering defect.
+6. **Tracked, not expanded:**
+   - off-frustum shadow casters;
+   - redundant shadow-map redraws;
+   - paused fades for culled trees.
+7. **Hardware:** none. The benchmark interface is unchanged, with SwiftShader results flagged as software.

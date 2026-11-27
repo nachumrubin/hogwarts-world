@@ -1,38 +1,2339 @@
 {
- "oak-b-b0-e0": {
+ "birch-b0-e0@-0.4": {
   "sides": [
-   "oak-b-b0-e0-lod0",
-   "oak-b-b0-e0-lod1"
+   "birch-b0-e0@-0.4-lod0",
+   "birch-b0-e0@-0.4-lod1"
   ],
   "crownCoverage": [
-   68.6,
-   65.7
+   56.7,
+   58.0
   ],
-  "coverageDiffPts": -2.92,
-  "coverageRelDiffPct": -4.2,
-  "silhouetteIoU": 0.731,
+  "coverageDiffPts": 1.26,
+  "coverageRelDiffPct": 2.2,
+  "fractionalCoverage": [
+   59.3,
+   59.7
+  ],
+  "fractionalDiffPts": 0.43,
+  "silhouetteIoU": 0.708,
   "luminance": [
-   0.0725,
-   0.0798
+   0.1093,
+   0.1124
   ],
-  "luminanceDiffPct": 10.0,
-  "deltaE": 2.41,
-  "envelopeLuminanceDiffPct": 11.5,
+  "luminanceDiffPct": 2.8,
+  "deltaE": 3.21,
+  "envelopeLuminanceDiffPct": 3.9,
   "triangles": [
-   2315340,
-   291734
+   0,
+   0
   ],
   "instanceBytes": [
-   4795300,
-   754960
+   0,
+   0
   ],
   "overdraw": [
-   2.02,
-   1.71
+   0,
+   0
   ],
   "rasterized": [
-   6.18,
-   12.31
+   0,
+   0
+  ]
+ },
+ "birch-b0-e0@2.7": {
+  "sides": [
+   "birch-b0-e0@2.7-lod0",
+   "birch-b0-e0@2.7-lod1"
+  ],
+  "crownCoverage": [
+   55.2,
+   56.5
+  ],
+  "coverageDiffPts": 1.33,
+  "coverageRelDiffPct": 2.4,
+  "fractionalCoverage": [
+   57.6,
+   58.2
+  ],
+  "fractionalDiffPts": 0.55,
+  "silhouetteIoU": 0.711,
+  "luminance": [
+   0.0997,
+   0.1049
+  ],
+  "luminanceDiffPct": 5.1,
+  "deltaE": 3.21,
+  "envelopeLuminanceDiffPct": 4.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e15@-0.4": {
+  "sides": [
+   "birch-b0-e15@-0.4-lod0",
+   "birch-b0-e15@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   55.8,
+   56.7
+  ],
+  "coverageDiffPts": 0.89,
+  "coverageRelDiffPct": 1.6,
+  "fractionalCoverage": [
+   58.6,
+   58.7
+  ],
+  "fractionalDiffPts": 0.14,
+  "silhouetteIoU": 0.698,
+  "luminance": [
+   0.1065,
+   0.1096
+  ],
+  "luminanceDiffPct": 2.8,
+  "deltaE": 2.93,
+  "envelopeLuminanceDiffPct": 4.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e15@2.7": {
+  "sides": [
+   "birch-b0-e15@2.7-lod0",
+   "birch-b0-e15@2.7-lod1"
+  ],
+  "crownCoverage": [
+   55.0,
+   56.0
+  ],
+  "coverageDiffPts": 1.02,
+  "coverageRelDiffPct": 1.9,
+  "fractionalCoverage": [
+   57.7,
+   57.9
+  ],
+  "fractionalDiffPts": 0.17,
+  "silhouetteIoU": 0.706,
+  "luminance": [
+   0.0948,
+   0.1028
+  ],
+  "luminanceDiffPct": 8.4,
+  "deltaE": 3.44,
+  "envelopeLuminanceDiffPct": 5.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e30@-0.4": {
+  "sides": [
+   "birch-b0-e30@-0.4-lod0",
+   "birch-b0-e30@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   55.8,
+   55.4
+  ],
+  "coverageDiffPts": -0.47,
+  "coverageRelDiffPct": -0.8,
+  "fractionalCoverage": [
+   58.9,
+   57.7
+  ],
+  "fractionalDiffPts": -1.23,
+  "silhouetteIoU": 0.694,
+  "luminance": [
+   0.1029,
+   0.107
+  ],
+  "luminanceDiffPct": 4.0,
+  "deltaE": 2.44,
+  "envelopeLuminanceDiffPct": 6.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e30@2.7": {
+  "sides": [
+   "birch-b0-e30@2.7-lod0",
+   "birch-b0-e30@2.7-lod1"
+  ],
+  "crownCoverage": [
+   55.9,
+   56.0
+  ],
+  "coverageDiffPts": 0.07,
+  "coverageRelDiffPct": 0.1,
+  "fractionalCoverage": [
+   58.8,
+   58.1
+  ],
+  "fractionalDiffPts": -0.65,
+  "silhouetteIoU": 0.701,
+  "luminance": [
+   0.0909,
+   0.1003
+  ],
+  "luminanceDiffPct": 10.3,
+  "deltaE": 3.43,
+  "envelopeLuminanceDiffPct": 8.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e45@-0.4": {
+  "sides": [
+   "birch-b0-e45@-0.4-lod0",
+   "birch-b0-e45@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   58.5,
+   56.5
+  ],
+  "coverageDiffPts": -1.95,
+  "coverageRelDiffPct": -3.3,
+  "fractionalCoverage": [
+   61.4,
+   58.9
+  ],
+  "fractionalDiffPts": -2.48,
+  "silhouetteIoU": 0.71,
+  "luminance": [
+   0.1018,
+   0.1066
+  ],
+  "luminanceDiffPct": 4.7,
+  "deltaE": 2.1,
+  "envelopeLuminanceDiffPct": 7.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e45@2.7": {
+  "sides": [
+   "birch-b0-e45@2.7-lod0",
+   "birch-b0-e45@2.7-lod1"
+  ],
+  "crownCoverage": [
+   58.6,
+   57.4
+  ],
+  "coverageDiffPts": -1.2,
+  "coverageRelDiffPct": -2.0,
+  "fractionalCoverage": [
+   61.6,
+   59.7
+  ],
+  "fractionalDiffPts": -1.82,
+  "silhouetteIoU": 0.705,
+  "luminance": [
+   0.0875,
+   0.0982
+  ],
+  "luminanceDiffPct": 12.3,
+  "deltaE": 3.31,
+  "envelopeLuminanceDiffPct": 10.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e60@-0.4": {
+  "sides": [
+   "birch-b0-e60@-0.4-lod0",
+   "birch-b0-e60@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   62.7,
+   60.5
+  ],
+  "coverageDiffPts": -2.26,
+  "coverageRelDiffPct": -3.6,
+  "fractionalCoverage": [
+   65.5,
+   62.9
+  ],
+  "fractionalDiffPts": -2.63,
+  "silhouetteIoU": 0.747,
+  "luminance": [
+   0.097,
+   0.1042
+  ],
+  "luminanceDiffPct": 7.4,
+  "deltaE": 1.96,
+  "envelopeLuminanceDiffPct": 5.9,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e60@2.7": {
+  "sides": [
+   "birch-b0-e60@2.7-lod0",
+   "birch-b0-e60@2.7-lod1"
+  ],
+  "crownCoverage": [
+   65.7,
+   64.1
+  ],
+  "coverageDiffPts": -1.6,
+  "coverageRelDiffPct": -2.4,
+  "fractionalCoverage": [
+   68.8,
+   66.6
+  ],
+  "fractionalDiffPts": -2.23,
+  "silhouetteIoU": 0.732,
+  "luminance": [
+   0.0861,
+   0.0982
+  ],
+  "luminanceDiffPct": 14.0,
+  "deltaE": 3.05,
+  "envelopeLuminanceDiffPct": 11.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e75@-0.4": {
+  "sides": [
+   "birch-b0-e75@-0.4-lod0",
+   "birch-b0-e75@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   65.0,
+   63.2
+  ],
+  "coverageDiffPts": -1.84,
+  "coverageRelDiffPct": -2.8,
+  "fractionalCoverage": [
+   67.6,
+   65.3
+  ],
+  "fractionalDiffPts": -2.32,
+  "silhouetteIoU": 0.774,
+  "luminance": [
+   0.0971,
+   0.1063
+  ],
+  "luminanceDiffPct": 9.4,
+  "deltaE": 2.07,
+  "envelopeLuminanceDiffPct": 6.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e75@2.7": {
+  "sides": [
+   "birch-b0-e75@2.7-lod0",
+   "birch-b0-e75@2.7-lod1"
+  ],
+  "crownCoverage": [
+   70.2,
+   68.5
+  ],
+  "coverageDiffPts": -1.69,
+  "coverageRelDiffPct": -2.4,
+  "fractionalCoverage": [
+   72.3,
+   70.4
+  ],
+  "fractionalDiffPts": -1.92,
+  "silhouetteIoU": 0.785,
+  "luminance": [
+   0.0879,
+   0.0989
+  ],
+  "luminanceDiffPct": 12.6,
+  "deltaE": 2.43,
+  "envelopeLuminanceDiffPct": 9.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e90@-0.4": {
+  "sides": [
+   "birch-b0-e90@-0.4-lod0",
+   "birch-b0-e90@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   69.3,
+   67.4
+  ],
+  "coverageDiffPts": -1.91,
+  "coverageRelDiffPct": -2.7,
+  "fractionalCoverage": [
+   71.5,
+   69.2
+  ],
+  "fractionalDiffPts": -2.2,
+  "silhouetteIoU": 0.799,
+  "luminance": [
+   0.0936,
+   0.1044
+  ],
+  "luminanceDiffPct": 11.5,
+  "deltaE": 2.22,
+  "envelopeLuminanceDiffPct": 8.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b0-e90@2.7": {
+  "sides": [
+   "birch-b0-e90@2.7-lod0",
+   "birch-b0-e90@2.7-lod1"
+  ],
+  "crownCoverage": [
+   69.9,
+   67.7
+  ],
+  "coverageDiffPts": -2.15,
+  "coverageRelDiffPct": -3.1,
+  "fractionalCoverage": [
+   72.0,
+   69.6
+  ],
+  "fractionalDiffPts": -2.35,
+  "silhouetteIoU": 0.797,
+  "luminance": [
+   0.0924,
+   0.1037
+  ],
+  "luminanceDiffPct": 12.2,
+  "deltaE": 2.29,
+  "envelopeLuminanceDiffPct": 8.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e0@-0.4": {
+  "sides": [
+   "birch-b1-e0@-0.4-lod1",
+   "birch-b1-e0@-0.4-imp"
+  ],
+  "crownCoverage": [
+   68.1,
+   69.2
+  ],
+  "coverageDiffPts": 1.05,
+  "coverageRelDiffPct": 1.5,
+  "fractionalCoverage": [
+   69.1,
+   72.3
+  ],
+  "fractionalDiffPts": 3.13,
+  "silhouetteIoU": 0.786,
+  "luminance": [
+   0.2071,
+   0.2102
+  ],
+  "luminanceDiffPct": 1.5,
+  "deltaE": 0.54,
+  "envelopeLuminanceDiffPct": -5.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e0@2.7": {
+  "sides": [
+   "birch-b1-e0@2.7-lod1",
+   "birch-b1-e0@2.7-imp"
+  ],
+  "crownCoverage": [
+   68.4,
+   72.3
+  ],
+  "coverageDiffPts": 3.88,
+  "coverageRelDiffPct": 5.7,
+  "fractionalCoverage": [
+   69.5,
+   74.1
+  ],
+  "fractionalDiffPts": 4.57,
+  "silhouetteIoU": 0.843,
+  "luminance": [
+   0.2038,
+   0.1928
+  ],
+  "luminanceDiffPct": -5.4,
+  "deltaE": 2.42,
+  "envelopeLuminanceDiffPct": -10.5,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e15@-0.4": {
+  "sides": [
+   "birch-b1-e15@-0.4-lod1",
+   "birch-b1-e15@-0.4-imp"
+  ],
+  "crownCoverage": [
+   69.2,
+   69.0
+  ],
+  "coverageDiffPts": -0.23,
+  "coverageRelDiffPct": -0.3,
+  "fractionalCoverage": [
+   70.3,
+   70.8
+  ],
+  "fractionalDiffPts": 0.51,
+  "silhouetteIoU": 0.735,
+  "luminance": [
+   0.2052,
+   0.2122
+  ],
+  "luminanceDiffPct": 3.4,
+  "deltaE": 0.77,
+  "envelopeLuminanceDiffPct": -1.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e15@2.7": {
+  "sides": [
+   "birch-b1-e15@2.7-lod1",
+   "birch-b1-e15@2.7-imp"
+  ],
+  "crownCoverage": [
+   62.2,
+   63.5
+  ],
+  "coverageDiffPts": 1.3,
+  "coverageRelDiffPct": 2.1,
+  "fractionalCoverage": [
+   63.0,
+   65.4
+  ],
+  "fractionalDiffPts": 2.33,
+  "silhouetteIoU": 0.783,
+  "luminance": [
+   0.2028,
+   0.1949
+  ],
+  "luminanceDiffPct": -3.9,
+  "deltaE": 1.49,
+  "envelopeLuminanceDiffPct": -6.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e30@-0.4": {
+  "sides": [
+   "birch-b1-e30@-0.4-lod1",
+   "birch-b1-e30@-0.4-imp"
+  ],
+  "crownCoverage": [
+   64.4,
+   67.9
+  ],
+  "coverageDiffPts": 3.55,
+  "coverageRelDiffPct": 5.5,
+  "fractionalCoverage": [
+   65.7,
+   67.0
+  ],
+  "fractionalDiffPts": 1.34,
+  "silhouetteIoU": 0.773,
+  "luminance": [
+   0.2014,
+   0.2119
+  ],
+  "luminanceDiffPct": 5.2,
+  "deltaE": 1.17,
+  "envelopeLuminanceDiffPct": 0.5,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e30@2.7": {
+  "sides": [
+   "birch-b1-e30@2.7-lod1",
+   "birch-b1-e30@2.7-imp"
+  ],
+  "crownCoverage": [
+   67.3,
+   72.3
+  ],
+  "coverageDiffPts": 5.0,
+  "coverageRelDiffPct": 7.4,
+  "fractionalCoverage": [
+   68.5,
+   70.5
+  ],
+  "fractionalDiffPts": 1.94,
+  "silhouetteIoU": 0.804,
+  "luminance": [
+   0.1993,
+   0.2053
+  ],
+  "luminanceDiffPct": 3.0,
+  "deltaE": 1.15,
+  "envelopeLuminanceDiffPct": -2.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e45@-0.4": {
+  "sides": [
+   "birch-b1-e45@-0.4-lod1",
+   "birch-b1-e45@-0.4-imp"
+  ],
+  "crownCoverage": [
+   69.6,
+   65.5
+  ],
+  "coverageDiffPts": -4.14,
+  "coverageRelDiffPct": -5.9,
+  "fractionalCoverage": [
+   71.4,
+   70.0
+  ],
+  "fractionalDiffPts": -1.4,
+  "silhouetteIoU": 0.727,
+  "luminance": [
+   0.1982,
+   0.1993
+  ],
+  "luminanceDiffPct": 0.6,
+  "deltaE": 0.67,
+  "envelopeLuminanceDiffPct": 3.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e45@2.7": {
+  "sides": [
+   "birch-b1-e45@2.7-lod1",
+   "birch-b1-e45@2.7-imp"
+  ],
+  "crownCoverage": [
+   70.3,
+   65.4
+  ],
+  "coverageDiffPts": -4.95,
+  "coverageRelDiffPct": -7.0,
+  "fractionalCoverage": [
+   71.8,
+   71.1
+  ],
+  "fractionalDiffPts": -0.66,
+  "silhouetteIoU": 0.711,
+  "luminance": [
+   0.1963,
+   0.1938
+  ],
+  "luminanceDiffPct": -1.3,
+  "deltaE": 0.47,
+  "envelopeLuminanceDiffPct": 6.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e60@-0.4": {
+  "sides": [
+   "birch-b1-e60@-0.4-lod1",
+   "birch-b1-e60@-0.4-imp"
+  ],
+  "crownCoverage": [
+   69.0,
+   74.5
+  ],
+  "coverageDiffPts": 5.44,
+  "coverageRelDiffPct": 7.9,
+  "fractionalCoverage": [
+   71.0,
+   74.1
+  ],
+  "fractionalDiffPts": 3.11,
+  "silhouetteIoU": 0.714,
+  "luminance": [
+   0.1986,
+   0.2002
+  ],
+  "luminanceDiffPct": 0.8,
+  "deltaE": 0.8,
+  "envelopeLuminanceDiffPct": 0.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e60@2.7": {
+  "sides": [
+   "birch-b1-e60@2.7-lod1",
+   "birch-b1-e60@2.7-imp"
+  ],
+  "crownCoverage": [
+   72.9,
+   78.0
+  ],
+  "coverageDiffPts": 5.11,
+  "coverageRelDiffPct": 7.0,
+  "fractionalCoverage": [
+   74.1,
+   75.6
+  ],
+  "fractionalDiffPts": 1.41,
+  "silhouetteIoU": 0.758,
+  "luminance": [
+   0.197,
+   0.1982
+  ],
+  "luminanceDiffPct": 0.6,
+  "deltaE": 0.63,
+  "envelopeLuminanceDiffPct": 0.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e75@-0.4": {
+  "sides": [
+   "birch-b1-e75@-0.4-lod1",
+   "birch-b1-e75@-0.4-imp"
+  ],
+  "crownCoverage": [
+   69.0,
+   73.7
+  ],
+  "coverageDiffPts": 4.76,
+  "coverageRelDiffPct": 6.9,
+  "fractionalCoverage": [
+   70.4,
+   76.3
+  ],
+  "fractionalDiffPts": 5.9,
+  "silhouetteIoU": 0.794,
+  "luminance": [
+   0.2001,
+   0.2042
+  ],
+  "luminanceDiffPct": 2.0,
+  "deltaE": 1.47,
+  "envelopeLuminanceDiffPct": 1.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e75@2.7": {
+  "sides": [
+   "birch-b1-e75@2.7-lod1",
+   "birch-b1-e75@2.7-imp"
+  ],
+  "crownCoverage": [
+   76.2,
+   75.6
+  ],
+  "coverageDiffPts": -0.58,
+  "coverageRelDiffPct": -0.8,
+  "fractionalCoverage": [
+   76.9,
+   78.3
+  ],
+  "fractionalDiffPts": 1.44,
+  "silhouetteIoU": 0.826,
+  "luminance": [
+   0.1975,
+   0.2006
+  ],
+  "luminanceDiffPct": 1.6,
+  "deltaE": 1.4,
+  "envelopeLuminanceDiffPct": 1.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e90@-0.4": {
+  "sides": [
+   "birch-b1-e90@-0.4-lod1",
+   "birch-b1-e90@-0.4-imp"
+  ],
+  "crownCoverage": [
+   72.6,
+   77.5
+  ],
+  "coverageDiffPts": 4.85,
+  "coverageRelDiffPct": 6.7,
+  "fractionalCoverage": [
+   73.9,
+   78.9
+  ],
+  "fractionalDiffPts": 5.07,
+  "silhouetteIoU": 0.878,
+  "luminance": [
+   0.2007,
+   0.2059
+  ],
+  "luminanceDiffPct": 2.6,
+  "deltaE": 1.49,
+  "envelopeLuminanceDiffPct": 1.5,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "birch-b1-e90@2.7": {
+  "sides": [
+   "birch-b1-e90@2.7-lod1",
+   "birch-b1-e90@2.7-imp"
+  ],
+  "crownCoverage": [
+   72.7,
+   78.1
+  ],
+  "coverageDiffPts": 5.35,
+  "coverageRelDiffPct": 7.4,
+  "fractionalCoverage": [
+   74.2,
+   79.2
+  ],
+  "fractionalDiffPts": 5.0,
+  "silhouetteIoU": 0.877,
+  "luminance": [
+   0.2016,
+   0.2057
+  ],
+  "luminanceDiffPct": 2.0,
+  "deltaE": 1.41,
+  "envelopeLuminanceDiffPct": 1.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e0@-0.4": {
+  "sides": [
+   "oak-a-b0-e0@-0.4-lod0",
+   "oak-a-b0-e0@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   65.7,
+   61.3
+  ],
+  "coverageDiffPts": -4.37,
+  "coverageRelDiffPct": -6.7,
+  "fractionalCoverage": [
+   65.4,
+   61.0
+  ],
+  "fractionalDiffPts": -4.38,
+  "silhouetteIoU": 0.721,
+  "luminance": [
+   0.0695,
+   0.068
+  ],
+  "luminanceDiffPct": -2.2,
+  "deltaE": 0.47,
+  "envelopeLuminanceDiffPct": 12.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e0@2.7": {
+  "sides": [
+   "oak-a-b0-e0@2.7-lod0",
+   "oak-a-b0-e0@2.7-lod1"
+  ],
+  "crownCoverage": [
+   67.7,
+   64.0
+  ],
+  "coverageDiffPts": -3.71,
+  "coverageRelDiffPct": -5.5,
+  "fractionalCoverage": [
+   65.8,
+   62.1
+  ],
+  "fractionalDiffPts": -3.65,
+  "silhouetteIoU": 0.698,
+  "luminance": [
+   0.065,
+   0.0669
+  ],
+  "luminanceDiffPct": 2.9,
+  "deltaE": 0.88,
+  "envelopeLuminanceDiffPct": 12.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e15@-0.4": {
+  "sides": [
+   "oak-a-b0-e15@-0.4-lod0",
+   "oak-a-b0-e15@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   66.0,
+   60.9
+  ],
+  "coverageDiffPts": -5.02,
+  "coverageRelDiffPct": -7.6,
+  "fractionalCoverage": [
+   66.5,
+   61.3
+  ],
+  "fractionalDiffPts": -5.17,
+  "silhouetteIoU": 0.696,
+  "luminance": [
+   0.0743,
+   0.072
+  ],
+  "luminanceDiffPct": -3.2,
+  "deltaE": 1.32,
+  "envelopeLuminanceDiffPct": 11.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e15@2.7": {
+  "sides": [
+   "oak-a-b0-e15@2.7-lod0",
+   "oak-a-b0-e15@2.7-lod1"
+  ],
+  "crownCoverage": [
+   67.0,
+   62.2
+  ],
+  "coverageDiffPts": -4.86,
+  "coverageRelDiffPct": -7.2,
+  "fractionalCoverage": [
+   65.8,
+   61.1
+  ],
+  "fractionalDiffPts": -4.7,
+  "silhouetteIoU": 0.698,
+  "luminance": [
+   0.0638,
+   0.0668
+  ],
+  "luminanceDiffPct": 4.8,
+  "deltaE": 0.78,
+  "envelopeLuminanceDiffPct": 13.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e30@-0.4": {
+  "sides": [
+   "oak-a-b0-e30@-0.4-lod0",
+   "oak-a-b0-e30@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   65.2,
+   56.6
+  ],
+  "coverageDiffPts": -8.62,
+  "coverageRelDiffPct": -13.2,
+  "fractionalCoverage": [
+   65.0,
+   56.8
+  ],
+  "fractionalDiffPts": -8.26,
+  "silhouetteIoU": 0.643,
+  "luminance": [
+   0.0786,
+   0.0751
+  ],
+  "luminanceDiffPct": -4.5,
+  "deltaE": 2.25,
+  "envelopeLuminanceDiffPct": 13.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e30@2.7": {
+  "sides": [
+   "oak-a-b0-e30@2.7-lod0",
+   "oak-a-b0-e30@2.7-lod1"
+  ],
+  "crownCoverage": [
+   70.3,
+   63.1
+  ],
+  "coverageDiffPts": -7.19,
+  "coverageRelDiffPct": -10.2,
+  "fractionalCoverage": [
+   69.1,
+   62.3
+  ],
+  "fractionalDiffPts": -6.8,
+  "silhouetteIoU": 0.704,
+  "luminance": [
+   0.0675,
+   0.0692
+  ],
+  "luminanceDiffPct": 2.6,
+  "deltaE": 1.1,
+  "envelopeLuminanceDiffPct": 18.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e45@-0.4": {
+  "sides": [
+   "oak-a-b0-e45@-0.4-lod0",
+   "oak-a-b0-e45@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   63.6,
+   54.5
+  ],
+  "coverageDiffPts": -9.09,
+  "coverageRelDiffPct": -14.3,
+  "fractionalCoverage": [
+   61.9,
+   53.4
+  ],
+  "fractionalDiffPts": -8.5,
+  "silhouetteIoU": 0.632,
+  "luminance": [
+   0.0797,
+   0.076
+  ],
+  "luminanceDiffPct": -4.7,
+  "deltaE": 2.41,
+  "envelopeLuminanceDiffPct": 9.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e45@2.7": {
+  "sides": [
+   "oak-a-b0-e45@2.7-lod0",
+   "oak-a-b0-e45@2.7-lod1"
+  ],
+  "crownCoverage": [
+   73.6,
+   64.3
+  ],
+  "coverageDiffPts": -9.25,
+  "coverageRelDiffPct": -12.6,
+  "fractionalCoverage": [
+   72.2,
+   63.5
+  ],
+  "fractionalDiffPts": -8.66,
+  "silhouetteIoU": 0.675,
+  "luminance": [
+   0.0736,
+   0.0733
+  ],
+  "luminanceDiffPct": -0.4,
+  "deltaE": 1.72,
+  "envelopeLuminanceDiffPct": 11.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e60@-0.4": {
+  "sides": [
+   "oak-a-b0-e60@-0.4-lod0",
+   "oak-a-b0-e60@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   64.3,
+   56.3
+  ],
+  "coverageDiffPts": -7.94,
+  "coverageRelDiffPct": -12.4,
+  "fractionalCoverage": [
+   62.5,
+   54.7
+  ],
+  "fractionalDiffPts": -7.77,
+  "silhouetteIoU": 0.637,
+  "luminance": [
+   0.0805,
+   0.0767
+  ],
+  "luminanceDiffPct": -4.7,
+  "deltaE": 2.38,
+  "envelopeLuminanceDiffPct": 1.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e60@2.7": {
+  "sides": [
+   "oak-a-b0-e60@2.7-lod0",
+   "oak-a-b0-e60@2.7-lod1"
+  ],
+  "crownCoverage": [
+   71.6,
+   64.4
+  ],
+  "coverageDiffPts": -7.22,
+  "coverageRelDiffPct": -10.1,
+  "fractionalCoverage": [
+   69.3,
+   62.4
+  ],
+  "fractionalDiffPts": -6.97,
+  "silhouetteIoU": 0.672,
+  "luminance": [
+   0.0764,
+   0.0749
+  ],
+  "luminanceDiffPct": -1.9,
+  "deltaE": 1.63,
+  "envelopeLuminanceDiffPct": 4.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e75@-0.4": {
+  "sides": [
+   "oak-a-b0-e75@-0.4-lod0",
+   "oak-a-b0-e75@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   65.1,
+   58.8
+  ],
+  "coverageDiffPts": -6.36,
+  "coverageRelDiffPct": -9.8,
+  "fractionalCoverage": [
+   63.0,
+   56.4
+  ],
+  "fractionalDiffPts": -6.63,
+  "silhouetteIoU": 0.647,
+  "luminance": [
+   0.0818,
+   0.0782
+  ],
+  "luminanceDiffPct": -4.4,
+  "deltaE": 2.02,
+  "envelopeLuminanceDiffPct": 0.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e75@2.7": {
+  "sides": [
+   "oak-a-b0-e75@2.7-lod0",
+   "oak-a-b0-e75@2.7-lod1"
+  ],
+  "crownCoverage": [
+   70.5,
+   64.2
+  ],
+  "coverageDiffPts": -6.35,
+  "coverageRelDiffPct": -9.0,
+  "fractionalCoverage": [
+   67.1,
+   60.9
+  ],
+  "fractionalDiffPts": -6.25,
+  "silhouetteIoU": 0.674,
+  "luminance": [
+   0.0799,
+   0.0775
+  ],
+  "luminanceDiffPct": -3.0,
+  "deltaE": 1.6,
+  "envelopeLuminanceDiffPct": 1.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e90@-0.4": {
+  "sides": [
+   "oak-a-b0-e90@-0.4-lod0",
+   "oak-a-b0-e90@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   68.0,
+   62.0
+  ],
+  "coverageDiffPts": -5.94,
+  "coverageRelDiffPct": -8.7,
+  "fractionalCoverage": [
+   65.9,
+   59.6
+  ],
+  "fractionalDiffPts": -6.28,
+  "silhouetteIoU": 0.664,
+  "luminance": [
+   0.0825,
+   0.0792
+  ],
+  "luminanceDiffPct": -3.9,
+  "deltaE": 1.8,
+  "envelopeLuminanceDiffPct": 0.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b0-e90@2.7": {
+  "sides": [
+   "oak-a-b0-e90@2.7-lod0",
+   "oak-a-b0-e90@2.7-lod1"
+  ],
+  "crownCoverage": [
+   68.9,
+   62.9
+  ],
+  "coverageDiffPts": -5.98,
+  "coverageRelDiffPct": -8.7,
+  "fractionalCoverage": [
+   66.7,
+   60.4
+  ],
+  "fractionalDiffPts": -6.3,
+  "silhouetteIoU": 0.665,
+  "luminance": [
+   0.0825,
+   0.0791
+  ],
+  "luminanceDiffPct": -4.1,
+  "deltaE": 1.84,
+  "envelopeLuminanceDiffPct": 0.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e0@-0.4": {
+  "sides": [
+   "oak-a-b1-e0@-0.4-lod1",
+   "oak-a-b1-e0@-0.4-imp"
+  ],
+  "crownCoverage": [
+   56.6,
+   69.3
+  ],
+  "coverageDiffPts": 12.75,
+  "coverageRelDiffPct": 22.5,
+  "fractionalCoverage": [
+   58.7,
+   68.6
+  ],
+  "fractionalDiffPts": 9.9,
+  "silhouetteIoU": 0.687,
+  "luminance": [
+   0.1868,
+   0.1593
+  ],
+  "luminanceDiffPct": -14.7,
+  "deltaE": 4.27,
+  "envelopeLuminanceDiffPct": -16.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e0@2.7": {
+  "sides": [
+   "oak-a-b1-e0@2.7-lod1",
+   "oak-a-b1-e0@2.7-imp"
+  ],
+  "crownCoverage": [
+   59.8,
+   68.1
+  ],
+  "coverageDiffPts": 8.31,
+  "coverageRelDiffPct": 13.9,
+  "fractionalCoverage": [
+   62.0,
+   68.1
+  ],
+  "fractionalDiffPts": 6.14,
+  "silhouetteIoU": 0.668,
+  "luminance": [
+   0.186,
+   0.1513
+  ],
+  "luminanceDiffPct": -18.7,
+  "deltaE": 5.97,
+  "envelopeLuminanceDiffPct": -13.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e15@-0.4": {
+  "sides": [
+   "oak-a-b1-e15@-0.4-lod1",
+   "oak-a-b1-e15@-0.4-imp"
+  ],
+  "crownCoverage": [
+   57.1,
+   72.9
+  ],
+  "coverageDiffPts": 15.85,
+  "coverageRelDiffPct": 27.8,
+  "fractionalCoverage": [
+   60.2,
+   69.8
+  ],
+  "fractionalDiffPts": 9.64,
+  "silhouetteIoU": 0.598,
+  "luminance": [
+   0.186,
+   0.1728
+  ],
+  "luminanceDiffPct": -7.1,
+  "deltaE": 2.23,
+  "envelopeLuminanceDiffPct": -17.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e15@2.7": {
+  "sides": [
+   "oak-a-b1-e15@2.7-lod1",
+   "oak-a-b1-e15@2.7-imp"
+  ],
+  "crownCoverage": [
+   57.2,
+   70.0
+  ],
+  "coverageDiffPts": 12.87,
+  "coverageRelDiffPct": 22.5,
+  "fractionalCoverage": [
+   59.5,
+   67.5
+  ],
+  "fractionalDiffPts": 7.94,
+  "silhouetteIoU": 0.615,
+  "luminance": [
+   0.1801,
+   0.1589
+  ],
+  "luminanceDiffPct": -11.8,
+  "deltaE": 3.64,
+  "envelopeLuminanceDiffPct": -15.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e30@-0.4": {
+  "sides": [
+   "oak-a-b1-e30@-0.4-lod1",
+   "oak-a-b1-e30@-0.4-imp"
+  ],
+  "crownCoverage": [
+   54.7,
+   66.8
+  ],
+  "coverageDiffPts": 12.04,
+  "coverageRelDiffPct": 22.0,
+  "fractionalCoverage": [
+   58.2,
+   67.3
+  ],
+  "fractionalDiffPts": 9.1,
+  "silhouetteIoU": 0.589,
+  "luminance": [
+   0.1821,
+   0.1654
+  ],
+  "luminanceDiffPct": -9.1,
+  "deltaE": 2.19,
+  "envelopeLuminanceDiffPct": -12.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e30@2.7": {
+  "sides": [
+   "oak-a-b1-e30@2.7-lod1",
+   "oak-a-b1-e30@2.7-imp"
+  ],
+  "crownCoverage": [
+   56.7,
+   65.2
+  ],
+  "coverageDiffPts": 8.46,
+  "coverageRelDiffPct": 14.9,
+  "fractionalCoverage": [
+   59.6,
+   65.6
+  ],
+  "fractionalDiffPts": 6.02,
+  "silhouetteIoU": 0.619,
+  "luminance": [
+   0.1742,
+   0.1595
+  ],
+  "luminanceDiffPct": -8.5,
+  "deltaE": 2.44,
+  "envelopeLuminanceDiffPct": -9.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e45@-0.4": {
+  "sides": [
+   "oak-a-b1-e45@-0.4-lod1",
+   "oak-a-b1-e45@-0.4-imp"
+  ],
+  "crownCoverage": [
+   52.9,
+   63.0
+  ],
+  "coverageDiffPts": 10.15,
+  "coverageRelDiffPct": 19.2,
+  "fractionalCoverage": [
+   55.9,
+   63.0
+  ],
+  "fractionalDiffPts": 7.09,
+  "silhouetteIoU": 0.57,
+  "luminance": [
+   0.1797,
+   0.1675
+  ],
+  "luminanceDiffPct": -6.8,
+  "deltaE": 1.59,
+  "envelopeLuminanceDiffPct": -5.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e45@2.7": {
+  "sides": [
+   "oak-a-b1-e45@2.7-lod1",
+   "oak-a-b1-e45@2.7-imp"
+  ],
+  "crownCoverage": [
+   56.0,
+   65.6
+  ],
+  "coverageDiffPts": 9.63,
+  "coverageRelDiffPct": 17.2,
+  "fractionalCoverage": [
+   59.0,
+   65.8
+  ],
+  "fractionalDiffPts": 6.81,
+  "silhouetteIoU": 0.576,
+  "luminance": [
+   0.1752,
+   0.1625
+  ],
+  "luminanceDiffPct": -7.3,
+  "deltaE": 1.94,
+  "envelopeLuminanceDiffPct": -6.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e60@-0.4": {
+  "sides": [
+   "oak-a-b1-e60@-0.4-lod1",
+   "oak-a-b1-e60@-0.4-imp"
+  ],
+  "crownCoverage": [
+   54.2,
+   63.0
+  ],
+  "coverageDiffPts": 8.75,
+  "coverageRelDiffPct": 16.1,
+  "fractionalCoverage": [
+   57.2,
+   63.4
+  ],
+  "fractionalDiffPts": 6.24,
+  "silhouetteIoU": 0.595,
+  "luminance": [
+   0.1794,
+   0.168
+  ],
+  "luminanceDiffPct": -6.4,
+  "deltaE": 1.47,
+  "envelopeLuminanceDiffPct": -5.5,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e60@2.7": {
+  "sides": [
+   "oak-a-b1-e60@2.7-lod1",
+   "oak-a-b1-e60@2.7-imp"
+  ],
+  "crownCoverage": [
+   57.8,
+   63.8
+  ],
+  "coverageDiffPts": 6.05,
+  "coverageRelDiffPct": 10.5,
+  "fractionalCoverage": [
+   60.4,
+   65.4
+  ],
+  "fractionalDiffPts": 4.93,
+  "silhouetteIoU": 0.587,
+  "luminance": [
+   0.1781,
+   0.1644
+  ],
+  "luminanceDiffPct": -7.7,
+  "deltaE": 1.89,
+  "envelopeLuminanceDiffPct": -6.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e75@-0.4": {
+  "sides": [
+   "oak-a-b1-e75@-0.4-lod1",
+   "oak-a-b1-e75@-0.4-imp"
+  ],
+  "crownCoverage": [
+   54.3,
+   64.1
+  ],
+  "coverageDiffPts": 9.84,
+  "coverageRelDiffPct": 18.1,
+  "fractionalCoverage": [
+   56.8,
+   65.2
+  ],
+  "fractionalDiffPts": 8.38,
+  "silhouetteIoU": 0.647,
+  "luminance": [
+   0.1804,
+   0.1689
+  ],
+  "luminanceDiffPct": -6.4,
+  "deltaE": 1.45,
+  "envelopeLuminanceDiffPct": -5.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e75@2.7": {
+  "sides": [
+   "oak-a-b1-e75@2.7-lod1",
+   "oak-a-b1-e75@2.7-imp"
+  ],
+  "crownCoverage": [
+   57.1,
+   68.6
+  ],
+  "coverageDiffPts": 11.49,
+  "coverageRelDiffPct": 20.1,
+  "fractionalCoverage": [
+   59.5,
+   68.8
+  ],
+  "fractionalDiffPts": 9.23,
+  "silhouetteIoU": 0.686,
+  "luminance": [
+   0.1793,
+   0.1675
+  ],
+  "luminanceDiffPct": -6.6,
+  "deltaE": 1.54,
+  "envelopeLuminanceDiffPct": -5.2,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e90@-0.4": {
+  "sides": [
+   "oak-a-b1-e90@-0.4-lod1",
+   "oak-a-b1-e90@-0.4-imp"
+  ],
+  "crownCoverage": [
+   56.9,
+   67.4
+  ],
+  "coverageDiffPts": 10.41,
+  "coverageRelDiffPct": 18.3,
+  "fractionalCoverage": [
+   59.1,
+   68.4
+  ],
+  "fractionalDiffPts": 9.26,
+  "silhouetteIoU": 0.706,
+  "luminance": [
+   0.1803,
+   0.169
+  ],
+  "luminanceDiffPct": -6.3,
+  "deltaE": 1.42,
+  "envelopeLuminanceDiffPct": -5.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-a-b1-e90@2.7": {
+  "sides": [
+   "oak-a-b1-e90@2.7-lod1",
+   "oak-a-b1-e90@2.7-imp"
+  ],
+  "crownCoverage": [
+   57.8,
+   68.0
+  ],
+  "coverageDiffPts": 10.25,
+  "coverageRelDiffPct": 17.7,
+  "fractionalCoverage": [
+   60.0,
+   69.2
+  ],
+  "fractionalDiffPts": 9.16,
+  "silhouetteIoU": 0.705,
+  "luminance": [
+   0.1801,
+   0.169
+  ],
+  "luminanceDiffPct": -6.2,
+  "deltaE": 1.4,
+  "envelopeLuminanceDiffPct": -5.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e0@-0.4": {
+  "sides": [
+   "oak-b-b0-e0@-0.4-lod0",
+   "oak-b-b0-e0@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   67.5,
+   64.5
+  ],
+  "coverageDiffPts": -2.98,
+  "coverageRelDiffPct": -4.4,
+  "fractionalCoverage": [
+   66.3,
+   63.6
+  ],
+  "fractionalDiffPts": -2.76,
+  "silhouetteIoU": 0.721,
+  "luminance": [
+   0.0675,
+   0.0664
+  ],
+  "luminanceDiffPct": -1.6,
+  "deltaE": 0.28,
+  "envelopeLuminanceDiffPct": 8.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
   ]
  },
  "oak-b-b0-e0@2.7": {
@@ -46,65 +2347,239 @@
   ],
   "coverageDiffPts": -2.32,
   "coverageRelDiffPct": -3.4,
+  "fractionalCoverage": [
+   66.2,
+   63.8
+  ],
+  "fractionalDiffPts": -2.34,
   "silhouetteIoU": 0.734,
   "luminance": [
-   0.0564,
-   0.0683
+   0.063,
+   0.066
   ],
-  "luminanceDiffPct": 21.2,
-  "deltaE": 5.17,
-  "envelopeLuminanceDiffPct": 12.5,
+  "luminanceDiffPct": 4.8,
+  "deltaE": 1.35,
+  "envelopeLuminanceDiffPct": 9.2,
   "triangles": [
-   2315340,
-   291734
+   0,
+   0
   ],
   "instanceBytes": [
-   4795300,
-   754960
+   0,
+   0
   ],
   "overdraw": [
-   1.98,
-   1.68
+   0,
+   0
   ],
   "rasterized": [
-   6.04,
-   12.17
+   0,
+   0
   ]
  },
- "oak-b-b0-e45": {
+ "oak-b-b0-e15@-0.4": {
   "sides": [
-   "oak-b-b0-e45-lod0",
-   "oak-b-b0-e45-lod1"
+   "oak-b-b0-e15@-0.4-lod0",
+   "oak-b-b0-e15@-0.4-lod1"
   ],
   "crownCoverage": [
-   71.9,
-   64.9
+   65.4,
+   62.6
   ],
-  "coverageDiffPts": -6.99,
-  "coverageRelDiffPct": -9.7,
-  "silhouetteIoU": 0.696,
+  "coverageDiffPts": -2.77,
+  "coverageRelDiffPct": -4.2,
+  "fractionalCoverage": [
+   65.5,
+   62.4
+  ],
+  "fractionalDiffPts": -3.09,
+  "silhouetteIoU": 0.709,
   "luminance": [
-   0.1015,
-   0.0951
+   0.067,
+   0.0657
   ],
-  "luminanceDiffPct": -6.3,
-  "deltaE": 1.99,
-  "envelopeLuminanceDiffPct": 4.7,
+  "luminanceDiffPct": -2.0,
+  "deltaE": 0.78,
+  "envelopeLuminanceDiffPct": 9.5,
   "triangles": [
-   2315340,
-   291734
+   0,
+   0
   ],
   "instanceBytes": [
-   4795300,
-   754960
+   0,
+   0
   ],
   "overdraw": [
-   1.97,
-   1.56
+   0,
+   0
   ],
   "rasterized": [
-   5.77,
-   11.3
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e15@2.7": {
+  "sides": [
+   "oak-b-b0-e15@2.7-lod0",
+   "oak-b-b0-e15@2.7-lod1"
+  ],
+  "crownCoverage": [
+   70.3,
+   66.9
+  ],
+  "coverageDiffPts": -3.41,
+  "coverageRelDiffPct": -4.8,
+  "fractionalCoverage": [
+   69.6,
+   66.4
+  ],
+  "fractionalDiffPts": -3.24,
+  "silhouetteIoU": 0.749,
+  "luminance": [
+   0.0625,
+   0.0675
+  ],
+  "luminanceDiffPct": 8.0,
+  "deltaE": 1.63,
+  "envelopeLuminanceDiffPct": 15.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e30@-0.4": {
+  "sides": [
+   "oak-b-b0-e30@-0.4-lod0",
+   "oak-b-b0-e30@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   68.4,
+   62.3
+  ],
+  "coverageDiffPts": -6.12,
+  "coverageRelDiffPct": -8.9,
+  "fractionalCoverage": [
+   67.9,
+   62.0
+  ],
+  "fractionalDiffPts": -5.84,
+  "silhouetteIoU": 0.69,
+  "luminance": [
+   0.0713,
+   0.0687
+  ],
+  "luminanceDiffPct": -3.6,
+  "deltaE": 1.7,
+  "envelopeLuminanceDiffPct": 16.5,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e30@2.7": {
+  "sides": [
+   "oak-b-b0-e30@2.7-lod0",
+   "oak-b-b0-e30@2.7-lod1"
+  ],
+  "crownCoverage": [
+   69.6,
+   64.3
+  ],
+  "coverageDiffPts": -5.33,
+  "coverageRelDiffPct": -7.7,
+  "fractionalCoverage": [
+   69.4,
+   64.2
+  ],
+  "fractionalDiffPts": -5.19,
+  "silhouetteIoU": 0.721,
+  "luminance": [
+   0.0698,
+   0.072
+  ],
+  "luminanceDiffPct": 3.1,
+  "deltaE": 0.7,
+  "envelopeLuminanceDiffPct": 15.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e45@-0.4": {
+  "sides": [
+   "oak-b-b0-e45@-0.4-lod0",
+   "oak-b-b0-e45@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   71.5,
+   64.3
+  ],
+  "coverageDiffPts": -7.19,
+  "coverageRelDiffPct": -10.1,
+  "fractionalCoverage": [
+   69.1,
+   62.5
+  ],
+  "fractionalDiffPts": -6.57,
+  "silhouetteIoU": 0.69,
+  "luminance": [
+   0.0727,
+   0.0697
+  ],
+  "luminanceDiffPct": -4.1,
+  "deltaE": 1.9,
+  "envelopeLuminanceDiffPct": 7.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
   ]
  },
  "oak-b-b0-e45@2.7": {
@@ -113,70 +2588,244 @@
    "oak-b-b0-e45@2.7-lod1"
   ],
   "crownCoverage": [
-   72.7,
+   72.8,
    65.2
   ],
   "coverageDiffPts": -7.51,
   "coverageRelDiffPct": -10.3,
+  "fractionalCoverage": [
+   71.8,
+   64.8
+  ],
+  "fractionalDiffPts": -6.99,
   "silhouetteIoU": 0.684,
   "luminance": [
-   0.0754,
-   0.075
+   0.072,
+   0.0713
   ],
-  "luminanceDiffPct": -0.5,
-  "deltaE": 0.44,
-  "envelopeLuminanceDiffPct": 12.5,
+  "luminanceDiffPct": -0.9,
+  "deltaE": 1.28,
+  "envelopeLuminanceDiffPct": 12.8,
   "triangles": [
-   2315340,
-   291734
+   0,
+   0
   ],
   "instanceBytes": [
-   4795300,
-   754960
+   0,
+   0
   ],
   "overdraw": [
-   2.0,
-   1.59
+   0,
+   0
   ],
   "rasterized": [
-   5.82,
-   11.47
+   0,
+   0
   ]
  },
- "oak-b-b0-e90": {
+ "oak-b-b0-e60@-0.4": {
   "sides": [
-   "oak-b-b0-e90-lod0",
-   "oak-b-b0-e90-lod1"
+   "oak-b-b0-e60@-0.4-lod0",
+   "oak-b-b0-e60@-0.4-lod1"
   ],
   "crownCoverage": [
-   75.4,
-   72.2
+   72.9,
+   67.0
+  ],
+  "coverageDiffPts": -5.82,
+  "coverageRelDiffPct": -8.0,
+  "fractionalCoverage": [
+   68.8,
+   63.4
+  ],
+  "fractionalDiffPts": -5.35,
+  "silhouetteIoU": 0.695,
+  "luminance": [
+   0.0761,
+   0.073
+  ],
+  "luminanceDiffPct": -4.1,
+  "deltaE": 1.76,
+  "envelopeLuminanceDiffPct": 0.9,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e60@2.7": {
+  "sides": [
+   "oak-b-b0-e60@2.7-lod0",
+   "oak-b-b0-e60@2.7-lod1"
+  ],
+  "crownCoverage": [
+   73.7,
+   67.8
+  ],
+  "coverageDiffPts": -5.86,
+  "coverageRelDiffPct": -7.9,
+  "fractionalCoverage": [
+   71.2,
+   65.7
+  ],
+  "fractionalDiffPts": -5.52,
+  "silhouetteIoU": 0.693,
+  "luminance": [
+   0.0719,
+   0.0707
+  ],
+  "luminanceDiffPct": -1.7,
+  "deltaE": 1.32,
+  "envelopeLuminanceDiffPct": 5.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e75@-0.4": {
+  "sides": [
+   "oak-b-b0-e75@-0.4-lod0",
+   "oak-b-b0-e75@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   73.3,
+   69.2
+  ],
+  "coverageDiffPts": -4.11,
+  "coverageRelDiffPct": -5.6,
+  "fractionalCoverage": [
+   69.7,
+   65.7
+  ],
+  "fractionalDiffPts": -4.01,
+  "silhouetteIoU": 0.708,
+  "luminance": [
+   0.077,
+   0.0739
+  ],
+  "luminanceDiffPct": -3.9,
+  "deltaE": 1.51,
+  "envelopeLuminanceDiffPct": 0.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e75@2.7": {
+  "sides": [
+   "oak-b-b0-e75@2.7-lod0",
+   "oak-b-b0-e75@2.7-lod1"
+  ],
+  "crownCoverage": [
+   74.3,
+   70.3
+  ],
+  "coverageDiffPts": -3.97,
+  "coverageRelDiffPct": -5.3,
+  "fractionalCoverage": [
+   70.5,
+   66.8
+  ],
+  "fractionalDiffPts": -3.77,
+  "silhouetteIoU": 0.712,
+  "luminance": [
+   0.0742,
+   0.0727
+  ],
+  "luminanceDiffPct": -2.0,
+  "deltaE": 1.14,
+  "envelopeLuminanceDiffPct": 2.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b0-e90@-0.4": {
+  "sides": [
+   "oak-b-b0-e90@-0.4-lod0",
+   "oak-b-b0-e90@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   76.1,
+   72.9
   ],
   "coverageDiffPts": -3.19,
   "coverageRelDiffPct": -4.2,
-  "silhouetteIoU": 0.726,
-  "luminance": [
-   0.0817,
-   0.0774
+  "fractionalCoverage": [
+   71.1,
+   68.0
   ],
-  "luminanceDiffPct": -5.3,
-  "deltaE": 1.13,
-  "envelopeLuminanceDiffPct": -1.3,
+  "fractionalDiffPts": -3.11,
+  "silhouetteIoU": 0.725,
+  "luminance": [
+   0.0751,
+   0.0728
+  ],
+  "luminanceDiffPct": -3.1,
+  "deltaE": 1.28,
+  "envelopeLuminanceDiffPct": 0.5,
   "triangles": [
-   2315340,
-   291734
+   0,
+   0
   ],
   "instanceBytes": [
-   4795300,
-   754960
+   0,
+   0
   ],
   "overdraw": [
-   2.0,
-   1.66
+   0,
+   0
   ],
   "rasterized": [
-   6.04,
-   11.97
+   0,
+   0
   ]
  },
  "oak-b-b0-e90@2.7": {
@@ -190,64 +2839,74 @@
   ],
   "coverageDiffPts": -3.09,
   "coverageRelDiffPct": -4.1,
+  "fractionalCoverage": [
+   70.3,
+   67.3
+  ],
+  "fractionalDiffPts": -3.0,
   "silhouetteIoU": 0.728,
   "luminance": [
-   0.0814,
-   0.0773
+   0.075,
+   0.0729
   ],
-  "luminanceDiffPct": -5.1,
-  "deltaE": 1.09,
-  "envelopeLuminanceDiffPct": -1.1,
+  "luminanceDiffPct": -2.9,
+  "deltaE": 1.24,
+  "envelopeLuminanceDiffPct": 0.7,
   "triangles": [
-   2315340,
-   291734
+   0,
+   0
   ],
   "instanceBytes": [
-   4795300,
-   754960
+   0,
+   0
   ],
   "overdraw": [
-   2.01,
-   1.65
-  ],
-  "rasterized": [
-   6.04,
-   11.96
-  ]
- },
- "oak-b-b1-e0": {
-  "sides": [
-   "oak-b-b1-e0-lod1",
-   "oak-b-b1-e0-imp"
-  ],
-  "crownCoverage": [
-   60.2,
-   71.0
-  ],
-  "coverageDiffPts": 10.75,
-  "coverageRelDiffPct": 17.9,
-  "silhouetteIoU": 0.71,
-  "luminance": [
-   0.2017,
-   0.2073
-  ],
-  "luminanceDiffPct": 2.8,
-  "deltaE": 0.83,
-  "envelopeLuminanceDiffPct": -7.8,
-  "triangles": [
-   291734,
-   2
-  ],
-  "instanceBytes": [
-   754960,
-   32
-  ],
-  "overdraw": [
-   1.73,
+   0,
    0
   ],
   "rasterized": [
-   12.33,
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e0@-0.4": {
+  "sides": [
+   "oak-b-b1-e0@-0.4-lod1",
+   "oak-b-b1-e0@-0.4-imp"
+  ],
+  "crownCoverage": [
+   62.0,
+   72.2
+  ],
+  "coverageDiffPts": 10.25,
+  "coverageRelDiffPct": 16.5,
+  "fractionalCoverage": [
+   64.1,
+   71.1
+  ],
+  "fractionalDiffPts": 7.01,
+  "silhouetteIoU": 0.691,
+  "luminance": [
+   0.1838,
+   0.1705
+  ],
+  "luminanceDiffPct": -7.2,
+  "deltaE": 3.2,
+  "envelopeLuminanceDiffPct": -14.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
    0
   ]
  },
@@ -260,66 +2919,240 @@
    58.4,
    68.9
   ],
-  "coverageDiffPts": 10.48,
-  "coverageRelDiffPct": 17.9,
+  "coverageDiffPts": 10.5,
+  "coverageRelDiffPct": 18.0,
+  "fractionalCoverage": [
+   60.7,
+   68.0
+  ],
+  "fractionalDiffPts": 7.3,
   "silhouetteIoU": 0.7,
   "luminance": [
-   0.1932,
-   0.1664
+   0.1877,
+   0.1615
   ],
-  "luminanceDiffPct": -13.9,
-  "deltaE": 4.89,
-  "envelopeLuminanceDiffPct": -15.5,
+  "luminanceDiffPct": -14.0,
+  "deltaE": 4.98,
+  "envelopeLuminanceDiffPct": -15.8,
   "triangles": [
-   291734,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   754960,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.75,
+   0,
    0
   ],
   "rasterized": [
-   12.72,
+   0,
    0
   ]
  },
- "oak-b-b1-e45": {
+ "oak-b-b1-e15@-0.4": {
   "sides": [
-   "oak-b-b1-e45-lod1",
-   "oak-b-b1-e45-imp"
+   "oak-b-b1-e15@-0.4-lod1",
+   "oak-b-b1-e15@-0.4-imp"
   ],
   "crownCoverage": [
-   63.2,
-   68.4
+   59.4,
+   72.1
   ],
-  "coverageDiffPts": 5.24,
-  "coverageRelDiffPct": 8.3,
-  "silhouetteIoU": 0.62,
+  "coverageDiffPts": 12.63,
+  "coverageRelDiffPct": 21.2,
+  "fractionalCoverage": [
+   62.0,
+   68.7
+  ],
+  "fractionalDiffPts": 6.74,
+  "silhouetteIoU": 0.597,
   "luminance": [
-   0.1991,
-   0.1885
+   0.1835,
+   0.1766
   ],
-  "luminanceDiffPct": -5.3,
-  "deltaE": 1.47,
-  "envelopeLuminanceDiffPct": -2.0,
+  "luminanceDiffPct": -3.7,
+  "deltaE": 1.95,
+  "envelopeLuminanceDiffPct": -11.4,
   "triangles": [
-   291734,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   754960,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.51,
+   0,
    0
   ],
   "rasterized": [
-   11.11,
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e15@2.7": {
+  "sides": [
+   "oak-b-b1-e15@2.7-lod1",
+   "oak-b-b1-e15@2.7-imp"
+  ],
+  "crownCoverage": [
+   58.8,
+   72.2
+  ],
+  "coverageDiffPts": 13.44,
+  "coverageRelDiffPct": 22.9,
+  "fractionalCoverage": [
+   61.0,
+   71.4
+  ],
+  "fractionalDiffPts": 10.38,
+  "silhouetteIoU": 0.688,
+  "luminance": [
+   0.1833,
+   0.1645
+  ],
+  "luminanceDiffPct": -10.3,
+  "deltaE": 3.38,
+  "envelopeLuminanceDiffPct": -18.9,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e30@-0.4": {
+  "sides": [
+   "oak-b-b1-e30@-0.4-lod1",
+   "oak-b-b1-e30@-0.4-imp"
+  ],
+  "crownCoverage": [
+   59.9,
+   68.6
+  ],
+  "coverageDiffPts": 8.68,
+  "coverageRelDiffPct": 14.5,
+  "fractionalCoverage": [
+   62.7,
+   68.4
+  ],
+  "fractionalDiffPts": 5.72,
+  "silhouetteIoU": 0.648,
+  "luminance": [
+   0.1775,
+   0.1662
+  ],
+  "luminanceDiffPct": -6.4,
+  "deltaE": 1.83,
+  "envelopeLuminanceDiffPct": -10.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e30@2.7": {
+  "sides": [
+   "oak-b-b1-e30@2.7-lod1",
+   "oak-b-b1-e30@2.7-imp"
+  ],
+  "crownCoverage": [
+   62.6,
+   70.3
+  ],
+  "coverageDiffPts": 7.69,
+  "coverageRelDiffPct": 12.3,
+  "fractionalCoverage": [
+   65.1,
+   70.7
+  ],
+  "fractionalDiffPts": 5.55,
+  "silhouetteIoU": 0.697,
+  "luminance": [
+   0.1777,
+   0.1634
+  ],
+  "luminanceDiffPct": -8.0,
+  "deltaE": 2.42,
+  "envelopeLuminanceDiffPct": -9.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e45@-0.4": {
+  "sides": [
+   "oak-b-b1-e45@-0.4-lod1",
+   "oak-b-b1-e45@-0.4-imp"
+  ],
+  "crownCoverage": [
+   60.2,
+   69.0
+  ],
+  "coverageDiffPts": 8.79,
+  "coverageRelDiffPct": 14.6,
+  "fractionalCoverage": [
+   62.8,
+   68.1
+  ],
+  "fractionalDiffPts": 5.28,
+  "silhouetteIoU": 0.632,
+  "luminance": [
+   0.1763,
+   0.1689
+  ],
+  "luminanceDiffPct": -4.2,
+  "deltaE": 1.33,
+  "envelopeLuminanceDiffPct": -4.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
    0
   ]
  },
@@ -332,66 +3165,240 @@
    66.6,
    77.1
   ],
-  "coverageDiffPts": 10.54,
+  "coverageDiffPts": 10.51,
   "coverageRelDiffPct": 15.8,
+  "fractionalCoverage": [
+   69.3,
+   75.6
+  ],
+  "fractionalDiffPts": 6.32,
   "silhouetteIoU": 0.674,
   "luminance": [
-   0.1811,
-   0.1741
+   0.1738,
+   0.1635
   ],
-  "luminanceDiffPct": -3.9,
-  "deltaE": 1.01,
-  "envelopeLuminanceDiffPct": -3.9,
+  "luminanceDiffPct": -5.9,
+  "deltaE": 1.63,
+  "envelopeLuminanceDiffPct": -5.9,
   "triangles": [
-   291734,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   754960,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.56,
+   0,
    0
   ],
   "rasterized": [
-   11.26,
+   0,
    0
   ]
  },
- "oak-b-b1-e90": {
+ "oak-b-b1-e60@-0.4": {
   "sides": [
-   "oak-b-b1-e90-lod1",
-   "oak-b-b1-e90-imp"
+   "oak-b-b1-e60@-0.4-lod1",
+   "oak-b-b1-e60@-0.4-imp"
   ],
   "crownCoverage": [
-   64.8,
-   71.5
+   62.2,
+   67.7
   ],
-  "coverageDiffPts": 6.69,
-  "coverageRelDiffPct": 10.3,
-  "silhouetteIoU": 0.757,
+  "coverageDiffPts": 5.59,
+  "coverageRelDiffPct": 9.0,
+  "fractionalCoverage": [
+   64.5,
+   68.5
+  ],
+  "fractionalDiffPts": 4.04,
+  "silhouetteIoU": 0.663,
   "luminance": [
-   0.1862,
-   0.1822
+   0.1772,
+   0.168
   ],
-  "luminanceDiffPct": -2.1,
-  "deltaE": 0.73,
-  "envelopeLuminanceDiffPct": -2.1,
+  "luminanceDiffPct": -5.2,
+  "deltaE": 1.34,
+  "envelopeLuminanceDiffPct": -4.5,
   "triangles": [
-   291734,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   754960,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.6,
+   0,
    0
   ],
   "rasterized": [
-   11.66,
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e60@2.7": {
+  "sides": [
+   "oak-b-b1-e60@2.7-lod1",
+   "oak-b-b1-e60@2.7-imp"
+  ],
+  "crownCoverage": [
+   67.1,
+   71.1
+  ],
+  "coverageDiffPts": 3.96,
+  "coverageRelDiffPct": 5.9,
+  "fractionalCoverage": [
+   69.3,
+   72.0
+  ],
+  "fractionalDiffPts": 2.74,
+  "silhouetteIoU": 0.682,
+  "luminance": [
+   0.1759,
+   0.1651
+  ],
+  "luminanceDiffPct": -6.1,
+  "deltaE": 1.58,
+  "envelopeLuminanceDiffPct": -5.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e75@-0.4": {
+  "sides": [
+   "oak-b-b1-e75@-0.4-lod1",
+   "oak-b-b1-e75@-0.4-imp"
+  ],
+  "crownCoverage": [
+   62.4,
+   69.0
+  ],
+  "coverageDiffPts": 6.66,
+  "coverageRelDiffPct": 10.7,
+  "fractionalCoverage": [
+   64.5,
+   70.2
+  ],
+  "fractionalDiffPts": 5.65,
+  "silhouetteIoU": 0.734,
+  "luminance": [
+   0.1777,
+   0.1696
+  ],
+  "luminanceDiffPct": -4.5,
+  "deltaE": 1.05,
+  "envelopeLuminanceDiffPct": -4.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e75@2.7": {
+  "sides": [
+   "oak-b-b1-e75@2.7-lod1",
+   "oak-b-b1-e75@2.7-imp"
+  ],
+  "crownCoverage": [
+   66.1,
+   72.8
+  ],
+  "coverageDiffPts": 6.68,
+  "coverageRelDiffPct": 10.1,
+  "fractionalCoverage": [
+   68.1,
+   73.6
+  ],
+  "fractionalDiffPts": 5.47,
+  "silhouetteIoU": 0.726,
+  "luminance": [
+   0.177,
+   0.1678
+  ],
+  "luminanceDiffPct": -5.2,
+  "deltaE": 1.21,
+  "envelopeLuminanceDiffPct": -4.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-b-b1-e90@-0.4": {
+  "sides": [
+   "oak-b-b1-e90@-0.4-lod1",
+   "oak-b-b1-e90@-0.4-imp"
+  ],
+  "crownCoverage": [
+   64.8,
+   71.4
+  ],
+  "coverageDiffPts": 6.6,
+  "coverageRelDiffPct": 10.2,
+  "fractionalCoverage": [
+   66.7,
+   72.4
+  ],
+  "fractionalDiffPts": 5.69,
+  "silhouetteIoU": 0.756,
+  "luminance": [
+   0.1771,
+   0.1687
+  ],
+  "luminanceDiffPct": -4.7,
+  "deltaE": 1.06,
+  "envelopeLuminanceDiffPct": -4.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
    0
   ]
  },
@@ -404,67 +3411,1225 @@
    65.0,
    71.6
   ],
-  "coverageDiffPts": 6.66,
-  "coverageRelDiffPct": 10.3,
+  "coverageDiffPts": 6.61,
+  "coverageRelDiffPct": 10.2,
+  "fractionalCoverage": [
+   66.9,
+   72.5
+  ],
+  "fractionalDiffPts": 5.58,
   "silhouetteIoU": 0.758,
   "luminance": [
-   0.1858,
-   0.1821
+   0.1769,
+   0.1687
   ],
-  "luminanceDiffPct": -2.0,
-  "deltaE": 0.69,
-  "envelopeLuminanceDiffPct": -1.9,
+  "luminanceDiffPct": -4.6,
+  "deltaE": 1.04,
+  "envelopeLuminanceDiffPct": -4.3,
   "triangles": [
-   291734,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   754960,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.6,
+   0,
    0
   ],
   "rasterized": [
-   11.56,
+   0,
    0
   ]
  },
- "pine-b0-e0": {
+ "oak-c-b0-e0@-0.4": {
   "sides": [
-   "pine-b0-e0-lod0",
-   "pine-b0-e0-lod1"
+   "oak-c-b0-e0@-0.4-lod0",
+   "oak-c-b0-e0@-0.4-lod1"
   ],
   "crownCoverage": [
-   58.4,
-   53.6
+   56.5,
+   51.6
   ],
-  "coverageDiffPts": -4.78,
-  "coverageRelDiffPct": -8.2,
-  "silhouetteIoU": 0.896,
+  "coverageDiffPts": -4.82,
+  "coverageRelDiffPct": -8.5,
+  "fractionalCoverage": [
+   58.7,
+   53.4
+  ],
+  "fractionalDiffPts": -5.25,
+  "silhouetteIoU": 0.692,
   "luminance": [
-   0.0838,
-   0.0901
+   0.0813,
+   0.0777
   ],
-  "luminanceDiffPct": 7.5,
-  "deltaE": 5.78,
-  "envelopeLuminanceDiffPct": 9.5,
+  "luminanceDiffPct": -4.4,
+  "deltaE": 0.8,
+  "envelopeLuminanceDiffPct": 12.2,
   "triangles": [
-   1468041,
-   271163
+   1266368,
+   134908
   ],
   "instanceBytes": [
-   12419720,
-   742280
+   2684200,
+   339640
   ],
   "overdraw": [
-   1.84,
-   1.41
+   0,
+   0
   ],
   "rasterized": [
-   45.29,
-   18.43
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e0@2.7": {
+  "sides": [
+   "oak-c-b0-e0@2.7-lod0",
+   "oak-c-b0-e0@2.7-lod1"
+  ],
+  "crownCoverage": [
+   55.9,
+   51.5
+  ],
+  "coverageDiffPts": -4.34,
+  "coverageRelDiffPct": -7.8,
+  "fractionalCoverage": [
+   57.4,
+   52.7
+  ],
+  "fractionalDiffPts": -4.69,
+  "silhouetteIoU": 0.688,
+  "luminance": [
+   0.0786,
+   0.0783
+  ],
+  "luminanceDiffPct": -0.4,
+  "deltaE": 0.71,
+  "envelopeLuminanceDiffPct": 11.5,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e15@-0.4": {
+  "sides": [
+   "oak-c-b0-e15@-0.4-lod0",
+   "oak-c-b0-e15@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   55.5,
+   51.5
+  ],
+  "coverageDiffPts": -4.0,
+  "coverageRelDiffPct": -7.2,
+  "fractionalCoverage": [
+   57.9,
+   53.2
+  ],
+  "fractionalDiffPts": -4.67,
+  "silhouetteIoU": 0.692,
+  "luminance": [
+   0.0818,
+   0.0783
+  ],
+  "luminanceDiffPct": -4.2,
+  "deltaE": 0.88,
+  "envelopeLuminanceDiffPct": 11.0,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e15@2.7": {
+  "sides": [
+   "oak-c-b0-e15@2.7-lod0",
+   "oak-c-b0-e15@2.7-lod1"
+  ],
+  "crownCoverage": [
+   57.4,
+   53.5
+  ],
+  "coverageDiffPts": -3.94,
+  "coverageRelDiffPct": -6.9,
+  "fractionalCoverage": [
+   59.8,
+   55.2
+  ],
+  "fractionalDiffPts": -4.6,
+  "silhouetteIoU": 0.696,
+  "luminance": [
+   0.0756,
+   0.0769
+  ],
+  "luminanceDiffPct": 1.8,
+  "deltaE": 0.75,
+  "envelopeLuminanceDiffPct": 12.3,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e30@-0.4": {
+  "sides": [
+   "oak-c-b0-e30@-0.4-lod0",
+   "oak-c-b0-e30@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   55.5,
+   49.5
+  ],
+  "coverageDiffPts": -6.0,
+  "coverageRelDiffPct": -10.8,
+  "fractionalCoverage": [
+   58.0,
+   51.4
+  ],
+  "fractionalDiffPts": -6.57,
+  "silhouetteIoU": 0.661,
+  "luminance": [
+   0.0869,
+   0.0819
+  ],
+  "luminanceDiffPct": -5.8,
+  "deltaE": 1.64,
+  "envelopeLuminanceDiffPct": 14.4,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e30@2.7": {
+  "sides": [
+   "oak-c-b0-e30@2.7-lod0",
+   "oak-c-b0-e30@2.7-lod1"
+  ],
+  "crownCoverage": [
+   59.9,
+   53.9
+  ],
+  "coverageDiffPts": -6.0,
+  "coverageRelDiffPct": -10.0,
+  "fractionalCoverage": [
+   62.3,
+   55.9
+  ],
+  "fractionalDiffPts": -6.35,
+  "silhouetteIoU": 0.675,
+  "luminance": [
+   0.0799,
+   0.0786
+  ],
+  "luminanceDiffPct": -1.6,
+  "deltaE": 0.52,
+  "envelopeLuminanceDiffPct": 17.6,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e45@-0.4": {
+  "sides": [
+   "oak-c-b0-e45@-0.4-lod0",
+   "oak-c-b0-e45@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   57.9,
+   48.9
+  ],
+  "coverageDiffPts": -8.99,
+  "coverageRelDiffPct": -15.5,
+  "fractionalCoverage": [
+   60.0,
+   50.8
+  ],
+  "fractionalDiffPts": -9.13,
+  "silhouetteIoU": 0.628,
+  "luminance": [
+   0.0895,
+   0.084
+  ],
+  "luminanceDiffPct": -6.2,
+  "deltaE": 2.16,
+  "envelopeLuminanceDiffPct": 17.4,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e45@2.7": {
+  "sides": [
+   "oak-c-b0-e45@2.7-lod0",
+   "oak-c-b0-e45@2.7-lod1"
+  ],
+  "crownCoverage": [
+   59.9,
+   51.4
+  ],
+  "coverageDiffPts": -8.54,
+  "coverageRelDiffPct": -14.2,
+  "fractionalCoverage": [
+   62.4,
+   53.6
+  ],
+  "fractionalDiffPts": -8.75,
+  "silhouetteIoU": 0.655,
+  "luminance": [
+   0.082,
+   0.0781
+  ],
+  "luminanceDiffPct": -4.8,
+  "deltaE": 1.78,
+  "envelopeLuminanceDiffPct": 17.7,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e60@-0.4": {
+  "sides": [
+   "oak-c-b0-e60@-0.4-lod0",
+   "oak-c-b0-e60@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   59.0,
+   51.7
+  ],
+  "coverageDiffPts": -7.28,
+  "coverageRelDiffPct": -12.3,
+  "fractionalCoverage": [
+   61.3,
+   53.2
+  ],
+  "fractionalDiffPts": -8.01,
+  "silhouetteIoU": 0.64,
+  "luminance": [
+   0.088,
+   0.0824
+  ],
+  "luminanceDiffPct": -6.4,
+  "deltaE": 2.22,
+  "envelopeLuminanceDiffPct": 8.3,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e60@2.7": {
+  "sides": [
+   "oak-c-b0-e60@2.7-lod0",
+   "oak-c-b0-e60@2.7-lod1"
+  ],
+  "crownCoverage": [
+   58.9,
+   51.8
+  ],
+  "coverageDiffPts": -7.11,
+  "coverageRelDiffPct": -12.1,
+  "fractionalCoverage": [
+   61.4,
+   53.7
+  ],
+  "fractionalDiffPts": -7.75,
+  "silhouetteIoU": 0.66,
+  "luminance": [
+   0.0846,
+   0.0802
+  ],
+  "luminanceDiffPct": -5.2,
+  "deltaE": 1.85,
+  "envelopeLuminanceDiffPct": 9.1,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e75@-0.4": {
+  "sides": [
+   "oak-c-b0-e75@-0.4-lod0",
+   "oak-c-b0-e75@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   60.5,
+   54.4
+  ],
+  "coverageDiffPts": -6.08,
+  "coverageRelDiffPct": -10.1,
+  "fractionalCoverage": [
+   63.3,
+   56.3
+  ],
+  "fractionalDiffPts": -6.99,
+  "silhouetteIoU": 0.655,
+  "luminance": [
+   0.0868,
+   0.0819
+  ],
+  "luminanceDiffPct": -5.6,
+  "deltaE": 1.94,
+  "envelopeLuminanceDiffPct": 1.9,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e75@2.7": {
+  "sides": [
+   "oak-c-b0-e75@2.7-lod0",
+   "oak-c-b0-e75@2.7-lod1"
+  ],
+  "crownCoverage": [
+   62.1,
+   55.6
+  ],
+  "coverageDiffPts": -6.45,
+  "coverageRelDiffPct": -10.4,
+  "fractionalCoverage": [
+   64.9,
+   57.6
+  ],
+  "fractionalDiffPts": -7.3,
+  "silhouetteIoU": 0.66,
+  "luminance": [
+   0.0845,
+   0.0807
+  ],
+  "luminanceDiffPct": -4.6,
+  "deltaE": 1.67,
+  "envelopeLuminanceDiffPct": 2.8,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e90@-0.4": {
+  "sides": [
+   "oak-c-b0-e90@-0.4-lod0",
+   "oak-c-b0-e90@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   62.5,
+   56.0
+  ],
+  "coverageDiffPts": -6.55,
+  "coverageRelDiffPct": -10.5,
+  "fractionalCoverage": [
+   65.6,
+   58.2
+  ],
+  "fractionalDiffPts": -7.34,
+  "silhouetteIoU": 0.652,
+  "luminance": [
+   0.0854,
+   0.0813
+  ],
+  "luminanceDiffPct": -4.8,
+  "deltaE": 1.65,
+  "envelopeLuminanceDiffPct": 1.1,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b0-e90@2.7": {
+  "sides": [
+   "oak-c-b0-e90@2.7-lod0",
+   "oak-c-b0-e90@2.7-lod1"
+  ],
+  "crownCoverage": [
+   62.5,
+   56.0
+  ],
+  "coverageDiffPts": -6.48,
+  "coverageRelDiffPct": -10.4,
+  "fractionalCoverage": [
+   65.6,
+   58.3
+  ],
+  "fractionalDiffPts": -7.38,
+  "silhouetteIoU": 0.652,
+  "luminance": [
+   0.0854,
+   0.0812
+  ],
+  "luminanceDiffPct": -4.9,
+  "deltaE": 1.69,
+  "envelopeLuminanceDiffPct": 1.0,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e0@-0.4": {
+  "sides": [
+   "oak-c-b1-e0@-0.4-lod1",
+   "oak-c-b1-e0@-0.4-imp"
+  ],
+  "crownCoverage": [
+   52.3,
+   56.4
+  ],
+  "coverageDiffPts": 4.13,
+  "coverageRelDiffPct": 7.9,
+  "fractionalCoverage": [
+   55.9,
+   60.3
+  ],
+  "fractionalDiffPts": 4.5,
+  "silhouetteIoU": 0.655,
+  "luminance": [
+   0.2242,
+   0.2254
+  ],
+  "luminanceDiffPct": 0.6,
+  "deltaE": 1.43,
+  "envelopeLuminanceDiffPct": -7.9,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e0@2.7": {
+  "sides": [
+   "oak-c-b1-e0@2.7-lod1",
+   "oak-c-b1-e0@2.7-imp"
+  ],
+  "crownCoverage": [
+   53.1,
+   57.7
+  ],
+  "coverageDiffPts": 4.57,
+  "coverageRelDiffPct": 8.6,
+  "fractionalCoverage": [
+   56.5,
+   60.7
+  ],
+  "fractionalDiffPts": 4.15,
+  "silhouetteIoU": 0.663,
+  "luminance": [
+   0.2246,
+   0.2099
+  ],
+  "luminanceDiffPct": -6.5,
+  "deltaE": 3.4,
+  "envelopeLuminanceDiffPct": -9.8,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e15@-0.4": {
+  "sides": [
+   "oak-c-b1-e15@-0.4-lod1",
+   "oak-c-b1-e15@-0.4-imp"
+  ],
+  "crownCoverage": [
+   50.6,
+   53.5
+  ],
+  "coverageDiffPts": 2.98,
+  "coverageRelDiffPct": 5.9,
+  "fractionalCoverage": [
+   53.7,
+   57.5
+  ],
+  "fractionalDiffPts": 3.75,
+  "silhouetteIoU": 0.551,
+  "luminance": [
+   0.2252,
+   0.2338
+  ],
+  "luminanceDiffPct": 3.8,
+  "deltaE": 1.38,
+  "envelopeLuminanceDiffPct": -7.6,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e15@2.7": {
+  "sides": [
+   "oak-c-b1-e15@2.7-lod1",
+   "oak-c-b1-e15@2.7-imp"
+  ],
+  "crownCoverage": [
+   55.2,
+   57.7
+  ],
+  "coverageDiffPts": 2.42,
+  "coverageRelDiffPct": 4.4,
+  "fractionalCoverage": [
+   58.2,
+   60.5
+  ],
+  "fractionalDiffPts": 2.34,
+  "silhouetteIoU": 0.568,
+  "luminance": [
+   0.2239,
+   0.2226
+  ],
+  "luminanceDiffPct": -0.6,
+  "deltaE": 2.37,
+  "envelopeLuminanceDiffPct": -8.3,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e30@-0.4": {
+  "sides": [
+   "oak-c-b1-e30@-0.4-lod1",
+   "oak-c-b1-e30@-0.4-imp"
+  ],
+  "crownCoverage": [
+   43.9,
+   43.8
+  ],
+  "coverageDiffPts": -0.1,
+  "coverageRelDiffPct": -0.2,
+  "fractionalCoverage": [
+   46.7,
+   47.2
+  ],
+  "fractionalDiffPts": 0.5,
+  "silhouetteIoU": 0.578,
+  "luminance": [
+   0.2237,
+   0.2333
+  ],
+  "luminanceDiffPct": 4.3,
+  "deltaE": 1.52,
+  "envelopeLuminanceDiffPct": -3.5,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e30@2.7": {
+  "sides": [
+   "oak-c-b1-e30@2.7-lod1",
+   "oak-c-b1-e30@2.7-imp"
+  ],
+  "crownCoverage": [
+   54.7,
+   55.0
+  ],
+  "coverageDiffPts": 0.3,
+  "coverageRelDiffPct": 0.5,
+  "fractionalCoverage": [
+   58.5,
+   57.8
+  ],
+  "fractionalDiffPts": -0.74,
+  "silhouetteIoU": 0.591,
+  "luminance": [
+   0.2184,
+   0.2231
+  ],
+  "luminanceDiffPct": 2.2,
+  "deltaE": 1.87,
+  "envelopeLuminanceDiffPct": -2.7,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e45@-0.4": {
+  "sides": [
+   "oak-c-b1-e45@-0.4-lod1",
+   "oak-c-b1-e45@-0.4-imp"
+  ],
+  "crownCoverage": [
+   49.9,
+   46.0
+  ],
+  "coverageDiffPts": -3.91,
+  "coverageRelDiffPct": -7.8,
+  "fractionalCoverage": [
+   53.3,
+   53.9
+  ],
+  "fractionalDiffPts": 0.58,
+  "silhouetteIoU": 0.458,
+  "luminance": [
+   0.2128,
+   0.2209
+  ],
+  "luminanceDiffPct": 3.8,
+  "deltaE": 1.22,
+  "envelopeLuminanceDiffPct": 1.1,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e45@2.7": {
+  "sides": [
+   "oak-c-b1-e45@2.7-lod1",
+   "oak-c-b1-e45@2.7-imp"
+  ],
+  "crownCoverage": [
+   55.7,
+   52.6
+  ],
+  "coverageDiffPts": -3.11,
+  "coverageRelDiffPct": -5.6,
+  "fractionalCoverage": [
+   59.3,
+   58.4
+  ],
+  "fractionalDiffPts": -0.87,
+  "silhouetteIoU": 0.503,
+  "luminance": [
+   0.2082,
+   0.2116
+  ],
+  "luminanceDiffPct": 1.7,
+  "deltaE": 1.14,
+  "envelopeLuminanceDiffPct": 0.4,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e60@-0.4": {
+  "sides": [
+   "oak-c-b1-e60@-0.4-lod1",
+   "oak-c-b1-e60@-0.4-imp"
+  ],
+  "crownCoverage": [
+   54.7,
+   51.5
+  ],
+  "coverageDiffPts": -3.2,
+  "coverageRelDiffPct": -5.9,
+  "fractionalCoverage": [
+   58.4,
+   57.7
+  ],
+  "fractionalDiffPts": -0.66,
+  "silhouetteIoU": 0.498,
+  "luminance": [
+   0.2065,
+   0.2103
+  ],
+  "luminanceDiffPct": 1.9,
+  "deltaE": 0.84,
+  "envelopeLuminanceDiffPct": 0.9,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e60@2.7": {
+  "sides": [
+   "oak-c-b1-e60@2.7-lod1",
+   "oak-c-b1-e60@2.7-imp"
+  ],
+  "crownCoverage": [
+   58.0,
+   54.3
+  ],
+  "coverageDiffPts": -3.7,
+  "coverageRelDiffPct": -6.4,
+  "fractionalCoverage": [
+   61.1,
+   59.9
+  ],
+  "fractionalDiffPts": -1.18,
+  "silhouetteIoU": 0.514,
+  "luminance": [
+   0.2055,
+   0.2051
+  ],
+  "luminanceDiffPct": -0.2,
+  "deltaE": 1.01,
+  "envelopeLuminanceDiffPct": -0.0,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e75@-0.4": {
+  "sides": [
+   "oak-c-b1-e75@-0.4-lod1",
+   "oak-c-b1-e75@-0.4-imp"
+  ],
+  "crownCoverage": [
+   58.7,
+   60.8
+  ],
+  "coverageDiffPts": 2.01,
+  "coverageRelDiffPct": 3.4,
+  "fractionalCoverage": [
+   62.3,
+   64.9
+  ],
+  "fractionalDiffPts": 2.61,
+  "silhouetteIoU": 0.584,
+  "luminance": [
+   0.2055,
+   0.207
+  ],
+  "luminanceDiffPct": 0.7,
+  "deltaE": 0.38,
+  "envelopeLuminanceDiffPct": 0.2,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e75@2.7": {
+  "sides": [
+   "oak-c-b1-e75@2.7-lod1",
+   "oak-c-b1-e75@2.7-imp"
+  ],
+  "crownCoverage": [
+   60.5,
+   61.3
+  ],
+  "coverageDiffPts": 0.72,
+  "coverageRelDiffPct": 1.2,
+  "fractionalCoverage": [
+   63.4,
+   65.5
+  ],
+  "fractionalDiffPts": 2.02,
+  "silhouetteIoU": 0.594,
+  "luminance": [
+   0.2052,
+   0.2063
+  ],
+  "luminanceDiffPct": 0.5,
+  "deltaE": 0.45,
+  "envelopeLuminanceDiffPct": -0.1,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e90@-0.4": {
+  "sides": [
+   "oak-c-b1-e90@-0.4-lod1",
+   "oak-c-b1-e90@-0.4-imp"
+  ],
+  "crownCoverage": [
+   64.5,
+   69.4
+  ],
+  "coverageDiffPts": 4.95,
+  "coverageRelDiffPct": 7.7,
+  "fractionalCoverage": [
+   67.1,
+   70.6
+  ],
+  "fractionalDiffPts": 3.52,
+  "silhouetteIoU": 0.701,
+  "luminance": [
+   0.205,
+   0.2044
+  ],
+  "luminanceDiffPct": -0.3,
+  "deltaE": 0.08,
+  "envelopeLuminanceDiffPct": -0.3,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "oak-c-b1-e90@2.7": {
+  "sides": [
+   "oak-c-b1-e90@2.7-lod1",
+   "oak-c-b1-e90@2.7-imp"
+  ],
+  "crownCoverage": [
+   64.1,
+   69.3
+  ],
+  "coverageDiffPts": 5.19,
+  "coverageRelDiffPct": 8.1,
+  "fractionalCoverage": [
+   66.8,
+   70.4
+  ],
+  "fractionalDiffPts": 3.64,
+  "silhouetteIoU": 0.703,
+  "luminance": [
+   0.2053,
+   0.2045
+  ],
+  "luminanceDiffPct": -0.4,
+  "deltaE": 0.12,
+  "envelopeLuminanceDiffPct": -0.4,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b0-e0@-0.4": {
+  "sides": [
+   "pine-b0-e0@-0.4-lod0",
+   "pine-b0-e0@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   59.5,
+   54.7
+  ],
+  "coverageDiffPts": -4.81,
+  "coverageRelDiffPct": -8.1,
+  "fractionalCoverage": [
+   60.4,
+   55.4
+  ],
+  "fractionalDiffPts": -4.99,
+  "silhouetteIoU": 0.896,
+  "luminance": [
+   0.0665,
+   0.0661
+  ],
+  "luminanceDiffPct": -0.6,
+  "deltaE": 1.17,
+  "envelopeLuminanceDiffPct": 9.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
   ]
  },
  "pine-b0-e0@2.7": {
@@ -478,65 +4643,239 @@
   ],
   "coverageDiffPts": -4.12,
   "coverageRelDiffPct": -7.2,
+  "fractionalCoverage": [
+   57.8,
+   53.5
+  ],
+  "fractionalDiffPts": -4.31,
   "silhouetteIoU": 0.903,
   "luminance": [
-   0.05,
-   0.0724
+   0.0643,
+   0.0644
   ],
-  "luminanceDiffPct": 44.7,
-  "deltaE": 10.58,
-  "envelopeLuminanceDiffPct": 11.8,
+  "luminanceDiffPct": 0.1,
+  "deltaE": 1.56,
+  "envelopeLuminanceDiffPct": 8.5,
   "triangles": [
-   1468041,
-   271163
+   0,
+   0
   ],
   "instanceBytes": [
-   12419720,
-   742280
+   0,
+   0
   ],
   "overdraw": [
-   1.9,
-   1.42
+   0,
+   0
   ],
   "rasterized": [
-   46.21,
-   18.35
+   0,
+   0
   ]
  },
- "pine-b0-e45": {
+ "pine-b0-e15@-0.4": {
   "sides": [
-   "pine-b0-e45-lod0",
-   "pine-b0-e45-lod1"
+   "pine-b0-e15@-0.4-lod0",
+   "pine-b0-e15@-0.4-lod1"
   ],
   "crownCoverage": [
-   64.0,
-   59.1
+   55.5,
+   50.9
   ],
-  "coverageDiffPts": -4.88,
-  "coverageRelDiffPct": -7.6,
-  "silhouetteIoU": 0.884,
+  "coverageDiffPts": -4.68,
+  "coverageRelDiffPct": -8.4,
+  "fractionalCoverage": [
+   56.3,
+   51.5
+  ],
+  "fractionalDiffPts": -4.85,
+  "silhouetteIoU": 0.891,
   "luminance": [
-   0.1257,
-   0.1181
+   0.0686,
+   0.0701
   ],
-  "luminanceDiffPct": -6.0,
-  "deltaE": 1.91,
-  "envelopeLuminanceDiffPct": 5.6,
+  "luminanceDiffPct": 2.1,
+  "deltaE": 0.61,
+  "envelopeLuminanceDiffPct": 8.8,
   "triangles": [
-   1468041,
-   271163
+   0,
+   0
   ],
   "instanceBytes": [
-   12419720,
-   742280
+   0,
+   0
   ],
   "overdraw": [
-   1.69,
-   1.29
+   0,
+   0
   ],
   "rasterized": [
-   41.59,
-   17.08
+   0,
+   0
+  ]
+ },
+ "pine-b0-e15@2.7": {
+  "sides": [
+   "pine-b0-e15@2.7-lod0",
+   "pine-b0-e15@2.7-lod1"
+  ],
+  "crownCoverage": [
+   58.0,
+   53.6
+  ],
+  "coverageDiffPts": -4.38,
+  "coverageRelDiffPct": -7.5,
+  "fractionalCoverage": [
+   58.9,
+   54.3
+  ],
+  "fractionalDiffPts": -4.57,
+  "silhouetteIoU": 0.904,
+  "luminance": [
+   0.0654,
+   0.0666
+  ],
+  "luminanceDiffPct": 2.0,
+  "deltaE": 0.41,
+  "envelopeLuminanceDiffPct": 9.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b0-e30@-0.4": {
+  "sides": [
+   "pine-b0-e30@-0.4-lod0",
+   "pine-b0-e30@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   62.1,
+   57.0
+  ],
+  "coverageDiffPts": -5.08,
+  "coverageRelDiffPct": -8.2,
+  "fractionalCoverage": [
+   62.9,
+   57.7
+  ],
+  "fractionalDiffPts": -5.26,
+  "silhouetteIoU": 0.891,
+  "luminance": [
+   0.0737,
+   0.0771
+  ],
+  "luminanceDiffPct": 4.5,
+  "deltaE": 1.75,
+  "envelopeLuminanceDiffPct": 11.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b0-e30@2.7": {
+  "sides": [
+   "pine-b0-e30@2.7-lod0",
+   "pine-b0-e30@2.7-lod1"
+  ],
+  "crownCoverage": [
+   60.1,
+   55.0
+  ],
+  "coverageDiffPts": -5.12,
+  "coverageRelDiffPct": -8.5,
+  "fractionalCoverage": [
+   61.2,
+   55.9
+  ],
+  "fractionalDiffPts": -5.25,
+  "silhouetteIoU": 0.892,
+  "luminance": [
+   0.0694,
+   0.0728
+  ],
+  "luminanceDiffPct": 4.9,
+  "deltaE": 2.27,
+  "envelopeLuminanceDiffPct": 10.9,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b0-e45@-0.4": {
+  "sides": [
+   "pine-b0-e45@-0.4-lod0",
+   "pine-b0-e45@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   66.0,
+   61.2
+  ],
+  "coverageDiffPts": -4.8,
+  "coverageRelDiffPct": -7.3,
+  "fractionalCoverage": [
+   67.3,
+   62.2
+  ],
+  "fractionalDiffPts": -5.14,
+  "silhouetteIoU": 0.888,
+  "luminance": [
+   0.0769,
+   0.0787
+  ],
+  "luminanceDiffPct": 2.4,
+  "deltaE": 1.74,
+  "envelopeLuminanceDiffPct": 12.7,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
   ]
  },
  "pine-b0-e45@2.7": {
@@ -546,69 +4885,243 @@
   ],
   "crownCoverage": [
    67.1,
-   61.4
+   61.3
   ],
-  "coverageDiffPts": -5.75,
+  "coverageDiffPts": -5.8,
   "coverageRelDiffPct": -8.6,
+  "fractionalCoverage": [
+   68.4,
+   62.4
+  ],
+  "fractionalDiffPts": -6.04,
   "silhouetteIoU": 0.882,
   "luminance": [
-   0.0695,
-   0.0955
+   0.0723,
+   0.078
   ],
-  "luminanceDiffPct": 37.4,
-  "deltaE": 6.15,
-  "envelopeLuminanceDiffPct": 22.7,
+  "luminanceDiffPct": 8.0,
+  "deltaE": 2.91,
+  "envelopeLuminanceDiffPct": 16.4,
   "triangles": [
-   1468041,
-   271163
+   0,
+   0
   ],
   "instanceBytes": [
-   12419720,
-   742280
+   0,
+   0
   ],
   "overdraw": [
-   1.69,
-   1.31
+   0,
+   0
   ],
   "rasterized": [
-   41.38,
-   17.2
+   0,
+   0
   ]
  },
- "pine-b0-e90": {
+ "pine-b0-e60@-0.4": {
   "sides": [
-   "pine-b0-e90-lod0",
-   "pine-b0-e90-lod1"
+   "pine-b0-e60@-0.4-lod0",
+   "pine-b0-e60@-0.4-lod1"
   ],
   "crownCoverage": [
-   67.5,
-   63.1
+   67.1,
+   62.7
   ],
-  "coverageDiffPts": -4.44,
-  "coverageRelDiffPct": -6.6,
-  "silhouetteIoU": 0.888,
+  "coverageDiffPts": -4.38,
+  "coverageRelDiffPct": -6.5,
+  "fractionalCoverage": [
+   68.7,
+   63.9
+  ],
+  "fractionalDiffPts": -4.76,
+  "silhouetteIoU": 0.887,
   "luminance": [
-   0.0927,
-   0.1057
+   0.0793,
+   0.0794
   ],
-  "luminanceDiffPct": 14.1,
-  "deltaE": 3.31,
-  "envelopeLuminanceDiffPct": 7.2,
+  "luminanceDiffPct": 0.0,
+  "deltaE": 1.5,
+  "envelopeLuminanceDiffPct": 5.2,
   "triangles": [
-   1468041,
-   271163
+   0,
+   0
   ],
   "instanceBytes": [
-   12419720,
-   742280
+   0,
+   0
   ],
   "overdraw": [
-   1.48,
-   1.33
+   0,
+   0
   ],
   "rasterized": [
-   35.98,
-   17.6
+   0,
+   0
+  ]
+ },
+ "pine-b0-e60@2.7": {
+  "sides": [
+   "pine-b0-e60@2.7-lod0",
+   "pine-b0-e60@2.7-lod1"
+  ],
+  "crownCoverage": [
+   66.5,
+   61.6
+  ],
+  "coverageDiffPts": -4.9,
+  "coverageRelDiffPct": -7.4,
+  "fractionalCoverage": [
+   68.0,
+   62.8
+  ],
+  "fractionalDiffPts": -5.15,
+  "silhouetteIoU": 0.888,
+  "luminance": [
+   0.0745,
+   0.0799
+  ],
+  "luminanceDiffPct": 7.3,
+  "deltaE": 2.41,
+  "envelopeLuminanceDiffPct": 9.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b0-e75@-0.4": {
+  "sides": [
+   "pine-b0-e75@-0.4-lod0",
+   "pine-b0-e75@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   66.0,
+   62.0
+  ],
+  "coverageDiffPts": -4.0,
+  "coverageRelDiffPct": -6.1,
+  "fractionalCoverage": [
+   67.8,
+   63.4
+  ],
+  "fractionalDiffPts": -4.41,
+  "silhouetteIoU": 0.889,
+  "luminance": [
+   0.0814,
+   0.0823
+  ],
+  "luminanceDiffPct": 1.2,
+  "deltaE": 1.34,
+  "envelopeLuminanceDiffPct": 1.9,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b0-e75@2.7": {
+  "sides": [
+   "pine-b0-e75@2.7-lod0",
+   "pine-b0-e75@2.7-lod1"
+  ],
+  "crownCoverage": [
+   68.7,
+   64.1
+  ],
+  "coverageDiffPts": -4.6,
+  "coverageRelDiffPct": -6.7,
+  "fractionalCoverage": [
+   70.4,
+   65.5
+  ],
+  "fractionalDiffPts": -4.91,
+  "silhouetteIoU": 0.889,
+  "luminance": [
+   0.0776,
+   0.0815
+  ],
+  "luminanceDiffPct": 5.1,
+  "deltaE": 1.81,
+  "envelopeLuminanceDiffPct": 4.5,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b0-e90@-0.4": {
+  "sides": [
+   "pine-b0-e90@-0.4-lod0",
+   "pine-b0-e90@-0.4-lod1"
+  ],
+  "crownCoverage": [
+   67.2,
+   62.9
+  ],
+  "coverageDiffPts": -4.32,
+  "coverageRelDiffPct": -6.4,
+  "fractionalCoverage": [
+   69.0,
+   64.3
+  ],
+  "fractionalDiffPts": -4.71,
+  "silhouetteIoU": 0.889,
+  "luminance": [
+   0.0804,
+   0.0827
+  ],
+  "luminanceDiffPct": 2.9,
+  "deltaE": 1.38,
+  "envelopeLuminanceDiffPct": 2.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
   ]
  },
  "pine-b0-e90@2.7": {
@@ -622,64 +5135,74 @@
   ],
   "coverageDiffPts": -4.38,
   "coverageRelDiffPct": -6.5,
+  "fractionalCoverage": [
+   69.1,
+   64.4
+  ],
+  "fractionalDiffPts": -4.7,
   "silhouetteIoU": 0.888,
   "luminance": [
-   0.0918,
-   0.1054
+   0.0802,
+   0.0826
   ],
-  "luminanceDiffPct": 14.8,
-  "deltaE": 3.4,
-  "envelopeLuminanceDiffPct": 7.6,
+  "luminanceDiffPct": 3.0,
+  "deltaE": 1.39,
+  "envelopeLuminanceDiffPct": 2.9,
   "triangles": [
-   1468041,
-   271163
+   0,
+   0
   ],
   "instanceBytes": [
-   12419720,
-   742280
+   0,
+   0
   ],
   "overdraw": [
-   1.48,
-   1.32
-  ],
-  "rasterized": [
-   36.07,
-   17.46
-  ]
- },
- "pine-b1-e0": {
-  "sides": [
-   "pine-b1-e0-lod1",
-   "pine-b1-e0-imp"
-  ],
-  "crownCoverage": [
-   33.9,
-   31.6
-  ],
-  "coverageDiffPts": -2.28,
-  "coverageRelDiffPct": -6.7,
-  "silhouetteIoU": 0.712,
-  "luminance": [
-   0.2212,
-   0.2457
-  ],
-  "luminanceDiffPct": 11.1,
-  "deltaE": 2.66,
-  "envelopeLuminanceDiffPct": 4.3,
-  "triangles": [
-   271163,
-   2
-  ],
-  "instanceBytes": [
-   742280,
-   32
-  ],
-  "overdraw": [
-   1.47,
+   0,
    0
   ],
   "rasterized": [
-   19.23,
+   0,
+   0
+  ]
+ },
+ "pine-b1-e0@-0.4": {
+  "sides": [
+   "pine-b1-e0@-0.4-lod1",
+   "pine-b1-e0@-0.4-imp"
+  ],
+  "crownCoverage": [
+   37.6,
+   34.7
+  ],
+  "coverageDiffPts": -2.86,
+  "coverageRelDiffPct": -7.6,
+  "fractionalCoverage": [
+   39.4,
+   37.6
+  ],
+  "fractionalDiffPts": -1.82,
+  "silhouetteIoU": 0.716,
+  "luminance": [
+   0.2027,
+   0.2173
+  ],
+  "luminanceDiffPct": 7.2,
+  "deltaE": 2.04,
+  "envelopeLuminanceDiffPct": 3.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
    0
   ]
  },
@@ -694,64 +5217,238 @@
   ],
   "coverageDiffPts": -2.47,
   "coverageRelDiffPct": -9.2,
+  "fractionalCoverage": [
+   28.4,
+   27.0
+  ],
+  "fractionalDiffPts": -1.38,
   "silhouetteIoU": 0.718,
   "luminance": [
-   0.2138,
-   0.2262
+   0.204,
+   0.2109
   ],
-  "luminanceDiffPct": 5.8,
-  "deltaE": 1.88,
-  "envelopeLuminanceDiffPct": 1.2,
+  "luminanceDiffPct": 3.4,
+  "deltaE": 1.75,
+  "envelopeLuminanceDiffPct": 0.8,
   "triangles": [
-   271163,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   742280,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.53,
+   0,
    0
   ],
   "rasterized": [
-   21.31,
+   0,
    0
   ]
  },
- "pine-b1-e45": {
+ "pine-b1-e15@-0.4": {
   "sides": [
-   "pine-b1-e45-lod1",
-   "pine-b1-e45-imp"
+   "pine-b1-e15@-0.4-lod1",
+   "pine-b1-e15@-0.4-imp"
   ],
   "crownCoverage": [
-   41.0,
-   27.4
+   40.4,
+   36.8
   ],
-  "coverageDiffPts": -13.64,
-  "coverageRelDiffPct": -33.3,
-  "silhouetteIoU": 0.392,
+  "coverageDiffPts": -3.67,
+  "coverageRelDiffPct": -9.1,
+  "fractionalCoverage": [
+   41.9,
+   40.0
+  ],
+  "fractionalDiffPts": -1.92,
+  "silhouetteIoU": 0.595,
   "luminance": [
-   0.2232,
-   0.2339
+   0.2086,
+   0.2293
   ],
-  "luminanceDiffPct": 4.8,
-  "deltaE": 2.02,
-  "envelopeLuminanceDiffPct": 9.4,
+  "luminanceDiffPct": 9.9,
+  "deltaE": 2.39,
+  "envelopeLuminanceDiffPct": 1.8,
   "triangles": [
-   271163,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   742280,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.29,
+   0,
    0
   ],
   "rasterized": [
-   17.17,
+   0,
+   0
+  ]
+ },
+ "pine-b1-e15@2.7": {
+  "sides": [
+   "pine-b1-e15@2.7-lod1",
+   "pine-b1-e15@2.7-imp"
+  ],
+  "crownCoverage": [
+   30.2,
+   27.7
+  ],
+  "coverageDiffPts": -2.46,
+  "coverageRelDiffPct": -8.2,
+  "fractionalCoverage": [
+   31.9,
+   30.9
+  ],
+  "fractionalDiffPts": -0.99,
+  "silhouetteIoU": 0.581,
+  "luminance": [
+   0.2065,
+   0.2155
+  ],
+  "luminanceDiffPct": 4.4,
+  "deltaE": 1.77,
+  "envelopeLuminanceDiffPct": -0.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b1-e30@-0.4": {
+  "sides": [
+   "pine-b1-e30@-0.4-lod1",
+   "pine-b1-e30@-0.4-imp"
+  ],
+  "crownCoverage": [
+   40.9,
+   33.9
+  ],
+  "coverageDiffPts": -6.95,
+  "coverageRelDiffPct": -17.0,
+  "fractionalCoverage": [
+   42.1,
+   37.1
+  ],
+  "fractionalDiffPts": -5.0,
+  "silhouetteIoU": 0.598,
+  "luminance": [
+   0.2128,
+   0.2337
+  ],
+  "luminanceDiffPct": 9.8,
+  "deltaE": 2.33,
+  "envelopeLuminanceDiffPct": 5.8,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b1-e30@2.7": {
+  "sides": [
+   "pine-b1-e30@2.7-lod1",
+   "pine-b1-e30@2.7-imp"
+  ],
+  "crownCoverage": [
+   37.2,
+   31.4
+  ],
+  "coverageDiffPts": -5.78,
+  "coverageRelDiffPct": -15.6,
+  "fractionalCoverage": [
+   39.4,
+   34.4
+  ],
+  "fractionalDiffPts": -4.93,
+  "silhouetteIoU": 0.604,
+  "luminance": [
+   0.2101,
+   0.2254
+  ],
+  "luminanceDiffPct": 7.3,
+  "deltaE": 1.99,
+  "envelopeLuminanceDiffPct": 3.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b1-e45@-0.4": {
+  "sides": [
+   "pine-b1-e45@-0.4-lod1",
+   "pine-b1-e45@-0.4-imp"
+  ],
+  "crownCoverage": [
+   41.0,
+   30.2
+  ],
+  "coverageDiffPts": -10.77,
+  "coverageRelDiffPct": -26.3,
+  "fractionalCoverage": [
+   43.4,
+   37.4
+  ],
+  "fractionalDiffPts": -6.0,
+  "silhouetteIoU": 0.449,
+  "luminance": [
+   0.2013,
+   0.2157
+  ],
+  "luminanceDiffPct": 7.2,
+  "deltaE": 2.01,
+  "envelopeLuminanceDiffPct": 8.4,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
    0
   ]
  },
@@ -764,66 +5461,240 @@
    39.5,
    29.5
   ],
-  "coverageDiffPts": -10.02,
+  "coverageDiffPts": -10.03,
   "coverageRelDiffPct": -25.4,
-  "silhouetteIoU": 0.472,
-  "luminance": [
-   0.2212,
-   0.242
+  "fractionalCoverage": [
+   41.6,
+   35.9
   ],
-  "luminanceDiffPct": 9.4,
-  "deltaE": 2.67,
-  "envelopeLuminanceDiffPct": 8.8,
+  "fractionalDiffPts": -5.79,
+  "silhouetteIoU": 0.475,
+  "luminance": [
+   0.2054,
+   0.2153
+  ],
+  "luminanceDiffPct": 4.8,
+  "deltaE": 1.63,
+  "envelopeLuminanceDiffPct": 7.4,
   "triangles": [
-   271163,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   742280,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.35,
+   0,
    0
   ],
   "rasterized": [
-   17.42,
+   0,
    0
   ]
  },
- "pine-b1-e90": {
+ "pine-b1-e60@-0.4": {
   "sides": [
-   "pine-b1-e90-lod1",
-   "pine-b1-e90-imp"
+   "pine-b1-e60@-0.4-lod1",
+   "pine-b1-e60@-0.4-imp"
   ],
   "crownCoverage": [
-   58.6,
-   54.3
+   47.6,
+   35.1
   ],
-  "coverageDiffPts": -4.35,
-  "coverageRelDiffPct": -7.4,
-  "silhouetteIoU": 0.659,
+  "coverageDiffPts": -12.54,
+  "coverageRelDiffPct": -26.3,
+  "fractionalCoverage": [
+   50.5,
+   43.6
+  ],
+  "fractionalDiffPts": -6.81,
+  "silhouetteIoU": 0.424,
   "luminance": [
-   0.2165,
-   0.2257
+   0.1978,
+   0.2053
   ],
-  "luminanceDiffPct": 4.2,
-  "deltaE": 1.24,
-  "envelopeLuminanceDiffPct": 6.2,
+  "luminanceDiffPct": 3.8,
+  "deltaE": 1.49,
+  "envelopeLuminanceDiffPct": 4.1,
   "triangles": [
-   271163,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   742280,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.29,
+   0,
    0
   ],
   "rasterized": [
-   17.74,
+   0,
+   0
+  ]
+ },
+ "pine-b1-e60@2.7": {
+  "sides": [
+   "pine-b1-e60@2.7-lod1",
+   "pine-b1-e60@2.7-imp"
+  ],
+  "crownCoverage": [
+   51.4,
+   37.5
+  ],
+  "coverageDiffPts": -13.85,
+  "coverageRelDiffPct": -27.0,
+  "fractionalCoverage": [
+   53.9,
+   45.2
+  ],
+  "fractionalDiffPts": -8.69,
+  "silhouetteIoU": 0.44,
+  "luminance": [
+   0.1985,
+   0.2034
+  ],
+  "luminanceDiffPct": 2.5,
+  "deltaE": 1.18,
+  "envelopeLuminanceDiffPct": 4.3,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b1-e75@-0.4": {
+  "sides": [
+   "pine-b1-e75@-0.4-lod1",
+   "pine-b1-e75@-0.4-imp"
+  ],
+  "crownCoverage": [
+   55.1,
+   45.8
+  ],
+  "coverageDiffPts": -9.27,
+  "coverageRelDiffPct": -16.8,
+  "fractionalCoverage": [
+   58.9,
+   54.0
+  ],
+  "fractionalDiffPts": -4.93,
+  "silhouetteIoU": 0.463,
+  "luminance": [
+   0.1987,
+   0.2028
+  ],
+  "luminanceDiffPct": 2.0,
+  "deltaE": 1.13,
+  "envelopeLuminanceDiffPct": 4.0,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b1-e75@2.7": {
+  "sides": [
+   "pine-b1-e75@2.7-lod1",
+   "pine-b1-e75@2.7-imp"
+  ],
+  "crownCoverage": [
+   59.2,
+   49.7
+  ],
+  "coverageDiffPts": -9.53,
+  "coverageRelDiffPct": -16.1,
+  "fractionalCoverage": [
+   62.4,
+   55.9
+  ],
+  "fractionalDiffPts": -6.48,
+  "silhouetteIoU": 0.499,
+  "luminance": [
+   0.1995,
+   0.2052
+  ],
+  "luminanceDiffPct": 2.9,
+  "deltaE": 1.32,
+  "envelopeLuminanceDiffPct": 4.6,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
+   0
+  ]
+ },
+ "pine-b1-e90@-0.4": {
+  "sides": [
+   "pine-b1-e90@-0.4-lod1",
+   "pine-b1-e90@-0.4-imp"
+  ],
+  "crownCoverage": [
+   58.4,
+   54.8
+  ],
+  "coverageDiffPts": -3.6,
+  "coverageRelDiffPct": -6.2,
+  "fractionalCoverage": [
+   62.2,
+   59.1
+  ],
+  "fractionalDiffPts": -3.11,
+  "silhouetteIoU": 0.652,
+  "luminance": [
+   0.1996,
+   0.1989
+  ],
+  "luminanceDiffPct": -0.4,
+  "deltaE": 0.38,
+  "envelopeLuminanceDiffPct": 4.1,
+  "triangles": [
+   0,
+   0
+  ],
+  "instanceBytes": [
+   0,
+   0
+  ],
+  "overdraw": [
+   0,
+   0
+  ],
+  "rasterized": [
+   0,
    0
   ]
  },
@@ -838,28 +5709,33 @@
   ],
   "coverageDiffPts": -4.68,
   "coverageRelDiffPct": -8.0,
+  "fractionalCoverage": [
+   62.2,
+   58.9
+  ],
+  "fractionalDiffPts": -3.22,
   "silhouetteIoU": 0.661,
   "luminance": [
-   0.2167,
-   0.2254
+   0.1998,
+   0.1986
   ],
-  "luminanceDiffPct": 4.0,
-  "deltaE": 1.18,
-  "envelopeLuminanceDiffPct": 6.1,
+  "luminanceDiffPct": -0.6,
+  "deltaE": 0.32,
+  "envelopeLuminanceDiffPct": 3.9,
   "triangles": [
-   271163,
-   2
+   0,
+   0
   ],
   "instanceBytes": [
-   742280,
-   32
+   0,
+   0
   ],
   "overdraw": [
-   1.35,
+   0,
    0
   ],
   "rasterized": [
-   18.0,
+   0,
    0
   ]
  }

@@ -32,7 +32,7 @@ def main(bd, ad, ang=None, mid=None):
         rows = []
         for key in sorted(k for k in ma if k.startswith(id_ + '-b')):
             v, v0 = ma[key], mb.get(key)
-            b, view = key.split('-')[-2], key.split('-')[-1]
+            b = 'b0' if '-b0-' in key else 'b1'; view = key.split(f'-{b}-', 1)[1]
             vm = mm.get(key)
             row = [(crop(bd, v0['sides'][0], b), f"4.2 · {BN[b]} · {view} · {v0['sides'][0].split('-')[-1]}") if v0 else (Image.new('RGB', (10, 10)), '4.2: —'),
                    (crop(bd, v0['sides'][1], b), f"4.2 · {v0['sides'][1].split('-')[-1]} · cov {v0['coverageDiffPts']:+.1f} · lum {v0['luminanceDiffPct']:+.1f} %") if v0 else (Image.new('RGB', (10, 10)), '')]
@@ -62,7 +62,8 @@ def main(bd, ad, ang=None, mid=None):
                 ks = [k for k in allv if k.startswith(f'{id_}-{b}-')]
                 if not ks: continue
                 wc = max(ks, key=lambda k: abs(allv[k]['coverageDiffPts'])); wl = max(ks, key=lambda k: abs(allv[k]['luminanceDiffPct']))
-                out.append(f"| {NAMES[id_]} | {BN[b]} | {len(ks)} | {allv[wc]['coverageDiffPts']:+.1f} ({wc.split('-')[-1]}) | {allv[wl]['luminanceDiffPct']:+.1f} % ({wl.split('-')[-1]}) | {sum(ok(allv[k]) for k in ks)} of {len(ks)} |")
+                vw = lambda k: k.split(f'-{b}-', 1)[1]
+                out.append(f"| {NAMES[id_]} | {BN[b]} | {len(ks)} | {allv[wc]['coverageDiffPts']:+.1f} ({vw(wc)}) | {allv[wl]['luminanceDiffPct']:+.1f} % ({vw(wl)}) | {sum(ok(allv[k]) for k in ks)} of {len(ks)} |")
         out.append('\nEvery view (protocol views first, then the angular set; view = elevation tag @ azimuth in radians, 0.6 when omitted):\n')
         out.append('| key | Δ coverage (pts) | Δ luminance | fractional Δ coverage (diagnostic) | ΔE | IoU |'); out.append('|---|---|---|---|---|---|')
         for k in sorted(allv): out.append(f"| {k} | {mark(allv[k]['coverageDiffPts'], COV)} | {mark(allv[k]['luminanceDiffPct'], LUM)} % | {allv[k].get('fractionalDiffPts', 0):+.1f} | {allv[k]['deltaE']:.1f} | {allv[k]['silhouetteIoU']:.2f} |")

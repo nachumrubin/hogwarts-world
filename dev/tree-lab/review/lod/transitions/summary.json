@@ -153,21 +153,5 @@
       }
     }
   },
-  "renderChecks": [
-    {
-      "t": 14.33,
-      "cachedPath": false,
-      "identicalPng": true
-    },
-    {
-      "t": 16.4,
-      "cachedPath": false,
-      "identicalPng": true
-    },
-    {
-      "t": 18.47,
-      "cachedPath": false,
-      "identicalPng": true
-    }
-  ]
+  "renderChecks": []
 }

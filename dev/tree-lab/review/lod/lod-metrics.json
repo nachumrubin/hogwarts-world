@@ -8,16 +8,21 @@
    57.8,
    58.9
   ],
-  "coverageDiffPts": 1.08,
-  "coverageRelDiffPct": 1.9,
+  "coverageDiffPts": 1.07,
+  "coverageRelDiffPct": 1.8,
+  "fractionalCoverage": [
+   60.2,
+   60.6
+  ],
+  "fractionalDiffPts": 0.43,
   "silhouetteIoU": 0.717,
   "luminance": [
-   0.135,
-   0.1412
+   0.1374,
+   0.1325
   ],
-  "luminanceDiffPct": 4.5,
-  "deltaE": 4.03,
-  "envelopeLuminanceDiffPct": 5.3,
+  "luminanceDiffPct": -3.6,
+  "deltaE": 2.18,
+  "envelopeLuminanceDiffPct": 2.0,
   "triangles": [
    1736574,
    240482
@@ -44,16 +49,21 @@
    68.4,
    66.6
   ],
-  "coverageDiffPts": -1.75,
+  "coverageDiffPts": -1.77,
   "coverageRelDiffPct": -2.6,
+  "fractionalCoverage": [
+   70.8,
+   68.7
+  ],
+  "fractionalDiffPts": -2.09,
   "silhouetteIoU": 0.789,
   "luminance": [
-   0.103,
-   0.1192
+   0.1038,
+   0.1123
   ],
-  "luminanceDiffPct": 15.7,
-  "deltaE": 3.83,
-  "envelopeLuminanceDiffPct": 10.8,
+  "luminanceDiffPct": 8.2,
+  "deltaE": 1.78,
+  "envelopeLuminanceDiffPct": 5.6,
   "triangles": [
    1736574,
    240482
@@ -77,19 +87,24 @@
    "birch-b1-eye-imp"
   ],
   "crownCoverage": [
-   69.1,
-   69.8
+   69.4,
+   70.3
   ],
-  "coverageDiffPts": 0.66,
-  "coverageRelDiffPct": 1.0,
-  "silhouetteIoU": 0.769,
+  "coverageDiffPts": 0.86,
+  "coverageRelDiffPct": 1.2,
+  "fractionalCoverage": [
+   70.5,
+   71.0
+  ],
+  "fractionalDiffPts": 0.46,
+  "silhouetteIoU": 0.772,
   "luminance": [
-   0.2379,
-   0.2557
+   0.2227,
+   0.2377
   ],
-  "luminanceDiffPct": 7.5,
-  "deltaE": 1.85,
-  "envelopeLuminanceDiffPct": -2.2,
+  "luminanceDiffPct": 6.7,
+  "deltaE": 1.63,
+  "envelopeLuminanceDiffPct": -3.6,
   "triangles": [
    240482,
    2
@@ -116,16 +131,21 @@
    73.7,
    76.5
   ],
-  "coverageDiffPts": 2.76,
-  "coverageRelDiffPct": 3.7,
+  "coverageDiffPts": 2.82,
+  "coverageRelDiffPct": 3.8,
+  "fractionalCoverage": [
+   74.9,
+   80.1
+  ],
+  "fractionalDiffPts": 5.18,
   "silhouetteIoU": 0.82,
   "luminance": [
-   0.2185,
-   0.2239
+   0.2061,
+   0.2071
   ],
-  "luminanceDiffPct": 2.4,
-  "deltaE": 1.27,
-  "envelopeLuminanceDiffPct": 1.8,
+  "luminanceDiffPct": 0.5,
+  "deltaE": 1.07,
+  "envelopeLuminanceDiffPct": -0.2,
   "triangles": [
    240482,
    2
@@ -154,14 +174,19 @@
   ],
   "coverageDiffPts": -3.48,
   "coverageRelDiffPct": -5.8,
+  "fractionalCoverage": [
+   59.4,
+   55.6
+  ],
+  "fractionalDiffPts": -3.76,
   "silhouetteIoU": 0.694,
   "luminance": [
-   0.0913,
-   0.0934
+   0.0896,
+   0.0875
   ],
-  "luminanceDiffPct": 2.2,
-  "deltaE": 0.85,
-  "envelopeLuminanceDiffPct": 10.0,
+  "luminanceDiffPct": -2.3,
+  "deltaE": 0.93,
+  "envelopeLuminanceDiffPct": 9.0,
   "triangles": [
    2123801,
    230630
@@ -190,14 +215,19 @@
   ],
   "coverageDiffPts": -5.78,
   "coverageRelDiffPct": -8.3,
+  "fractionalCoverage": [
+   65.1,
+   59.1
+  ],
+  "fractionalDiffPts": -5.98,
   "silhouetteIoU": 0.667,
   "luminance": [
-   0.0919,
-   0.0858
+   0.0841,
+   0.0808
   ],
-  "luminanceDiffPct": -6.6,
-  "deltaE": 1.73,
-  "envelopeLuminanceDiffPct": -1.8,
+  "luminanceDiffPct": -3.9,
+  "deltaE": 1.92,
+  "envelopeLuminanceDiffPct": 0.5,
   "triangles": [
    2123801,
    230630
@@ -224,16 +254,21 @@
    53.5,
    62.4
   ],
-  "coverageDiffPts": 8.84,
-  "coverageRelDiffPct": 16.5,
+  "coverageDiffPts": 8.85,
+  "coverageRelDiffPct": 16.6,
+  "fractionalCoverage": [
+   56.4,
+   61.7
+  ],
+  "fractionalDiffPts": 5.27,
   "silhouetteIoU": 0.551,
   "luminance": [
-   0.2114,
-   0.2153
+   0.2019,
+   0.1997
   ],
-  "luminanceDiffPct": 1.9,
-  "deltaE": 1.15,
-  "envelopeLuminanceDiffPct": -8.9,
+  "luminanceDiffPct": -1.0,
+  "deltaE": 0.68,
+  "envelopeLuminanceDiffPct": -10.5,
   "triangles": [
    230630,
    2
@@ -260,16 +295,21 @@
    56.8,
    65.7
   ],
-  "coverageDiffPts": 8.95,
-  "coverageRelDiffPct": 15.8,
+  "coverageDiffPts": 8.94,
+  "coverageRelDiffPct": 15.7,
+  "fractionalCoverage": [
+   59.0,
+   67.3
+  ],
+  "fractionalDiffPts": 8.3,
   "silhouetteIoU": 0.659,
   "luminance": [
-   0.1915,
-   0.1857
+   0.1821,
+   0.1707
   ],
-  "luminanceDiffPct": -3.1,
-  "deltaE": 0.97,
-  "envelopeLuminanceDiffPct": -2.3,
+  "luminanceDiffPct": -6.3,
+  "deltaE": 1.43,
+  "envelopeLuminanceDiffPct": -5.1,
   "triangles": [
    230630,
    2
@@ -298,14 +338,19 @@
   ],
   "coverageDiffPts": -2.62,
   "coverageRelDiffPct": -3.8,
+  "fractionalCoverage": [
+   67.4,
+   64.9
+  ],
+  "fractionalDiffPts": -2.54,
   "silhouetteIoU": 0.74,
   "luminance": [
-   0.0781,
-   0.0832
+   0.0773,
+   0.0779
   ],
-  "luminanceDiffPct": 6.6,
-  "deltaE": 1.61,
-  "envelopeLuminanceDiffPct": 11.0,
+  "luminanceDiffPct": 0.9,
+  "deltaE": 0.39,
+  "envelopeLuminanceDiffPct": 9.5,
   "triangles": [
    2315340,
    291734
@@ -334,14 +379,19 @@
   ],
   "coverageDiffPts": -3.46,
   "coverageRelDiffPct": -4.8,
+  "fractionalCoverage": [
+   68.3,
+   64.8
+  ],
+  "fractionalDiffPts": -3.53,
   "silhouetteIoU": 0.719,
   "luminance": [
-   0.0847,
-   0.0799
+   0.0776,
+   0.0752
   ],
-  "luminanceDiffPct": -5.6,
-  "deltaE": 1.21,
-  "envelopeLuminanceDiffPct": -1.4,
+  "luminanceDiffPct": -3.0,
+  "deltaE": 1.32,
+  "envelopeLuminanceDiffPct": 0.7,
   "triangles": [
    2315340,
    291734
@@ -369,15 +419,20 @@
    68.0
   ],
   "coverageDiffPts": 8.74,
-  "coverageRelDiffPct": 14.7,
+  "coverageRelDiffPct": 14.8,
+  "fractionalCoverage": [
+   61.5,
+   67.5
+  ],
+  "fractionalDiffPts": 6.03,
   "silhouetteIoU": 0.651,
   "luminance": [
-   0.205,
-   0.2183
+   0.1954,
+   0.2043
   ],
-  "luminanceDiffPct": 6.5,
-  "deltaE": 1.48,
-  "envelopeLuminanceDiffPct": -8.4,
+  "luminanceDiffPct": 4.6,
+  "deltaE": 1.03,
+  "envelopeLuminanceDiffPct": -10.2,
   "triangles": [
    291734,
    2
@@ -406,14 +461,19 @@
   ],
   "coverageDiffPts": 3.88,
   "coverageRelDiffPct": 6.0,
+  "fractionalCoverage": [
+   66.4,
+   70.3
+  ],
+  "fractionalDiffPts": 3.81,
   "silhouetteIoU": 0.715,
   "luminance": [
-   0.1874,
-   0.1842
+   0.1781,
+   0.1705
   ],
-  "luminanceDiffPct": -1.7,
-  "deltaE": 0.56,
-  "envelopeLuminanceDiffPct": -1.3,
+  "luminanceDiffPct": -4.2,
+  "deltaE": 0.96,
+  "envelopeLuminanceDiffPct": -3.4,
   "triangles": [
    291734,
    2
@@ -442,14 +502,19 @@
   ],
   "coverageDiffPts": -3.19,
   "coverageRelDiffPct": -6.3,
+  "fractionalCoverage": [
+   52.9,
+   49.2
+  ],
+  "fractionalDiffPts": -3.7,
   "silhouetteIoU": 0.706,
   "luminance": [
-   0.0952,
-   0.0992
+   0.0951,
+   0.0919
   ],
-  "luminanceDiffPct": 4.2,
-  "deltaE": 1.76,
-  "envelopeLuminanceDiffPct": 9.4,
+  "luminanceDiffPct": -3.4,
+  "deltaE": 0.89,
+  "envelopeLuminanceDiffPct": 8.1,
   "triangles": [
    1266368,
    134908
@@ -478,14 +543,19 @@
   ],
   "coverageDiffPts": -6.34,
   "coverageRelDiffPct": -10.2,
+  "fractionalCoverage": [
+   65.0,
+   57.7
+  ],
+  "fractionalDiffPts": -7.32,
   "silhouetteIoU": 0.651,
   "luminance": [
-   0.0971,
-   0.0897
+   0.0881,
+   0.0834
   ],
-  "luminanceDiffPct": -7.6,
-  "deltaE": 1.65,
-  "envelopeLuminanceDiffPct": -1.7,
+  "luminanceDiffPct": -5.4,
+  "deltaE": 1.86,
+  "envelopeLuminanceDiffPct": 0.6,
   "triangles": [
    1266368,
    134908
@@ -512,16 +582,21 @@
    51.2,
    51.4
   ],
-  "coverageDiffPts": 0.19,
-  "coverageRelDiffPct": 0.4,
+  "coverageDiffPts": 0.15,
+  "coverageRelDiffPct": 0.3,
+  "fractionalCoverage": [
+   53.7,
+   55.5
+  ],
+  "fractionalDiffPts": 1.78,
   "silhouetteIoU": 0.601,
   "luminance": [
-   0.2445,
-   0.2667
+   0.2342,
+   0.2525
   ],
-  "luminanceDiffPct": 9.1,
-  "deltaE": 2.25,
-  "envelopeLuminanceDiffPct": -1.5,
+  "luminanceDiffPct": 7.8,
+  "deltaE": 1.89,
+  "envelopeLuminanceDiffPct": -2.6,
   "triangles": [
    134908,
    2
@@ -548,16 +623,21 @@
    63.1,
    61.3
   ],
-  "coverageDiffPts": -1.75,
+  "coverageDiffPts": -1.74,
   "coverageRelDiffPct": -2.8,
-  "silhouetteIoU": 0.571,
-  "luminance": [
-   0.2159,
-   0.2212
+  "fractionalCoverage": [
+   65.7,
+   67.1
   ],
-  "luminanceDiffPct": 2.5,
-  "deltaE": 0.61,
-  "envelopeLuminanceDiffPct": 2.0,
+  "fractionalDiffPts": 1.41,
+  "silhouetteIoU": 0.57,
+  "luminance": [
+   0.2062,
+   0.2085
+  ],
+  "luminanceDiffPct": 1.1,
+  "deltaE": 0.31,
+  "envelopeLuminanceDiffPct": 0.6,
   "triangles": [
    134908,
    2
@@ -586,14 +666,19 @@
   ],
   "coverageDiffPts": -4.98,
   "coverageRelDiffPct": -8.7,
+  "fractionalCoverage": [
+   58.2,
+   53.1
+  ],
+  "fractionalDiffPts": -5.1,
   "silhouetteIoU": 0.894,
   "luminance": [
-   0.0889,
-   0.0935
+   0.081,
+   0.0744
   ],
-  "luminanceDiffPct": 5.1,
-  "deltaE": 4.8,
-  "envelopeLuminanceDiffPct": 9.0,
+  "luminanceDiffPct": -8.2,
+  "deltaE": 1.95,
+  "envelopeLuminanceDiffPct": 8.1,
   "triangles": [
    1468041,
    271163
@@ -620,16 +705,21 @@
    67.7,
    63.3
   ],
-  "coverageDiffPts": -4.34,
+  "coverageDiffPts": -4.35,
   "coverageRelDiffPct": -6.4,
+  "fractionalCoverage": [
+   69.4,
+   64.7
+  ],
+  "fractionalDiffPts": -4.76,
   "silhouetteIoU": 0.887,
   "luminance": [
-   0.0999,
-   0.1069
+   0.0841,
+   0.0827
   ],
-  "luminanceDiffPct": 7.0,
-  "deltaE": 2.45,
-  "envelopeLuminanceDiffPct": 3.8,
+  "luminanceDiffPct": -1.7,
+  "deltaE": 1.07,
+  "envelopeLuminanceDiffPct": 0.6,
   "triangles": [
    1468041,
    271163
@@ -658,14 +748,19 @@
   ],
   "coverageDiffPts": -4.21,
   "coverageRelDiffPct": -11.3,
+  "fractionalCoverage": [
+   39.5,
+   36.7
+  ],
+  "fractionalDiffPts": -2.71,
   "silhouetteIoU": 0.632,
   "luminance": [
-   0.225,
-   0.2692
+   0.2077,
+   0.2439
   ],
-  "luminanceDiffPct": 19.6,
-  "deltaE": 4.48,
-  "envelopeLuminanceDiffPct": 4.5,
+  "luminanceDiffPct": 17.4,
+  "deltaE": 3.88,
+  "envelopeLuminanceDiffPct": 3.4,
   "triangles": [
    271163,
    2
@@ -694,14 +789,19 @@
   ],
   "coverageDiffPts": -16.85,
   "coverageRelDiffPct": -28.8,
+  "fractionalCoverage": [
+   62.0,
+   54.9
+  ],
+  "fractionalDiffPts": -7.13,
   "silhouetteIoU": 0.423,
   "luminance": [
-   0.2166,
-   0.2325
+   0.1987,
+   0.2057
   ],
-  "luminanceDiffPct": 7.4,
-  "deltaE": 2.44,
-  "envelopeLuminanceDiffPct": 6.4,
+  "luminanceDiffPct": 3.5,
+  "deltaE": 1.52,
+  "envelopeLuminanceDiffPct": 4.5,
   "triangles": [
    271163,
    2

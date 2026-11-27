@@ -1,0 +1,932 @@
+{
+  "id": "oak-b",
+  "boundary": "LOD0 ↔ LOD1",
+  "speed": 60,
+  "fadeS": 0.6,
+  "fadeStartedAt": 0.11666666666666665,
+  "reversedAt": 0.2333333333333333,
+  "frames": 54,
+  "checks": {
+    "reversalMidFade": true,
+    "reversalAtS": 0.5167,
+    "maxWeightStep": 0.0278,
+    "allowedStep": 0.0279,
+    "continuous": true,
+    "weightSumMaxError": 0,
+    "wrongCasterFrames": 0,
+    "staleShadowFrames": 0
+  },
+  "trace": [
+    {
+      "t": 0.0167,
+      "px": 714.2,
+      "phase": "recede",
+      "lod": 0,
+      "prev": -1,
+      "fade": 1,
+      "weights": {
+        "0": 1
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.0333,
+      "px": 694.6,
+      "phase": "recede",
+      "lod": 0,
+      "prev": -1,
+      "fade": 1,
+      "weights": {
+        "0": 1
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.05,
+      "px": 676,
+      "phase": "recede",
+      "lod": 0,
+      "prev": -1,
+      "fade": 1,
+      "weights": {
+        "0": 1
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.0667,
+      "px": 658.3,
+      "phase": "recede",
+      "lod": 0,
+      "prev": -1,
+      "fade": 1,
+      "weights": {
+        "0": 1
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.0833,
+      "px": 641.6,
+      "phase": "recede",
+      "lod": 0,
+      "prev": -1,
+      "fade": 1,
+      "weights": {
+        "0": 1
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.1,
+      "px": 625.7,
+      "phase": "recede",
+      "lod": 0,
+      "prev": -1,
+      "fade": 1,
+      "weights": {
+        "0": 1
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.1167,
+      "px": 610.6,
+      "phase": "recede",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0,
+      "weights": {
+        "0": 1,
+        "1": 0
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.1333,
+      "px": 596.2,
+      "phase": "recede",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.0278,
+      "weights": {
+        "0": 0.9722,
+        "1": 0.0278
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.15,
+      "px": 582.4,
+      "phase": "recede",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.0556,
+      "weights": {
+        "0": 0.9444,
+        "1": 0.0556
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.1667,
+      "px": 569.3,
+      "phase": "recede",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.0833,
+      "weights": {
+        "0": 0.9167,
+        "1": 0.0833
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.1833,
+      "px": 556.7,
+      "phase": "recede",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.1111,
+      "weights": {
+        "0": 0.8889,
+        "1": 0.1111
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.2,
+      "px": 544.7,
+      "phase": "recede",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.1389,
+      "weights": {
+        "0": 0.8611,
+        "1": 0.1389
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.2167,
+      "px": 533.2,
+      "phase": "recede",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.1667,
+      "weights": {
+        "0": 0.8333,
+        "1": 0.1667
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.2333,
+      "px": 522.2,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.1944,
+      "weights": {
+        "0": 0.8056,
+        "1": 0.1944
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.25,
+      "px": 533.2,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.2222,
+      "weights": {
+        "0": 0.7778,
+        "1": 0.2222
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.2667,
+      "px": 544.7,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.25,
+      "weights": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.2833,
+      "px": 556.7,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.2778,
+      "weights": {
+        "0": 0.7222,
+        "1": 0.2778
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.3,
+      "px": 569.3,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.3056,
+      "weights": {
+        "0": 0.6944,
+        "1": 0.3056
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.3167,
+      "px": 582.4,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.3333,
+      "weights": {
+        "0": 0.6667,
+        "1": 0.3333
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.3333,
+      "px": 596.2,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.3611,
+      "weights": {
+        "0": 0.6389,
+        "1": 0.3611
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.35,
+      "px": 610.6,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.3889,
+      "weights": {
+        "0": 0.6111,
+        "1": 0.3889
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.3667,
+      "px": 625.7,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.4167,
+      "weights": {
+        "0": 0.5833,
+        "1": 0.4167
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.3833,
+      "px": 641.6,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.4444,
+      "weights": {
+        "0": 0.5556,
+        "1": 0.4444
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.4,
+      "px": 658.3,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.4722,
+      "weights": {
+        "0": 0.5278,
+        "1": 0.4722
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.4167,
+      "px": 676,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.5,
+      "weights": {
+        "0": 0.5,
+        "1": 0.5
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": true,
+      "stale": false
+    },
+    {
+      "t": 0.4333,
+      "px": 694.6,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.5278,
+      "weights": {
+        "0": 0.4722,
+        "1": 0.5278
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.45,
+      "px": 714.2,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.5556,
+      "weights": {
+        "0": 0.4444,
+        "1": 0.5556
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.4667,
+      "px": 735,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.5833,
+      "weights": {
+        "0": 0.4167,
+        "1": 0.5833
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.4833,
+      "px": 757,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.6111,
+      "weights": {
+        "0": 0.3889,
+        "1": 0.6111
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.5,
+      "px": 780.4,
+      "phase": "return",
+      "lod": 1,
+      "prev": 0,
+      "fade": 0.6389,
+      "weights": {
+        "0": 0.3611,
+        "1": 0.6389
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.5167,
+      "px": 805.3,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.3611,
+      "weights": {
+        "0": 0.3611,
+        "1": 0.6389
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.5333,
+      "px": 831.9,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.3889,
+      "weights": {
+        "0": 0.3889,
+        "1": 0.6111
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.55,
+      "px": 860.2,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.4167,
+      "weights": {
+        "0": 0.4167,
+        "1": 0.5833
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.5667,
+      "px": 890.5,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.4444,
+      "weights": {
+        "0": 0.4444,
+        "1": 0.5556
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.5833,
+      "px": 923.1,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.4722,
+      "weights": {
+        "0": 0.4722,
+        "1": 0.5278
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.6,
+      "px": 958.1,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.5,
+      "weights": {
+        "0": 0.5,
+        "1": 0.5
+      },
+      "casters": [
+        1
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.6167,
+      "px": 995.9,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.5278,
+      "weights": {
+        "0": 0.5278,
+        "1": 0.4722
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": true,
+      "stale": false
+    },
+    {
+      "t": 0.6333,
+      "px": 1036.8,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.5556,
+      "weights": {
+        "0": 0.5556,
+        "1": 0.4444
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.65,
+      "px": 1081.2,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.5833,
+      "weights": {
+        "0": 0.5833,
+        "1": 0.4167
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.6667,
+      "px": 1129.6,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.6111,
+      "weights": {
+        "0": 0.6111,
+        "1": 0.3889
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.6833,
+      "px": 1182.5,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.6389,
+      "weights": {
+        "0": 0.6389,
+        "1": 0.3611
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.7,
+      "px": 1240.6,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.6667,
+      "weights": {
+        "0": 0.6667,
+        "1": 0.3333
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.7167,
+      "px": 1304.7,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.6944,
+      "weights": {
+        "0": 0.6944,
+        "1": 0.3056
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.7333,
+      "px": 1375.8,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.7222,
+      "weights": {
+        "0": 0.7222,
+        "1": 0.2778
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.75,
+      "px": 1455,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.75,
+      "weights": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.7667,
+      "px": 1544,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.7778,
+      "weights": {
+        "0": 0.7778,
+        "1": 0.2222
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.7833,
+      "px": 1644.6,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.8056,
+      "weights": {
+        "0": 0.8056,
+        "1": 0.1944
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.8,
+      "px": 1759.2,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.8333,
+      "weights": {
+        "0": 0.8333,
+        "1": 0.1667
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.8167,
+      "px": 1890.9,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.8611,
+      "weights": {
+        "0": 0.8611,
+        "1": 0.1389
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.8333,
+      "px": 2044,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.8889,
+      "weights": {
+        "0": 0.8889,
+        "1": 0.1111
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.85,
+      "px": 2224,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.9167,
+      "weights": {
+        "0": 0.9167,
+        "1": 0.0833
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.8667,
+      "px": 2438.8,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.9444,
+      "weights": {
+        "0": 0.9444,
+        "1": 0.0556
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.8833,
+      "px": 2699.6,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 0.9722,
+      "weights": {
+        "0": 0.9722,
+        "1": 0.0278
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    },
+    {
+      "t": 0.9,
+      "px": 3022.8,
+      "phase": "return",
+      "lod": 0,
+      "prev": 1,
+      "fade": 1,
+      "weights": {
+        "0": 1
+      },
+      "casters": [
+        0
+      ],
+      "casterChange": false,
+      "stale": false
+    }
+  ]
+}

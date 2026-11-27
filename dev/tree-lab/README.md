@@ -187,6 +187,13 @@ first visit to a deployed build pays the generation time.
   JSON download. Software adapters are flagged: SwiftShader timings are not GPU performance. See "Hardware benchmark
   procedure" in `review/CHANGES-phase-4.3.md`.
 
+## Directional lighting and impostor fidelity (Phase 4.4)
+
+* Report: `review/CHANGES-phase-4.4.md` (backlit transmission root cause, LOD0 atlas filtering corrections, card and
+  impostor mean-normal lighting, impostor coverage, the 20 protocol measurements for Phase 4.2, 4.3 and 4.4, the angular
+  matrix of 140 measurements, reversal tests, limitations). Evidence: `review/lod/`. Tools: `tools/evidence/exp.js`,
+  `tools/evidence/reversal.js`, `tools/evidence/bakesize.js`, `tools/coverage_single.py`, `tools/sprite_translucency.py`.
+
 ## LOD transition fidelity (Phase 4.3)
 
 * Report: `review/CHANGES-phase-4.3.md` (the pine root cause, corrections, the 20 protocol measurements before and

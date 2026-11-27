@@ -16,7 +16,7 @@ const VIEW_BTNS: [View, string, string][] = [['front', 'Front', 'Digit1'], ['sid
 
 export function bindUI(lab: Lab): void {
   const toast = (msg: string) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout((t as any)._h); (t as any)._h = setTimeout(() => t.classList.remove('show'), 2600); };
-  const busy = (on: boolean, msg = '') => { $('loading').hidden = !on; $('loadingText').textContent = msg; document.querySelector('.dot')!.classList.toggle('busy', on); $('status').textContent = on ? msg : 'Ready · LOD phase 4.3 (summer; no wind)'; };
+  const busy = (on: boolean, msg = '') => { $('loading').hidden = !on; $('loadingText').textContent = msg; document.querySelector('.dot')!.classList.toggle('busy', on); $('status').textContent = on ? msg : 'Ready · LOD phase 4.4 (summer; no wind)'; };
   lab.onStatus = (msg, b) => busy(b, msg);
   const guard = async (fn: () => Promise<unknown>) => { try { await fn(); } catch (e) { console.error(e); const el = $('error'); el.hidden = false; el.textContent = String((e as Error).message || e); busy(false); } };
 
