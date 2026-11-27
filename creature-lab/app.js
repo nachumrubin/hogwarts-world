@@ -28,9 +28,11 @@ function showControls(){const p=prefs[kind];
    if(kind==='hippogriff'&&!option)$('#inspection').add(new Option(label,value));
    if(kind!=='hippogriff')option?.remove();
  }
- const native=$('#inspection option[value="merperson-webgpu"]');
- if(kind==='merperson'&&lab.merpersonModel&&!native)$('#inspection').add(new Option('Textured studio · WebGPU','merperson-webgpu'));
- if(kind!=='merperson')native?.remove();
+ for(const [key,model] of [['merperson',lab.merpersonModel],['centaur',lab.centaurModel]]){
+   const value=key+'-webgpu',option=$('#inspection option[value="'+value+'"]');
+   if(kind===key&&model&&!option)$('#inspection').add(new Option('Textured studio · WebGPU',value));
+   if(kind!==key)option?.remove();
+ }
  $('#action').innerHTML=Object.entries(spec[kind].actions).map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('');setAction(p.action);
  for(const [id,out,format] of [['speed','speedV',v=>v.toFixed(1)+'×'],['light','lightV',v=>v+'%']]){const inp=$('#'+id);inp.value=p[id];$('#'+out).textContent=format(p[id]);inp.style.setProperty('--p',((inp.value-inp.min)/(inp.max-inp.min)*100)+'%')}
  all('[data-night]').forEach(b=>b.classList.toggle('chosen',!!Number(b.dataset.night)===p.night));$('#lod').value=p.lod;$('#wire').checked=p.wire;$('#normals').checked=p.normals;$('#view').dataset.inspection=p.mode;$('#inspection').value=p.mode;lab.setInspection(p.mode);lab.wire=p.wire;lab.normals=p.normals;lab.applyDebug();lab.speed=p.speed;lab.hab.setLighting(p.light/80,p.night);lab.setLOD(p.lod);setRunning(p.running)
@@ -72,11 +74,36 @@ async function survey(){
 async function start(){
  lab=new Lab($('#world'),metric);
  const params=new URLSearchParams(location.search),specimen=params.get('specimen');
- const loadError=await lab.prepareMerperson(params.get('merperson')==='baseline');
+ let centaurLoad;
+ let selection=0;
+ async function prepareCentaur(){
+   centaurLoad??=lab.prepareCentaur(params.get('centaur')==='baseline');
+   return centaurLoad;
+ }
+ function selectWithAssets(key){
+   const request=++selection;
+   if(key!=='centaur'||lab.centaurModel||params.get('centaur')==='baseline')return selectCreature(key);
+   toast('Loading Centaur model…');
+   return prepareCentaur().then(error=>{
+     if(request!==selection)return;
+     selectCreature(key);
+     if(error)toast('Centaur asset unavailable. Showing the procedural baseline.');
+     else {
+       $('#toast').style.display='none';
+       lab.thumbnail(key);
+       lab.render();
+     }
+   });
+ }
+ const [loadError,centaurError]=await Promise.all([
+   lab.prepareMerperson(params.get('merperson')==='baseline'),
+   specimen==='centaur'?prepareCentaur():null
+ ]);
  selectCreature(Object.hasOwn(spec,specimen)?specimen:'squid');
+ if(centaurError)toast('Centaur asset unavailable. Showing the procedural baseline.');
  if(loadError)toast('Merperson asset unavailable. Showing the procedural baseline.');$('#load').hidden=true;requestAnimationFrame(lab.loop);
  for(const key of Object.keys(spec))lab.thumbnail(key);lab.render();lab.onStimulus=()=>{if(kind==='squid'){setAction('Investigate');toast('Stimulus placed in the lake')}else if(kind==='owl'){setAction('Look');toast('Owl tracking target')}};
- all('[data-creature]').forEach(b=>b.onclick=()=>{if(!surveying&&b.dataset.creature!==kind){selectCreature(b.dataset.creature);showTab('workspace')}});
+ all('[data-creature]').forEach(b=>b.onclick=()=>{if(!surveying&&b.dataset.creature!==kind){selectWithAssets(b.dataset.creature);showTab('workspace')}});
  all('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));$('#help').onclick=()=>modal('<h2>Camera & animation</h2><p>Drag to orbit and scroll to zoom. In free camera mode, click the scene and use W/A/S/D to move, Q/E to descend or rise, and Shift to move faster.</p><p>Space pauses animation. Use the step button for one 1/60-second interval. Double-click the lake to place a stimulus. Field notes includes eight inspection angles.</p>');$('#closedialog').onclick=()=>$('#dialog').close();
  $('#plates').onclick=fourViews;$('#inspection').onchange=e=>{prefs[kind].mode=e.target.value;$('#view').dataset.inspection=e.target.value;lab.setInspection(e.target.value)};
  $('#action').onchange=e=>setAction(e.target.value);$('#play').onclick=()=>setRunning(!lab.running);$('#step').onclick=()=>{setRunning(false);lab.advance(1/60);lab.render()};$('#speed').oninput=e=>{prefs[kind].speed=+e.target.value;showControls()};$('#light').oninput=e=>{prefs[kind].light=+e.target.value;showControls()};all('[data-night]').forEach(b=>b.onclick=()=>{prefs[kind].night=!!Number(b.dataset.night);showControls()});for(const id of ['wire','normals','lod'])$('#'+id).onchange=e=>{prefs[kind][id]=id==='lod'?e.target.value:e.target.checked;showControls()};

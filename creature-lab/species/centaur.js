@@ -35,7 +35,7 @@ const foreStations=[[1.15,.637],[.887,.474],[.499,.599],[.176,.563],[.079,.620]]
 const hindStations=[[1.306,-.505],[.867,-.343],[.513,-.586],[.178,-.555],[.078,-.508]];
 
 export class Centaur extends Specimen {
-  constructor(){
+  constructor(fit){
     super();
     const base=joint(this.body);
     this.bones=[];this.bindPoints=[];this.bisectors=[];
@@ -47,20 +47,21 @@ export class Centaur extends Specimen {
       return b;
     };
     this.core=bone('barrel',null,vec(0,0,0));
-    this.pelvis=bone('equine pelvis',this.core,vec(0,1.18,-.48));
-    this.tail=bone('dock',this.pelvis,vec(0,1.34,-.69));
+    this.pelvis=bone('equine pelvis',this.core,fit?.pelvis??vec(0,1.18,-.48));
+    const tailPoints=fit?.tail??[[1.34,-.69],[1.11,-.892],[.82,-.91],[.53,-.96],[.30,-1.035]].map(([h,z])=>vec(0,h,z));
+    this.tail=bone('dock',this.pelvis,tailPoints[0]);
     this.tailChain=[this.tail];
-    for(const [h,z] of [[1.11,-.892],[.82,-.91],[.53,-.96],[.30,-1.035]]){
-      this.tailChain.push(bone('tail at '+h,this.tailChain.at(-1),vec(0,h,z)));
+    for(const point of tailPoints.slice(1)){
+      this.tailChain.push(bone('tail at '+point.y,this.tailChain.at(-1),point));
     }
     this.tailRates=this.tailChain.map(()=>vec(0,0,0));
     this.tailAngles=this.tailChain.map(()=>vec(0,0,0));
     this.armRecoil=0;
-    this.waist=bone('abdominal attachment',this.core,vec(0,1.39,.569));
-    this.chest=bone('thorax',this.waist,vec(0,1.64,.675));
-    this.ribs=bone('rib excursion',this.chest,vec(0,1.65,.678));
-    this.neck=bone('neck',this.chest,vec(0,1.935,.691));
-    this.head=bone('head',this.neck,vec(0,2.003,.712));
+    this.waist=bone('abdominal attachment',this.core,fit?.waist??vec(0,1.39,.569));
+    this.chest=bone('thorax',this.waist,fit?.chest??vec(0,1.64,.675));
+    this.ribs=bone('rib excursion',this.chest,fit?.chest??vec(0,1.65,.678));
+    this.neck=bone('neck',this.chest,fit?.neck??vec(0,1.935,.691));
+    this.head=bone('head',this.neck,fit?.head??vec(0,2.003,.712));
     this.arms=[-1,1].map(s=>{
       const arm=bone('shoulder '+s,this.chest,vec(s*.252,1.843,.674));
       const elbow=bone('elbow '+s,arm,vec(s*.338,1.585,.660));
@@ -73,14 +74,15 @@ export class Centaur extends Specimen {
     for(const side of [-1,1])for(const fore of [false,true]){
       const dz=side*(fore?-.037:.053),x=side*(fore?.215:.220);
       const names=fore?['shoulder','elbow','carpus','fetlock','hoof']:['hip','stifle','hock','fetlock','hoof'];
-      const ref=(fore?foreStations:hindStations).map(([y,z])=>vec(x,y,z+dz*(1-smooth(.69,1.19,y))));
+      const fitted=fit?.legs[legs.length];
+      const ref=fitted?.ref??(fore?foreStations:hindStations).map(([y,z])=>vec(x,y,z+dz*(1-smooth(.69,1.19,y))));
       const bones=[],helpers=[];
       ref.forEach((p,i)=>bones.push(bone(names[i]+' '+side,bones[i-1]||this.core,p)));
       for(let i=1;i<4;i++){
         const half=bone(names[i]+' volume '+side,bones[i-1],ref[i]);
         helpers[i]=half;this.bisectors.push([half,bones[i]]);
       }
-      const home=vec(x,0,(fore?.662:-.484)+dz);
+      const home=fitted?.home??vec(x,0,(fore?.662:-.484)+dz);
       const sole=joint(bones[4],...home.clone().sub(ref[4]).toArray());
       const offsets=ref.slice(1).map((p,i)=>p.clone().sub(ref[i]));
       const angles=offsets.map(p=>Math.atan2(p.z,-p.y));
@@ -91,6 +93,8 @@ export class Centaur extends Specimen {
         phase:((fore?.75:0)+(side>0?.5:0))%1,stance:true,initialized:false,swing:0});
     }
     this.horse=equineContacts(this,base,this.tail,base,legs,{kind:'centaur',fitted:true});
+    this.gaze=new T.Vector2();this.lids=[];this.brows=[];
+    if(fit)return;
     const levels=[];
     const level=i=>levels[i]??=this.skinLevel(i,legs);
     const skin=this.mesh(base,clay,i=>level(i).body,T.SkinnedMesh);
@@ -100,7 +104,6 @@ export class Centaur extends Specimen {
     // The pigmented skin and unpigmented hoof walls have the same base clay.
     this.materials.delete(clay);this.materials.set('pigmented skin',skin.material);
     skin.material.vertexColors=true;
-    this.gaze=new T.Vector2();this.lids=[];this.brows=[];
     this.finishReady=finishMaterial(skin.material,'hide',this.gaze);
     legs.forEach((leg,k)=>{
       leg.skin=skin;

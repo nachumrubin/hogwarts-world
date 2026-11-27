@@ -3,6 +3,7 @@ import {MotionStudio} from './hippogriff-studio.js';
 import {inspectionMaterials,studioLights,background,comparisonPlates} from './inspection.js';
 import {catalog} from './species/catalog.js';
 import {ImportedMerperson,loadMerpersonAsset} from './species/merperson-import.js';
+import {ImportedCentaur,loadCentaurAsset} from './species/centaur-import.js';
 import {MerpersonStudio} from './merperson-studio.js';
 import * as THREE from './vendor/three.module.js';
 import {Squid} from './squid.js';
@@ -36,7 +37,17 @@ export class Lab{
    return error;
   }
  }
- model(kind){return kind==='merperson'&&this.merpersonModel||species[kind]}
+ async prepareCentaur(baseline){
+  if(baseline)return;
+  try {
+   const asset=await loadCentaurAsset();
+   this.centaurModel=class extends ImportedCentaur {constructor(){super(asset)}};
+  } catch(error) {
+   console.error(error);
+   return error;
+  }
+ }
+ model(kind){return (kind==='merperson'?this.merpersonModel:kind==='centaur'?this.centaurModel:null)||species[kind]}
  thumbnail(kind){
   const out=document.querySelector('#thumb-'+kind),actor=new (this.model(kind))(),scene=new THREE.Scene();actor.setLOD(1);scene.add(actor.root);
   scene.add(new THREE.HemisphereLight(0xffebe2,0x627571,2));for(const [x,y,z,power,c] of [[-4,7,8,3,0xffdbaf],[2,4,-5,3,0xc3e6dc]]){let l=new THREE.DirectionalLight(c,power);l.position.set(x,y,z);scene.add(l)}
@@ -95,11 +106,11 @@ this.actor.update(dt,this.clock,this.action,context);this.extra?.update(dt,this.
     for(const actor of [this.actor,this.extra])actor?.contacts.forEach(c=>{c.anchor=null});
   }
   this.mode=mode;
-  if(mode==='merperson-webgpu'&&this.actor instanceof ImportedMerperson&&!this.merpersonStudio){
+  if(this.texturedStudioSelected&&!this.merpersonStudio){
    this.merpersonStudio=new MerpersonStudio(this.canvas);
    this.merpersonStudio.ready.catch(error=>{
     console.warn(error);
-    if(this.mode==='merperson-webgpu')this.render();
+    if(this.texturedStudioSelected)this.render();
    });
   }
   if(['motion','silver','woodland'].includes(mode)&&this.kind==='hippogriff')this.motionStudio??=new MotionStudio(this.canvas);
@@ -107,7 +118,11 @@ this.actor.update(dt,this.clock,this.action,context);this.extra?.update(dt,this.
   this.applyDebug()
  }
  get nativeMotion(){return ['motion','silver','woodland'].includes(this.mode)&&this.kind==='hippogriff'&&!this.extra&&!this.wire&&!this.normals&&this.motionStudio&&!this.motionStudio.error}
- get nativeMerperson(){return this.mode==='merperson-webgpu'&&this.actor instanceof ImportedMerperson&&!this.wire&&!this.normals&&this.merpersonStudio?.available}
+ get texturedStudioSelected(){
+  return (this.mode==='merperson-webgpu'&&this.actor instanceof ImportedMerperson)
+    ||(this.mode==='centaur-webgpu'&&this.actor instanceof ImportedCentaur);
+ }
+ get nativeMerperson(){return this.texturedStudioSelected&&!this.wire&&!this.normals&&this.merpersonStudio?.available}
  get captureCanvas(){return this.nativeMerperson?this.merpersonStudio.canvas:this.nativeMotion?this.motionStudio.canvas:this.canvas}
  renderMotion(width=this.canvas.width,height=this.canvas.height){
    if(this.motionFrame)return this.motionFrame;
@@ -118,7 +133,7 @@ this.actor.update(dt,this.clock,this.action,context);this.extra?.update(dt,this.
  render(){
   if(this.merpersonStudio){
     this.merpersonStudio.canvas.style.display=this.nativeMerperson?'block':'none';
-    if(this.kind!=='merperson'&&!this.motionFrame)this.merpersonStudio.releaseAsset();
+    if(!this.texturedStudioSelected&&!this.motionFrame)this.merpersonStudio.releaseAsset();
   }
   if(this.nativeMerperson){
     if(!this.motionFrame){
