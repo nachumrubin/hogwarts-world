@@ -65,9 +65,45 @@ const tailStations=12;
 const toVertical=new T.Quaternion().setFromAxisAngle(V(1,0,0),-Math.PI/2);
 const fromVertical=toVertical.clone().invert();
 const {lerp,smoothstep,clamp}=T.MathUtils;
+const armMotion=[.65,.55,.38];
 const shoulder=[.057,.294,.004];
 const elbow=[.075,.195,.004];
 const wrist=[.107,.099,.021];
+
+function forearmVertices({positions,indices}) {
+  // Weld identical positions for the flood only. The render mesh retains
+  // every original UV and normal seam.
+  const vertices=new Map(),keys=[];
+  for(let i=0;i<positions.length;i+=3){
+    const point=positions.subarray(i,i+3),key=point.join(',');
+    if(!vertices.has(key))vertices.set(key,{point,neighbors:new Set()});
+    keys.push(vertices.get(key));
+  }
+  for(let i=0;i<indices.length;i+=3){
+    const triangle=[keys[indices[i]],keys[indices[i+1]],keys[indices[i+2]]];
+    for(let j=0;j<3;j++){
+      const a=triangle[j],b=triangle[(j+1)%3];
+      a.neighbors.add(b);b.neighbors.add(a);
+    }
+  }
+  const arm=new Set();
+  for(const side of [-1,1]){
+    const eligible=({point:[x,y]})=>x*side>lerp(.055,.045,smoothstep(y,.168,.200))&&y>.008&&y<.245;
+    let seed,distance=Infinity;
+    for(const vertex of vertices.values()){
+      if(!eligible(vertex))continue;
+      const [x,y,z]=vertex.point;
+      const error=(x-(side<0?-.128:.099))**2+(y-.095)**2+(z-.009)**2;
+      if(error<distance){seed=vertex;distance=error}
+    }
+    const queue=[seed];
+    arm.add(seed);
+    for(const vertex of queue)for(const next of vertex.neighbors){
+      if(eligible(next)&&!arm.has(next)){arm.add(next);queue.push(next)}
+    }
+  }
+  return keys.map(vertex=>Number(arm.has(vertex)));
+}
 
 export class ImportedMerperson extends Merperson {
   constructor(asset) {
@@ -87,6 +123,8 @@ export class ImportedMerperson extends Merperson {
     addBone(V());
     bones.push(this.head);
     const tailStart=tailCenterline[0][2],tailEnd=tailCenterline.at(-1)[2];
+    this.tailSegment=V();
+    this.tailRotation=new T.Quaternion();
     this.stations=Array.from({length:tailStations},(_,i)=>{
       const u=i/(tailStations-1);
       const rest=V(0,lerp(waist,-.476,u)*scale,0);
@@ -97,7 +135,7 @@ export class ImportedMerperson extends Merperson {
       const a=point(shoulder),b=point(elbow),c=point(wrist);
       const upper=addBone(a),lower=addBone(b.sub(a),upper),hand=addBone(c.sub(point(elbow)),lower);
       arm.update(this.motion);
-      return {arm,driven:[upper,lower,hand],source:[arm.shoulder,arm.elbow,arm.wrist],
+      return {driven:[upper,lower,hand],source:[arm.shoulder,arm.elbow,arm.wrist],
         inverse:[arm.shoulder,arm.elbow,arm.wrist].map(b=>b.quaternion.clone().invert())};
     });
 
@@ -106,7 +144,7 @@ export class ImportedMerperson extends Merperson {
     geometry.setAttribute('normal',new T.BufferAttribute(asset.normals,3));
     geometry.setAttribute('uv',new T.BufferAttribute(asset.uv,2));
     geometry.setIndex(new T.BufferAttribute(asset.indices,1));
-    const indices=[],weights=[];
+    const indices=[],weights=[],forearms=forearmVertices(asset);
     for(let i=0;i<asset.positions.length;i+=3) {
       const x=Math.abs(asset.positions[i]),y=asset.positions[i+1],z=asset.positions[i+2];
       const u=clamp((waist-y)/(waist+.476),0,1)*(tailStations-1);
@@ -114,9 +152,9 @@ export class ImportedMerperson extends Merperson {
       const tail=1-smoothstep(y,waist-.045,waist);
       const head=smoothstep(y,.305,.375);
       // Keep the rear hair mass out of the shoulder envelope.
-      const arm=smoothstep(x,lerp(.044,.073,smoothstep(y,.13,.29)),
-        lerp(.077,.108,smoothstep(y,.13,.29)))*smoothstep(z,-.027,.005)*
-        smoothstep(y,.045,.091)*(1-smoothstep(y,.29,.327));
+      const shoulderWeight=smoothstep(x,.045,.093)*smoothstep(z,-.039,-.006)*
+        (1-smoothstep(y,.285,.327));
+      const arm=lerp(forearms[i/3],shoulderWeight,smoothstep(y,.210,.243));
       if(arm>0) {
         const start=2+tailStations+(asset.positions[i]<0?0:3);
         const lower=1-smoothstep(y,.168,.225),hand=1-smoothstep(y,.079,.118);
@@ -162,13 +200,25 @@ export class ImportedMerperson extends Merperson {
   pose(time) {
     super.pose(time);
     this.body.position.y+=.21;
-    for(const {bone,rest,coordinate} of this.stations) {
+    let previous;
+    for(const station of this.stations) {
+      const {bone,rest,coordinate}=station;
       this.tail.sample(...coordinate);
-      bone.position.copy(this.tail.center).sub(this.tail.station).applyQuaternion(toVertical).add(rest);
       bone.quaternion.copy(toVertical).multiply(this.tail.frame).multiply(fromVertical);
+      if(previous){
+        // Transport the imported bind segments through the original tail
+        // frames so the new centerline retains its own segment lengths.
+        this.tailRotation.slerpQuaternions(previous.bone.quaternion,bone.quaternion,.5);
+        this.tailSegment.subVectors(rest,previous.rest).applyQuaternion(this.tailRotation);
+        bone.position.copy(previous.bone.position).add(this.tailSegment);
+      }else bone.position.copy(rest);
+      previous=station;
     }
     for(const {driven,source,inverse} of this.armBindings) {
-      for(let i=0;i<driven.length;i++) driven[i].quaternion.copy(source[i].quaternion).multiply(inverse[i]);
+      for(let i=0;i<driven.length;i++){
+        this.tailRotation.copy(source[i].quaternion).multiply(inverse[i]);
+        driven[i].quaternion.identity().slerp(this.tailRotation,armMotion[i]);
+      }
     }
   }
 
