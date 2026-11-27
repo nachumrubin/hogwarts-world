@@ -167,7 +167,8 @@ export class MerpersonStudio {
       const mesh=specimen.model,{frame,palette,bind}=this.instances[i];
       specimen.root.updateMatrixWorld(true);
       mesh.skeleton.update();
-      const matrices=mesh.skeleton.boneMatrices.slice();
+      // The WebGL path may pad boneMatrices for a square bone texture.
+      const matrices=mesh.skeleton.boneMatrices.slice(0,mesh.skeleton.bones.length*16);
       for(let offset=0;offset<matrices.length;offset+=16){
         // The mesh uses Three's attached bind mode. Its current world matrix
         // cancels the inverse bind matrix before multiplication by the view.
