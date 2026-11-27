@@ -13,6 +13,12 @@ def lab(rgb):
     f = np.where(x > 0.008856, np.cbrt(x), 7.787 * x + 16 / 116)
     return np.array([116 * f[1] - 16, 500 * (f[0] - f[1]), 200 * (f[1] - f[2])])
 
+def frac(base):
+    """Integrated fractional coverage per pixel (diagnostic, Phase 4.4): silhouette renders draw the tree black on a
+    0.92 ground or white sky, so coverage ≈ 1 − value / 0.92 (clamped)."""
+    g = np.asarray(Image.open(base + '-sil.png').convert('L')).astype(np.float64) / 255
+    return np.clip(1 - g / 0.92, 0, 1)
+
 def load(base):
     lit = np.asarray(Image.open(base + '.png').convert('RGB')).astype(np.float64) / 255
     sil = np.asarray(Image.open(base + '-sil.png').convert('L')).astype(np.float64) / 255 < 0.35
@@ -49,6 +55,7 @@ def metrics(d):
         r_ = max(3, int(A[1].shape[0] * 0.035)); yy, xx = np.mgrid[-r_:r_ + 1, -r_:r_ + 1]
         env = ndimage.binary_fill_holes(ndimage.binary_closing(A[1], structure=(xx * xx + yy * yy) <= r_ * r_))
         ca, cb = A[1].sum() / max(env.sum(), 1), B[1].sum() / max(env.sum(), 1)
+        fa, fb = frac(os.path.join(d, 'lod', names[0]))[env].mean(), frac(os.path.join(d, 'lod', names[1]))[env].mean()
         iou = (A[1] & B[1]).sum() / max((A[1] | B[1]).sum(), 1)
         ma, mb = A[0][A[2]].mean(0), B[0][B[2]].mean(0)
         la, lb = ma @ [0.2126, 0.7152, 0.0722], mb @ [0.2126, 0.7152, 0.0722]
@@ -59,7 +66,7 @@ def metrics(d):
         dflt = {'triangles': 0, 'instanceBytes': 0, 'overdraw': {}}
         sa, sb = st.get(names[0], dflt), st.get(names[1], dflt)
         out[key] = {'sides': names, 'crownCoverage': [round(ca * 100, 1), round(cb * 100, 1)], 'coverageDiffPts': round((cb - ca) * 100, 2),
-                    'coverageRelDiffPct': round((cb - ca) / max(ca, 1e-9) * 100, 1), 'silhouetteIoU': round(float(iou), 3),
+                    'coverageRelDiffPct': round((cb - ca) / max(ca, 1e-9) * 100, 1), 'fractionalCoverage': [round(float(fa) * 100, 1), round(float(fb) * 100, 1)], 'fractionalDiffPts': round(float(fb - fa) * 100, 2), 'silhouetteIoU': round(float(iou), 3),
                     'luminance': [round(float(la), 4), round(float(lb), 4)], 'luminanceDiffPct': round((lb - la) / la * 100, 1), 'deltaE': round(de, 2), 'envelopeLuminanceDiffPct': round((eb - ea) / ea * 100, 1),
                     'triangles': [sa['triangles'], sb['triangles']], 'instanceBytes': [sa['instanceBytes'], sb['instanceBytes']],
                     'overdraw': [round(sa['overdraw'].get('meanFoliage', 0), 2), round(sb['overdraw'].get('meanFoliage', 0), 2)],

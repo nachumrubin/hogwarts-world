@@ -1927,7 +1927,7 @@
     ]
    ],
    "albedo": "foliage.oak.albedo.webp?8674483a59",
-   "normal": "foliage.oak.normal.webp?f9d00f2b9f"
+   "normal": "foliage.oak.normal.webp?c8f54458c3"
   },
   {
    "id": "birch",
@@ -4733,7 +4733,7 @@
     ]
    ],
    "albedo": "foliage.birch.albedo.webp?5418b44b1e",
-   "normal": "foliage.birch.normal.webp?06134a1b22"
+   "normal": "foliage.birch.normal.webp?0f2899c191"
   },
   {
    "id": "pine",
@@ -5619,7 +5619,7 @@
     ]
    ],
    "albedo": "foliage.pine.albedo.webp?b5652dbf13",
-   "normal": "foliage.pine.normal.webp?ddccf26a82"
+   "normal": "foliage.pine.normal.webp?5e317878e3"
   },
   {
    "id": "card-oak",

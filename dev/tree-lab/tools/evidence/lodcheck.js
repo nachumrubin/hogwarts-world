@@ -28,7 +28,7 @@ for (const id of ids) {
         force(l);
         const name = `${id}-b${sw}-${tag}-${l === 3 ? 'imp' : 'lod' + l}`;
         let od = {};
-        const shot = await window.__b64(await lab.shoot('three', 'lit', { width: S, height: S, light: LT, orbit: o, overdraw: (r) => { od = r; } }));
+        const shot = await window.__b64(await lab.shoot('three', 'lit', { width: S, height: S, light: LT, orbit: o, overdraw: a.noOverdraw ? undefined : (r) => { od = r; } }));
         window.__emit(`lod/${name}.png`, shot);
         window.__emit(`lod/${name}-sil.png`, await window.__b64(await lab.shoot('three', 'silhouette', { width: S, height: S, orbit: o })));
         lab.scene.apply(0);

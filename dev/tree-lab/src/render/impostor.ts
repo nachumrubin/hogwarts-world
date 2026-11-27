@@ -13,8 +13,13 @@ const Q = typeof location !== 'undefined' ? new URLSearchParams(location.search)
 export const IMP_SELF = +(Q?.get('impSelf') ?? 1.0);
 /** impostor alpha: share of the sharpened (0.5-threshold) alpha mixed into the unsharpened coverage (see impAlpha) */
 export const IMP_SHARP = +(Q?.get('impSharp') ?? 0.0);
-/** atlas encoding version (part of the pre-baked atlas fingerprint): 2 = occlusion alone in the normal's b channel */
-export const IMP_ENC = 2;
+/** bake at the switch size's mip level (Phase 4.4): 0 off, 1 alpha boost level, 2 boost level and texture sampling */
+export const IMP_BAKE_BIAS = +(Q?.get('impBias') ?? 0);
+/** the LOD1 → impostor switch height (px) the bake bias is computed for (scene lodPolicy chain B) */
+export const IMP_SWITCH_PX = 140;
+/** atlas encoding version (part of the pre-baked atlas fingerprint): 2 = occlusion alone in the normal's b channel;
+ *  3 = the normal's alpha holds coverage × the cards' mean-normal length (Phase 4.4) */
+export const IMP_ENC = 3;
 type V3 = [number, number, number];
 export interface ImpostorSpec { id: string; layer: number; center: V3; radius: number; ms: number; loaded?: boolean }
 
@@ -136,7 +141,10 @@ fn impAlpha(a: f32, uv: vec2f) -> f32 {
   if (u32(u.mode.x + 0.5) == 2u) { return vec4f(0.0, 0.0, 0.0, alpha); }   // silhouette mode
   if (u.fx.z > 13.5) { return vec4f(1.0, 0.0, 1.0, 1.0); }                   // diagnostic 14: ground shadow only
   // the atlas holds coverage-weighted (resolved MSAA) values: divide by coverage
-  let cov = max(A.a, 1e-3); let ncov = max(Nn.a, 1e-3);
+  // (encoding 3: the albedo's alpha is the coverage of both atlases; the normal's alpha is coverage × the mean length
+  // of the baked texel's leaf normals, so a texel of spread needles is lit as LOD1's cards light it)
+  let cov = max(A.a, 1e-3); let ncov = cov;
+  let nlenI = clamp(Nn.a / cov, 0.05, 1.0);
   let ab = A.rgb / cov;
   // albedo as the geometry showed it from this frame's direction (undersides already paler): the frames are view
   // directions, so which side of each leaf is seen is geometry, not lighting
@@ -157,7 +165,8 @@ fn impAlpha(a: f32, uv: vec2f) -> f32 {
   // its sky exposure; IMP_SELF is that exponent, measured against LOD1 (Phase 4.3: 1.0, tools/evidence/lodcheck.js variants)
   let sh = shO * mix(1.0, pow(expo, IMP_SELF), leaf * u.hor.w);
   // from here on the leaf shading of render/viewer.ts fsFol, term for term
-  let ndl = max(dot(N, L), 0.0); let back = max(-dot(N, L), 0.0);
+  // mean-normal lighting (render/viewer.ts fsFol, cards): the mean normal's projection, length × cosine
+  let ndl = max(dot(N, L), 0.0) * nlenI; let back = max(-dot(N, L), 0.0) * nlenI;
   let ao = mix(mix(0.55, 1.0, expo), occ, 1.0 - leaf);
   let skyUp = mix(u.hor.xyz, u.zen.xyz, 0.75) * u.zen.w;
   let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * N.y) * (0.65 + 0.35 * N.y) * u.zen.w;
@@ -252,9 +261,12 @@ export class Impostors {
     return sp;
   }
   /** Bake a specimen into atlas layer `layer` from the given draws (tree at the origin, yaw 0). */
-  bake(id: string, layer: number, draws: Draw[], center: V3, radius: number): ImpostorSpec {
+  bake(id: string, layer: number, draws: Draw[], center: V3, radius: number, height = 0): ImpostorSpec {
     const t0 = performance.now(), v = this.viewer;
-    const saved = v.bakeMode;
+    const saved = v.bakeMode, savedEx = [...v.ex] as typeof v.ex;
+    // the frame draws the bounding sphere (radius × PAD) across IMP_FRAME texels; at the switch the tree's height is
+    // IMP_SWITCH_PX pixels: the bake's foliage alpha uses the mip level of the switch size (viewer ex.z, Phase 4.4)
+    if (height > 0 && IMP_BAKE_BIAS) v.ex = [v.ex[0], v.ex[1], Math.max(0, Math.log2((IMP_SWITCH_PX / height) / (IMP_FRAME / (2 * radius * PAD)))), IMP_BAKE_BIAS > 1 ? 1 : 0];
     for (const [mode, tex] of [[6, this.alb], [7, this.nrm]] as [number, GPUTexture][]) {
       v.bakeMode = mode;
       for (let j = 0; j < IMP_N; j++) for (let i = 0; i < IMP_N; i++) {
@@ -262,7 +274,7 @@ export class Impostors {
         v.bakeFrame(tex, layer, i * IMP_FRAME, j * IMP_FRAME, IMP_FRAME, ortho(center, radius, dir), [...eye, 0], draws);
       }
     }
-    v.bakeMode = saved;
+    v.bakeMode = saved; v.ex = savedEx;
     v.mipsLayer(this.alb, this.nrm, layer, this.levels);
     const s: ImpostorSpec = { id, layer, center, radius, ms: performance.now() - t0 };
     this.setSpec(s);

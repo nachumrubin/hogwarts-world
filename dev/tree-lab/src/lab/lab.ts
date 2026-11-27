@@ -2,7 +2,7 @@
 // continuous in live mode), camera presets, standardized shots and review-sheet export. UI-agnostic: ui.ts binds the
 // DOM to it, and the headless capture script drives the same API through window.__lab.
 import { Viewer, viewProj, LIGHTS, MODES, KIND, MAT, type Mode, type FoliageRep, type Draw } from '../render/viewer.ts';
-import { Impostors, IMP_ENC } from '../render/impostor.ts';
+import { Impostors, IMP_ENC, IMP_BAKE_BIAS } from '../render/impostor.ts';
 import { unpackPos } from '../framework/foliage.ts';
 import { CameraController, FOV, type Box, type Preset, type V3 } from './camera.ts';
 import { SpecimenStore, LabScene, COMPARISONS, STAND, standTrees } from './scene.ts';
@@ -132,7 +132,7 @@ export class Lab {
         const src = this.impostorSource[id] ?? 1;
         const draws: Draw[] = [{ mesh: this.store.gpu(this.viewer, id, src), offset: [0, 0, 0], kind: KIND.tree, mat: MAT[e.def.material], foliage: this.store.foliage(this.viewer, id, src, 'hybrid'), yaw: 0 }];
         const saved = this.viewer.mode; this.viewer.mode = 'lit';
-        this.impostors.bake(id, SPECIES.findIndex((d) => d.id === id), draws, center, radius);
+        this.impostors.bake(id, SPECIES.findIndex((d) => d.id === id), draws, center, radius, b.max[1]);
         this.viewer.mode = saved;
         await this.viewer.device.queue.onSubmittedWorkDone();
       });
@@ -169,7 +169,7 @@ export class Lab {
   /** What an impostor atlas depends on: the specimen's generated foliage and skeleton, and the foliage textures. */
   fingerprint(id: string): string {
     const b = this.store.get(id).built!, f = b.foliage;
-    return [IMP_ENC, this.impostorSource[id] ?? 1, f.stats.leaves, f.stats.shoots, f.lods[1].instances, f.lods[1].triangles, b.lods[1].i.length, ...b.bounds.min.map((x) => x.toFixed(3)), ...b.bounds.max.map((x) => x.toFixed(3)), this.viewer.folTexKey].join(':');
+    return [IMP_ENC + (IMP_BAKE_BIAS ? 'b' + IMP_BAKE_BIAS : ''), this.impostorSource[id] ?? 1, f.stats.leaves, f.stats.shoots, f.lods[1].instances, f.lods[1].triangles, b.lods[1].i.length, ...b.bounds.min.map((x) => x.toFixed(3)), ...b.bounds.max.map((x) => x.toFixed(3)), this.viewer.folTexKey].join(':');
   }
   /** The woodland stand of n trees (12: the review stand; 50 and 200: generated, for the benchmark). */
   async standOf(n: number): Promise<void> {

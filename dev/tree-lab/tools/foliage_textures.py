@@ -188,7 +188,11 @@ def build():
             meta.append(place(layer, sp, recolour(sp, target), k))
         layer = finish(layer)
         L = lum(layer['col'])
-        trans = np.clip(0.75 - 2.5 * (L - np.median(L[layer['a'] > 0.5])), 0.2, 1) * (layer['a'] > 0.05)  # veins and midrib transmit less
+        # veins and midrib transmit less. Phase 4.4: no longer zeroed in transparent texels, which hold the dilated colour
+        # of the nearest leaf and now its translucency too: mips averaged those zeros in, and at the LOD0 → LOD1 switch a
+        # leaf transmitted only coverage × its translucency (pine 0.04, birch 0.23, oak 0.29 instead of 0.75), while the
+        # spray cards transmit 0.75: backlit LOD1 was up to 45 % brighter than LOD0
+        trans = np.clip(0.75 - 2.5 * (L - np.median(L[layer['a'] > 0.5])), 0.2, 1)
         files = save(lid, layer, trans)
         layer['t'] = trans
         sheets[lid] = (layer, meta)
