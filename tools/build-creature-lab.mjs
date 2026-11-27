@@ -12,12 +12,13 @@ const atlases=Object.fromEntries(await Promise.all(['face','chest','coat','tail'
  const image=await readFile(new URL('review/hippogriff-e3/assets/'+name+'.png',dir));
  return [name,'data:image/png;base64,'+image.toString('base64')];
 })));
+const merperson=await readFile(new URL('species/static/merperson-meshy.glb',dir));
 const options={
   entryPoints:[new URL('app.js',dir).pathname],
   bundle:true,target:'es2022',minify:true,write:false
 };
 const {outputFiles}=await build({
-  ...options,format:'iife',define:{HIPP_BUNDLED_ATLASES:JSON.stringify(atlases)},
+  ...options,format:'iife',define:{HIPP_BUNDLED_ATLASES:JSON.stringify(atlases),MERPERSON_EMBEDDED_GLB:JSON.stringify('data:model/gltf-binary;base64,'+merperson.toString('base64'))},
   logOverride:{'empty-import-meta':'silent'}
 });
 const script=outputFiles[0].text;
@@ -31,7 +32,7 @@ const standalone=html
 if (process.argv.includes('--pages')) {
   const out=new URL('../dist/creature-lab-pages/',import.meta.url);
   const hash=content=>createHash('sha256').update(content).digest('hex').slice(0,16);
-  const {outputFiles:[{text:pagesScript}]}=await build({...options,format:'esm',define:{HIPP_PAGES_ATLASES:'true'}});
+  const {outputFiles:[{text:pagesScript}]}=await build({...options,format:'esm',define:{HIPP_PAGES_ATLASES:'true',MERPERSON_PAGES:'true'}});
   const jsName='app-'+hash(pagesScript)+'.js';
   const cssName='style-'+hash(css)+'.css';
   const page=html

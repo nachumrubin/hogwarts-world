@@ -2,6 +2,8 @@ import {habitatFinish,surfaceAttribute} from './hippogriff-surface.js';
 import {MotionStudio} from './hippogriff-studio.js';
 import {inspectionMaterials,studioLights,background,comparisonPlates} from './inspection.js';
 import {catalog} from './species/catalog.js';
+import {ImportedMerperson,loadMerpersonAsset} from './species/merperson-import.js';
+import {MerpersonStudio} from './merperson-studio.js';
 import * as THREE from './vendor/three.module.js';
 import {Squid} from './squid.js';
 import {Aragog} from './aragog.js';
@@ -24,8 +26,19 @@ export class Lab{
   this.resize();new ResizeObserver(()=>this.resize()).observe(canvas.parentElement);this.bindCamera();
  }
  resize(){const box=this.canvas.parentElement.getBoundingClientRect();if(!box.width||!box.height)return;this.renderer.setSize(Math.round(box.width),Math.round(box.height),false);this.camera.aspect=box.width/box.height;this.camera.updateProjectionMatrix();if(this.actor&&!this.drag&&!this.free)this.setAngle(this.angle||'three-quarter')}
+ async prepareMerperson(baseline){
+  if(baseline)return;
+  try {
+   const asset=await loadMerpersonAsset();
+   this.merpersonModel=class extends ImportedMerperson {constructor(){super(asset)}};
+  } catch(error) {
+   console.error(error);
+   return error;
+  }
+ }
+ model(kind){return kind==='merperson'&&this.merpersonModel||species[kind]}
  thumbnail(kind){
-  const out=document.querySelector('#thumb-'+kind),actor=new species[kind](),scene=new THREE.Scene();actor.setLOD(1);scene.add(actor.root);
+  const out=document.querySelector('#thumb-'+kind),actor=new (this.model(kind))(),scene=new THREE.Scene();actor.setLOD(1);scene.add(actor.root);
   scene.add(new THREE.HemisphereLight(0xffebe2,0x627571,2));for(const [x,y,z,power,c] of [[-4,7,8,3,0xffdbaf],[2,4,-5,3,0xc3e6dc]]){let l=new THREE.DirectionalLight(c,power);l.position.set(x,y,z);scene.add(l)}
   const cam=new THREE.PerspectiveCamera(29,2.05,.1,80),look=kind==='squid'?new V(1,0,0):new V(0,1.05,0);
   cam.position.copy(look).add(kind==='squid'?new V(5,4.5,15.2):new V(4,2.8,5.5));if(catalog[kind]){
@@ -34,7 +47,7 @@ export class Lab{
   }cam.lookAt(look);if(kind==='squid')cam.rotateZ(-.095);
   const r=this.renderer;r.setPixelRatio(1);r.setSize(460,224,false);r.setClearColor(0,0);r.render(scene,cam);out.width=460;out.height=224;out.getContext('2d').drawImage(this.canvas,0,0,460,224);actor.dispose();r.setPixelRatio(Math.min(devicePixelRatio,1.65));this.resize()
  }
- switchCreature(kind){if(this.actor){this.setCopies(1);this.restoreMaterials(this.actor);this.actor.dispose();this.hab.dispose()}this.kind=kind;this.actor=new species[kind]();if(kind==='hippogriff'){this.actor.prepare();habitatFinish(this.actor)}this.scene.add(this.actor.root);this.hab=createHabitat(this.scene,kind);this.context={obstacles:this.hab.obstacles,terrainHeight:this.hab.terrainHeight,playerPosition:this.camera.position,habitatRadius:3};
+ switchCreature(kind){if(this.actor){this.setCopies(1);this.restoreMaterials(this.actor);this.actor.dispose();this.hab.dispose()}this.kind=kind;this.actor=new (this.model(kind))();if(kind==='hippogriff'){this.actor.prepare();habitatFinish(this.actor)}this.scene.add(this.actor.root);this.hab=createHabitat(this.scene,kind);this.context={obstacles:this.hab.obstacles,terrainHeight:this.hab.terrainHeight,playerPosition:this.camera.position,habitatRadius:3};
   this.bounds=kind==='hippogriff'?new THREE.Box3(new V(-.67,0,-1.74),new V(.67,2.86,1.85)):catalog[kind]?new THREE.Box3().setFromObject(this.actor.root):null;
   this.clock=0;this.action=catalog[kind]?Object.keys(catalog[kind].actions)[0]:kind==='squid'?'Swim':'Idle';this.level=0;this.angle='three-quarter';this.setAngle(this.angle);this.applyDebug();this.calculateMemory();this.render();
  }
@@ -54,7 +67,7 @@ export class Lab{
     if(angle==='close-up'){const size=this.bounds.getSize(new V());this.target.y+=size.y*.28;this.target.z+=size.z*.22;radius=this.fit()*.48}
   }
   if(this.kind==='merperson'&&angle==='close-up'){
-    this.actor.head.getWorldPosition(this.target);this.target.y+=.20;this.target.z+=.06;radius=.98;
+    this.actor.head.getWorldPosition(this.target);this.target.y+=this.actor.closeUpOffset??.20;this.target.z+=.06;radius=this.actor.closeUpRadius??.98;
   }else this.target.add(this.actor?.root.position||new V());
   const dir=(this.kind==='merperson'&&merpersonViews[angle])||(this.kind!=='squid'&&spiderViews[angle])||directions[angle]||directions['three-quarter'];
   this.spherical.setFromVector3(new V(...dir).normalize().multiplyScalar(radius));this.orbit()
@@ -69,25 +82,33 @@ export class Lab{
   window.addEventListener('keydown',e=>{if(document.activeElement===c)this.keys.add(e.code)});window.addEventListener('keyup',e=>this.keys.delete(e.code));window.addEventListener('blur',()=>this.keys.clear())
  }
  setDistance(d){this.setAngle('three-quarter');this.spherical.radius*=({near:1,medium:2,far:3.7})[d]||1;this.orbit()}
- setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new species[this.kind]();if(this.kind==='hippogriff'){this.extra.prepare();habitatFinish(this.extra)}this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root);this.applyDebug()}this.calculateMemory()}
+ setCopies(n){if(this.extra){this.restoreMaterials(this.extra);this.extra.dispose();this.extra=null}if(n===2){this.extra=new (this.model(this.kind))();if(this.kind==='hippogriff'){this.extra.prepare();habitatFinish(this.extra)}this.extra.setLOD(this.level);this.extra.setPosition(new V(this.kind==='squid'?1:3,0,this.kind==='squid'?-4:-2));this.scene.add(this.extra.root);this.applyDebug()}this.calculateMemory()}
  setLOD(l){this.auto=l==='auto';if(this.auto)return;let v=Number(l);if(this.level===v)return;this.actor.setLOD(v);this.extra?.setLOD(v);this.level=v;if(this.kind==='hippogriff')for(const actor of [this.actor,this.extra])if(actor)for(const {mesh} of actor.parts)surfaceAttribute(mesh,v);this.applyDebug();this.calculateMemory()}
  restoreMaterials(actor){actor.root.traverse(o=>{if(this.original.has(o))o.material=this.original.get(o)})}
  applyDebug(){for(const a of [this.actor,this.extra])a?.root.traverse(o=>{if(!o.isMesh)return;if(!this.original.has(o))this.original.set(o,o.material);const m=this.original.get(o);o.material=this.normals?this.normalMat:(this.inspectionMaterials[this.mode]||m);for(const mat of [].concat(o.material))mat.wireframe=this.wire})}
  calculateMemory(){const seen=new Set();let size=0;this.scene.traverse(o=>{for(const a of [o.instanceMatrix,o.instanceColor,o.geometry?.index,...Object.values(o.geometry?.attributes||{})]){const b=a?.array?.buffer;if(b&&!seen.has(b)){size+=b.byteLength;seen.add(b)}}});this.bytes=size}
  advance(dt){const previous=this.actor.root.position.clone();this.clock+=dt;const context=this.kind==='hippogriff'&&this.mode!=='habitat'?{...this.context,studio:true,terrainHeight:()=>0}:this.context;
 this.actor.update(dt,this.clock,this.action,context);this.extra?.update(dt,this.clock+.82,this.action,context);this.hab.update(dt,this.clock);if(!this.free&&this.kind!=='squid'){const travel=this.actor.root.position.clone().sub(previous);this.target.add(travel);this.camera.position.add(travel)}}
- plates(kind,mode){return comparisonPlates(this.renderer,kind,species[kind],mode)}
+ plates(kind,mode){return comparisonPlates(this.renderer,kind,this.model(kind),mode)}
  setInspection(mode){
   if(this.kind==='hippogriff' && (mode==='habitat')!==(this.mode==='habitat')){
     for(const actor of [this.actor,this.extra])actor?.contacts.forEach(c=>{c.anchor=null});
   }
   this.mode=mode;
+  if(mode==='merperson-webgpu'&&this.actor instanceof ImportedMerperson&&!this.merpersonStudio){
+   this.merpersonStudio=new MerpersonStudio(this.canvas);
+   this.merpersonStudio.ready.catch(error=>{
+    console.warn(error);
+    if(this.mode==='merperson-webgpu')this.render();
+   });
+  }
   if(['motion','silver','woodland'].includes(mode)&&this.kind==='hippogriff')this.motionStudio??=new MotionStudio(this.canvas);
   if(this.motionStudio)this.motionStudio.canvas.style.display=['motion','silver','woodland'].includes(mode)&&this.kind==='hippogriff'?'block':'none';
   this.applyDebug()
  }
  get nativeMotion(){return ['motion','silver','woodland'].includes(this.mode)&&this.kind==='hippogriff'&&!this.extra&&!this.wire&&!this.normals&&this.motionStudio&&!this.motionStudio.error}
- get captureCanvas(){return this.nativeMotion?this.motionStudio.canvas:this.canvas}
+ get nativeMerperson(){return this.mode==='merperson-webgpu'&&this.actor instanceof ImportedMerperson&&!this.wire&&!this.normals&&this.merpersonStudio?.available}
+ get captureCanvas(){return this.nativeMerperson?this.merpersonStudio.canvas:this.nativeMotion?this.motionStudio.canvas:this.canvas}
  renderMotion(width=this.canvas.width,height=this.canvas.height){
    if(this.motionFrame)return this.motionFrame;
    this.motionStudio.finish=this.mode!=='motion';this.motionStudio.woodland=this.mode==='woodland';
@@ -95,6 +116,18 @@ this.actor.update(dt,this.clock,this.action,context);this.extra?.update(dt,this.
    return this.motionFrame;
  }
  render(){
+  if(this.merpersonStudio){
+    this.merpersonStudio.canvas.style.display=this.nativeMerperson?'block':'none';
+    if(this.kind!=='merperson'&&!this.motionFrame)this.merpersonStudio.releaseAsset();
+  }
+  if(this.nativeMerperson){
+    if(!this.motionFrame){
+      this.motionFrame=this.merpersonStudio.draw(this.actor,this.extra,this.camera,this.canvas.width,this.canvas.height)
+        .catch(error=>{this.merpersonStudio.available=false;console.warn(error)})
+        .finally(()=>this.motionFrame=null);
+    }
+    return;
+  }
   if(this.motionStudio)this.motionStudio.canvas.style.display=this.nativeMotion?'block':'none';
   if(this.nativeMotion){
     if(!this.motionFrame)this.renderMotion().catch(()=>{this.setInspection('neutral')});return;
@@ -110,8 +143,8 @@ this.actor.update(dt,this.clock,this.action,context);this.extra?.update(dt,this.
   if(this.free){let k=this.keys,v=dt*(k.has('ShiftLeft')?12:4);this.camera.translateZ(v*(+k.has('KeyS')-k.has('KeyW')));this.camera.translateX(v*(+k.has('KeyD')-k.has('KeyA')));this.camera.position.y+=v*(+k.has('KeyE')-k.has('KeyQ'))}
   if(this.auto){const r=this.spherical.radius,f=this.fit(),lvl=this.level;const next=r>f*(lvl===2?2.7:3.2)?2:r>f*(lvl>=1?1.45:1.7)?1:0;if(next!==lvl){this.setLOD(next);this.auto=true}}
   const start=performance.now();if(this.running)this.advance((this.kind==='owl'?delta/1000:dt)*this.speed);const anim=performance.now()-start;
-  const gl=this.gl,ext=this.nativeMotion?null:this.gpuExt;let q;if(ext){if(gl.getParameter(ext.GPU_DISJOINT_EXT)){for(const p of this.queries)gl.deleteQuery(p);this.queries.length=0;this.gpuMs=null}else if(this.queries.length&&gl.getQueryParameter(this.queries[0],gl.QUERY_RESULT_AVAILABLE)){const p=this.queries.shift();this.gpuMs=gl.getQueryParameter(p,gl.QUERY_RESULT)/1e6;gl.deleteQuery(p)}if(this.queries.length<4){q=gl.createQuery();gl.beginQuery(ext.TIME_ELAPSED_EXT,q)}}
+  const gl=this.gl,ext=this.nativeMotion||this.nativeMerperson?null:this.gpuExt;let q;if(ext){if(gl.getParameter(ext.GPU_DISJOINT_EXT)){for(const p of this.queries)gl.deleteQuery(p);this.queries.length=0;this.gpuMs=null}else if(this.queries.length&&gl.getQueryParameter(this.queries[0],gl.QUERY_RESULT_AVAILABLE)){const p=this.queries.shift();this.gpuMs=gl.getQueryParameter(p,gl.QUERY_RESULT)/1e6;gl.deleteQuery(p)}if(this.queries.length<4){q=gl.createQuery();gl.beginQuery(ext.TIME_ELAPSED_EXT,q)}}
   this.render();if(q){gl.endQuery(ext.TIME_ELAPSED_EXT);this.queries.push(q)}
-  const r=this.renderer.info.render;this.metric={cpuMs:performance.now()-start,animationMs:anim,frameMs:delta,gpuMs:this.nativeMotion?null:this.gpuMs,triangles:this.nativeMotion?(this.motionStudio.triangles??0):r.triangles,drawCalls:this.nativeMotion?(this.motionStudio.drawCalls??0):r.calls,geometryBytes:this.bytes,renderer:this.nativeMotion?this.motionStudio.adapter:this.rendererName};this.samples.push(delta);if(this.samples.length>24)this.samples.shift();if(stamp-this.lastLabel>280){this.lastLabel=stamp;this.onFrame(this.metric,this.samples.reduce((a,b)=>a+b,0)/this.samples.length)}
+  const r=this.renderer.info.render;this.metric={cpuMs:performance.now()-start,animationMs:anim,frameMs:delta,gpuMs:this.nativeMotion?null:this.gpuMs,triangles:this.nativeMerperson?this.merpersonStudio.triangles:this.nativeMotion?(this.motionStudio.triangles??0):r.triangles,drawCalls:this.nativeMerperson?this.merpersonStudio.drawCalls:this.nativeMotion?(this.motionStudio.drawCalls??0):r.calls,geometryBytes:this.bytes,renderer:this.nativeMerperson?this.merpersonStudio.adapter:this.nativeMotion?this.motionStudio.adapter:this.rendererName};this.samples.push(delta);if(this.samples.length>24)this.samples.shift();if(stamp-this.lastLabel>280){this.lastLabel=stamp;this.onFrame(this.metric,this.samples.reduce((a,b)=>a+b,0)/this.samples.length)}
  }
 }

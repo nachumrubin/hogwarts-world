@@ -255,7 +255,7 @@ class SwimArm {
 }
 
 export class Merperson extends Specimen {
-  constructor() {
+  constructor(imported=false) {
     super();
     this.body.position.y=1.25;
     this.body.rotation.order='YXZ';
@@ -266,6 +266,7 @@ export class Merperson extends Specimen {
     this.tail=new SwimTail();
     this.arms=[-1,1].map(sign=>new SwimArm(chest,sign));
     for(const {shoulder,elbow,wrist} of this.arms) bones.push(shoulder,elbow,wrist);
+    if(imported) return;
     const body=tinted(this,this.body,0xfffefe,.73,torsoGeometry,T.SkinnedMesh);
     body.name='Continuous merperson skin';
     applySkinFinish(body.material,true);
@@ -341,11 +342,12 @@ export class Merperson extends Specimen {
       .22*turn+.043*Math.sin(time*.88)-.022*Math.sin(phase+.25),-.72*roll);
 
     this.tail.update(motion,pitch);
+    for(const arm of this.arms) arm.update(motion);
+    if(!this.skin) return;
     this.tail.deform(this.skin,motion);
     this.tail.attach(this.caudal,this.caudalRest,this.caudalCoordinate);
     bendFluke(this.fluke,motion);
     for(const fin of this.secondaryFins) this.tail.deform(fin,motion,1);
-    for(const arm of this.arms) arm.update(motion);
     for(let i=0;i<this.hair.length;i++) {
       const lock=this.hair[i];
       const drift=time*(1.67+i*.16)-i*.86;
