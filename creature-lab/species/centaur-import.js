@@ -3,7 +3,10 @@ import {Centaur} from './centaur.js';
 import {loadTexturedGLB,texturedMaterial} from './textured-glb.js';
 
 export function loadCentaurAsset(){
-  return loadTexturedGLB(new URL('./static/centaur-meshy.glb',import.meta.url));
+  const url=typeof CENTAUR_EMBEDDED_GLB==='string'?CENTAUR_EMBEDDED_GLB:
+    new URL('./static/centaur-meshy.glb',typeof CENTAUR_PAGES!=='undefined'?
+      new URL('species/',import.meta.url):import.meta.url);
+  return loadTexturedGLB(url);
 }
 
 // Meshy exports a standing archery pose with a diagonal heading and an offset origin.
