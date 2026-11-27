@@ -74,36 +74,37 @@ async function survey(){
 async function start(){
  lab=new Lab($('#world'),metric);
  const params=new URLSearchParams(location.search),specimen=params.get('specimen');
- let centaurLoad;
+ const pending={};
  let selection=0;
- async function prepareCentaur(){
-   centaurLoad??=lab.prepareCentaur(params.get('centaur')==='baseline');
-   return centaurLoad;
- }
- function selectWithAssets(key){
+ const loaders={unicorn:()=>lab.prepareUnicorn(),owl:()=>lab.prepareOwl()};
+ if(params.get('centaur')!=='baseline')loaders.centaur=()=>lab.prepareCentaur();
+ const prepare=key=>pending[key]??=loaders[key]();
+ const assetError=key=>toast(spec[key].name+' asset unavailable. Showing the procedural baseline.');
+ async function selectSpecimen(key){
    const request=++selection;
-   if(key!=='centaur'||lab.centaurModel||params.get('centaur')==='baseline')return selectCreature(key);
-   toast('Loading Centaur model…');
-   return prepareCentaur().then(error=>{
-     if(request!==selection)return;
-     selectCreature(key);
-     if(error)toast('Centaur asset unavailable. Showing the procedural baseline.');
-     else {
-       $('#toast').style.display='none';
-       lab.thumbnail(key);
-       lab.render();
-     }
-   });
+   if(key===kind&&!surveying)return;
+   if(!Object.hasOwn(loaders,key)||lab[key+'Model'])return selectCreature(key);
+   toast('Loading '+spec[key].name+' model…');
+   const error=await prepare(key);
+   if(request!==selection)return;
+   selectCreature(key);
+   if(error)assetError(key);
+   else {
+     $('#toast').style.display='none';
+     lab.thumbnail(key);
+     lab.render();
+   }
  }
- const [loadError,centaurError]=await Promise.all([
+ api.switchCreature=selectSpecimen;
+ const [loadError,specimenError]=await Promise.all([
    lab.prepareMerperson(params.get('merperson')==='baseline'),
-   specimen==='centaur'?prepareCentaur():null
+   Object.hasOwn(loaders,specimen)?prepare(specimen):null
  ]);
  selectCreature(Object.hasOwn(spec,specimen)?specimen:'squid');
- if(centaurError)toast('Centaur asset unavailable. Showing the procedural baseline.');
+ if(specimenError)assetError(specimen);
  if(loadError)toast('Merperson asset unavailable. Showing the procedural baseline.');$('#load').hidden=true;requestAnimationFrame(lab.loop);
  for(const key of Object.keys(spec))lab.thumbnail(key);lab.render();lab.onStimulus=()=>{if(kind==='squid'){setAction('Investigate');toast('Stimulus placed in the lake')}else if(kind==='owl'){setAction('Look');toast('Owl tracking target')}};
- all('[data-creature]').forEach(b=>b.onclick=()=>{if(!surveying&&b.dataset.creature!==kind){selectWithAssets(b.dataset.creature);showTab('workspace')}});
+ all('[data-creature]').forEach(b=>b.onclick=()=>{if(!surveying){selectSpecimen(b.dataset.creature);showTab('workspace')}});
  all('[data-tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));$('#help').onclick=()=>modal('<h2>Camera & animation</h2><p>Drag to orbit and scroll to zoom. In free camera mode, click the scene and use W/A/S/D to move, Q/E to descend or rise, and Shift to move faster.</p><p>Space pauses animation. Use the step button for one 1/60-second interval. Double-click the lake to place a stimulus. Field notes includes eight inspection angles.</p>');$('#closedialog').onclick=()=>$('#dialog').close();
  $('#plates').onclick=fourViews;$('#inspection').onchange=e=>{prefs[kind].mode=e.target.value;$('#view').dataset.inspection=e.target.value;lab.setInspection(e.target.value)};
  $('#action').onchange=e=>setAction(e.target.value);$('#play').onclick=()=>setRunning(!lab.running);$('#step').onclick=()=>{setRunning(false);lab.advance(1/60);lab.render()};$('#speed').oninput=e=>{prefs[kind].speed=+e.target.value;showControls()};$('#light').oninput=e=>{prefs[kind].light=+e.target.value;showControls()};all('[data-night]').forEach(b=>b.onclick=()=>{prefs[kind].night=!!Number(b.dataset.night);showControls()});for(const id of ['wire','normals','lod'])$('#'+id).onchange=e=>{prefs[kind][id]=id==='lod'?e.target.value:e.target.checked;showControls()};

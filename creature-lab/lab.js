@@ -4,6 +4,8 @@ import {inspectionMaterials,studioLights,background,comparisonPlates} from './in
 import {catalog} from './species/catalog.js';
 import {ImportedMerperson,loadMerpersonAsset} from './species/merperson-import.js';
 import {ImportedCentaur,loadCentaurAsset} from './species/centaur-import.js';
+import {ImportedUnicorn,loadUnicornAsset} from './species/unicorn-import.js';
+import {ImportedOwl,loadOwlAsset} from './species/owl-import.js';
 import {MerpersonStudio} from './merperson-studio.js';
 import * as THREE from './vendor/three.module.js';
 import {Squid} from './squid.js';
@@ -47,7 +49,25 @@ export class Lab{
    return error;
   }
  }
- model(kind){return (kind==='merperson'?this.merpersonModel:kind==='centaur'?this.centaurModel:null)||species[kind]}
+ async prepareUnicorn(){
+  try {
+   const asset=await loadUnicornAsset();
+   this.unicornModel=class extends ImportedUnicorn {constructor(){super(asset)}};
+  } catch(error) {
+   console.error(error);
+   return error;
+  }
+ }
+ async prepareOwl(){
+  try {
+   const asset=await loadOwlAsset();
+   this.owlModel=class extends ImportedOwl {constructor(){super(asset)}};
+  } catch(error) {
+   console.error(error);
+   return error;
+  }
+ }
+ model(kind){return this[kind+'Model']||species[kind]}
  thumbnail(kind){
   const out=document.querySelector('#thumb-'+kind),actor=new (this.model(kind))(),scene=new THREE.Scene();actor.setLOD(1);scene.add(actor.root);
   scene.add(new THREE.HemisphereLight(0xffebe2,0x627571,2));for(const [x,y,z,power,c] of [[-4,7,8,3,0xffdbaf],[2,4,-5,3,0xc3e6dc]]){let l=new THREE.DirectionalLight(c,power);l.position.set(x,y,z);scene.add(l)}
