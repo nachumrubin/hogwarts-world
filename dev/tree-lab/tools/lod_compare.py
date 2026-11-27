@@ -36,7 +36,7 @@ def main(bd, ad, ang=None):
                          (crop(ad, v['sides'][0], b), f"after · {v['sides'][0].split('-')[-1]}"),
                          (crop(ad, v['sides'][1], b), f"after · {v['sides'][1].split('-')[-1]} · cov {v['coverageDiffPts']:+.1f} · lum {v['luminanceDiffPct']:+.1f} %")])
             npass[0] += abs(v['coverageDiffPts']) <= COV; npass[1] += abs(v['luminanceDiffPct']) <= LUM
-            md.append(f"| {NAMES[id_]} | {BN[b]} | {view} | {v0['crownCoverage'] if v0 else '—'} → {v['crownCoverage']} | {mark(v0['coverageDiffPts'], COV) if v0 else '—'} → {mark(v['coverageDiffPts'], COV)} | "
+            md.append(f"| {NAMES[id_]} | {BN[b]} | {view} | {(f"{float(v0['crownCoverage'][0]):.1f} → {float(v0['crownCoverage'][1]):.1f}") if v0 else '—'} ⇒ {float(v['crownCoverage'][0]):.1f} → {float(v['crownCoverage'][1]):.1f} | {mark(v0['coverageDiffPts'], COV) if v0 else '—'} → {mark(v['coverageDiffPts'], COV)} | "
                       f"{mark(v0['luminanceDiffPct'], LUM) + ' %' if v0 else '—'} → {mark(v['luminanceDiffPct'], LUM)} % | {v['deltaE']:.1f} | {v['silhouetteIoU']:.2f} | {v['triangles'][0]:,} → {v['triangles'][1]:,} | "
                       f"{v['instanceBytes'][0] / 1048576:.2f} → {v['instanceBytes'][1] / 1048576:.2f} MB | {v['overdraw'][0]:.2f} → {v['overdraw'][1]:.2f} | {'pass' if ok(v) else 'fail'} |")
         if rows:

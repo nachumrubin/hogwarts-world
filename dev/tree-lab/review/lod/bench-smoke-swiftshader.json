@@ -1,0 +1,314 @@
+[
+  {
+    "tool": "Tree Lab benchmark",
+    "version": 2,
+    "commit": "8d541c3+",
+    "date": "2026-11-27T03:54:19.243Z",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "adapter": {
+      "name": "google swiftshader",
+      "software": true,
+      "timestampQueries": true
+    },
+    "settings": {
+      "scene": "oak-b",
+      "camera": "ground",
+      "chain": "B",
+      "motion": true,
+      "width": 640,
+      "height": 360,
+      "shadow": 1024,
+      "frames": 6,
+      "chainPx": [
+        700,
+        140,
+        140
+      ]
+    },
+    "camera": {
+      "eye": [
+        0,
+        1.7,
+        30.988769252420724
+      ],
+      "target": [
+        0,
+        8.71559135224333,
+        0
+      ],
+      "fovDeg": 45,
+      "path": "1.4 m/s, 6 frames at 60 fps"
+    },
+    "frameMs": {
+      "median": 12443.6,
+      "p95": 13147.4,
+      "p99": 13147.4,
+      "mean": 12503.033,
+      "n": 6,
+      "note": "wall time submit → GPU done, one frame at a time (latency)"
+    },
+    "cpuMs": {
+      "encode": {
+        "median": 0.4,
+        "p95": 0.7,
+        "p99": 0.7,
+        "mean": 0.45,
+        "n": 6,
+        "note": "command recording and submission"
+      },
+      "lod": {
+        "median": 0.2,
+        "p95": 0.4,
+        "p99": 0.4,
+        "mean": 0.267,
+        "n": 6,
+        "note": "LOD selection, culling, cross-fades (scene.apply)"
+      }
+    },
+    "gpuMs": {
+      "frame": {
+        "median": 12441.868,
+        "p95": 13146.047,
+        "p99": 13146.047,
+        "mean": 12501.263,
+        "n": 6,
+        "note": "sum of the passes (timestamp queries)"
+      },
+      "shadow": {
+        "median": 980.937,
+        "p95": 1032.741,
+        "p99": 1032.741,
+        "mean": 992.836,
+        "n": 6,
+        "note": "shadow map (frames that redrew it)"
+      },
+      "main": {
+        "median": 11496.639,
+        "p95": 12114.028,
+        "p99": 12114.028,
+        "mean": 11508.427,
+        "n": 6
+      },
+      "split": {
+        "bark": {
+          "median": 8236.376,
+          "p95": 8717.673,
+          "p99": 8717.673,
+          "mean": 8174.797,
+          "n": 6,
+          "note": "bark and ground"
+        },
+        "foliage": {
+          "median": 3645.204,
+          "p95": 3750.708,
+          "p99": 3750.708,
+          "mean": 3595.387,
+          "n": 6
+        },
+        "impostorsSky": {
+          "median": 8.349,
+          "p95": 9.1,
+          "p99": 9.1,
+          "mean": 8.39,
+          "n": 6
+        },
+        "note": "separate passes: the attachments are stored and reloaded between them, so their sum exceeds the single main pass"
+      }
+    },
+    "shadowRenders": 6,
+    "drawCalls": 5,
+    "triangles": 316456,
+    "foliageInstances": 37748,
+    "pixels": {
+      "foliageFragmentsRasterized": 327728,
+      "foliageCoverage": 0.1198,
+      "foliageOverdraw": 1.634,
+      "impostorFragments": 0,
+      "impostorCoverage": 0,
+      "note": "first frame, counted at half resolution and scaled; no depth rejection"
+    },
+    "trees": 1,
+    "lod": {
+      "lod0": 0,
+      "lod1": 1,
+      "lod2": 0,
+      "impostor": 0,
+      "culled": 0
+    },
+    "lodAtEnd": {
+      "lod0": 0,
+      "lod1": 1,
+      "lod2": 0,
+      "impostor": 0,
+      "culled": 0
+    },
+    "memory": {
+      "geometryBytes": 7158744,
+      "foliageInstanceBytes": 754960,
+      "textureBytes": 123032888,
+      "impostorAtlasBytes": 54186960,
+      "shadowMapBytes": 4194304,
+      "renderTargetBytes": 8294400,
+      "lod0Released": 46938120,
+      "total": 197622256,
+      "note": "allocated by the lab (buffers, textures), not driver-reported"
+    },
+    "warning": "Software adapter: these timings are CPU-rasterizer timings, not GPU performance."
+  },
+  {
+    "tool": "Tree Lab benchmark",
+    "version": 2,
+    "commit": "8d541c3+",
+    "date": "2026-11-27T03:57:27.975Z",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "adapter": {
+      "name": "google swiftshader",
+      "software": true,
+      "timestampQueries": true
+    },
+    "settings": {
+      "scene": "oak-b",
+      "camera": "ground",
+      "chain": "A",
+      "motion": true,
+      "width": 640,
+      "height": 360,
+      "shadow": 1024,
+      "frames": 6,
+      "chainPx": [
+        700,
+        240,
+        110
+      ]
+    },
+    "camera": {
+      "eye": [
+        0,
+        1.7,
+        30.988769252420724
+      ],
+      "target": [
+        0,
+        8.71559135224333,
+        0
+      ],
+      "fovDeg": 45,
+      "path": "1.4 m/s, 6 frames at 60 fps"
+    },
+    "frameMs": {
+      "median": 13623.4,
+      "p95": 14258.4,
+      "p99": 14258.4,
+      "mean": 13757.05,
+      "n": 6,
+      "note": "wall time submit → GPU done, one frame at a time (latency)"
+    },
+    "cpuMs": {
+      "encode": {
+        "median": 0.2,
+        "p95": 0.3,
+        "p99": 0.3,
+        "mean": 0.233,
+        "n": 6,
+        "note": "command recording and submission"
+      },
+      "lod": {
+        "median": 0.1,
+        "p95": 0.5,
+        "p99": 0.5,
+        "mean": 0.133,
+        "n": 6,
+        "note": "LOD selection, culling, cross-fades (scene.apply)"
+      }
+    },
+    "gpuMs": {
+      "frame": {
+        "median": 13621.58,
+        "p95": 14257.082,
+        "p99": 14257.082,
+        "mean": 13755.426,
+        "n": 6,
+        "note": "sum of the passes (timestamp queries)"
+      },
+      "shadow": {
+        "median": 1073.652,
+        "p95": 1133.318,
+        "p99": 1133.318,
+        "mean": 1090.607,
+        "n": 6,
+        "note": "shadow map (frames that redrew it)"
+      },
+      "main": {
+        "median": 12488.262,
+        "p95": 13183.43,
+        "p99": 13183.43,
+        "mean": 12664.819,
+        "n": 6
+      },
+      "split": {
+        "bark": {
+          "median": 8274.515,
+          "p95": 8824.114,
+          "p99": 8824.114,
+          "mean": 8398.723,
+          "n": 6,
+          "note": "bark and ground"
+        },
+        "foliage": {
+          "median": 3737.306,
+          "p95": 3843.199,
+          "p99": 3843.199,
+          "mean": 3731.063,
+          "n": 6
+        },
+        "impostorsSky": {
+          "median": 8.569,
+          "p95": 12.481,
+          "p99": 12.481,
+          "mean": 9.339,
+          "n": 6
+        },
+        "note": "separate passes: the attachments are stored and reloaded between them, so their sum exceeds the single main pass"
+      }
+    },
+    "shadowRenders": 6,
+    "drawCalls": 5,
+    "triangles": 316456,
+    "foliageInstances": 37748,
+    "pixels": {
+      "foliageFragmentsRasterized": 327728,
+      "foliageCoverage": 0.1198,
+      "foliageOverdraw": 1.634,
+      "impostorFragments": 0,
+      "impostorCoverage": 0,
+      "note": "first frame, counted at half resolution and scaled; no depth rejection"
+    },
+    "trees": 1,
+    "lod": {
+      "lod0": 0,
+      "lod1": 1,
+      "lod2": 0,
+      "impostor": 0,
+      "culled": 0
+    },
+    "lodAtEnd": {
+      "lod0": 0,
+      "lod1": 1,
+      "lod2": 0,
+      "impostor": 0,
+      "culled": 0
+    },
+    "memory": {
+      "geometryBytes": 7158744,
+      "foliageInstanceBytes": 754960,
+      "textureBytes": 123032888,
+      "impostorAtlasBytes": 54186960,
+      "shadowMapBytes": 4194304,
+      "renderTargetBytes": 8294400,
+      "lod0Released": 46938120,
+      "total": 197622256,
+      "note": "allocated by the lab (buffers, textures), not driver-reported"
+    },
+    "warning": "Software adapter: these timings are CPU-rasterizer timings, not GPU performance."
+  }
+]

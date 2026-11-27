@@ -1,0 +1,173 @@
+{
+  "dt": 0.03333333333333333,
+  "screen": "1920×1080",
+  "stand": 200,
+  "policy": [
+    700,
+    140,
+    140
+  ],
+  "transition": {
+    "hysteresis": 0.12,
+    "fade": 0.6
+  },
+  "paths": {
+    "ground approach and retreat": {
+      "seconds": 60,
+      "frames": 1800,
+      "trees": 200,
+      "switches": 368,
+      "maxSwitchesPerTree": 4,
+      "reversalsWithin1s": 0,
+      "oscillatingTrees": 0,
+      "boundariesCrossed": [
+        "1↔3",
+        "0↔1"
+      ],
+      "maxSimultaneousFades": 11,
+      "longestFadeS": 2.87,
+      "fadeS": 0.6,
+      "shadow": {
+        "casterChanges": 371,
+        "staleFrames": 0,
+        "redundantRedraws": 1429
+      }
+    },
+    "vertical ascent and descent": {
+      "seconds": 80,
+      "frames": 2400,
+      "trees": 200,
+      "switches": 319,
+      "maxSwitchesPerTree": 4,
+      "reversalsWithin1s": 0,
+      "oscillatingTrees": 0,
+      "boundariesCrossed": [
+        "1↔3",
+        "0↔1"
+      ],
+      "maxSimultaneousFades": 25,
+      "longestFadeS": 12.2,
+      "fadeS": 0.6,
+      "shadow": {
+        "casterChanges": 293,
+        "staleFrames": 0,
+        "redundantRedraws": 2107
+      }
+    },
+    "low broom flight": {
+      "seconds": 20,
+      "frames": 600,
+      "trees": 200,
+      "switches": 156,
+      "maxSwitchesPerTree": 2,
+      "reversalsWithin1s": 0,
+      "oscillatingTrees": 0,
+      "boundariesCrossed": [
+        "1↔3",
+        "0↔1"
+      ],
+      "maxSimultaneousFades": 24,
+      "longestFadeS": 16.2,
+      "fadeS": 0.6,
+      "shadow": {
+        "casterChanges": 231,
+        "staleFrames": 0,
+        "redundantRedraws": 369
+      }
+    },
+    "high forest traversal": {
+      "seconds": 20,
+      "frames": 600,
+      "trees": 200,
+      "switches": 0,
+      "maxSwitchesPerTree": 0,
+      "reversalsWithin1s": 0,
+      "oscillatingTrees": 0,
+      "boundariesCrossed": [],
+      "maxSimultaneousFades": 0,
+      "longestFadeS": 0,
+      "fadeS": 0.6,
+      "shadow": {
+        "casterChanges": 181,
+        "staleFrames": 0,
+        "redundantRedraws": 419
+      }
+    },
+    "aerial impostor crossing": {
+      "seconds": 40,
+      "frames": 1200,
+      "trees": 200,
+      "switches": 308,
+      "maxSwitchesPerTree": 2,
+      "reversalsWithin1s": 0,
+      "oscillatingTrees": 0,
+      "boundariesCrossed": [
+        "1↔3"
+      ],
+      "maxSimultaneousFades": 44,
+      "longestFadeS": 9.2,
+      "fadeS": 0.6,
+      "shadow": {
+        "casterChanges": 196,
+        "staleFrames": 0,
+        "redundantRedraws": 1004
+      }
+    },
+    "orbit": {
+      "seconds": 24,
+      "frames": 720,
+      "trees": 200,
+      "switches": 182,
+      "maxSwitchesPerTree": 3,
+      "reversalsWithin1s": 1,
+      "oscillatingTrees": 1,
+      "boundariesCrossed": [
+        "1↔3",
+        "0↔1"
+      ],
+      "maxSimultaneousFades": 13,
+      "longestFadeS": 4.67,
+      "fadeS": 0.6,
+      "shadow": {
+        "casterChanges": 214,
+        "staleFrames": 0,
+        "redundantRedraws": 506
+      }
+    },
+    "rapid direction reversals": {
+      "seconds": 12,
+      "frames": 360,
+      "trees": 200,
+      "switches": 0,
+      "maxSwitchesPerTree": 0,
+      "reversalsWithin1s": 0,
+      "oscillatingTrees": 0,
+      "boundariesCrossed": [],
+      "maxSimultaneousFades": 0,
+      "longestFadeS": 0,
+      "fadeS": 0.6,
+      "shadow": {
+        "casterChanges": 180,
+        "staleFrames": 0,
+        "redundantRedraws": 180
+      }
+    }
+  },
+  "renderChecks": [
+    {
+      "t": 14.33,
+      "cachedPath": false,
+      "identicalPng": true
+    },
+    {
+      "t": 16.4,
+      "cachedPath": false,
+      "identicalPng": true
+    },
+    {
+      "t": 18.47,
+      "cachedPath": false,
+      "identicalPng": true
+    }
+  ]
+}

@@ -7,7 +7,8 @@ from PIL import Image
 S = 1008
 src = sys.argv[1]; here = os.path.dirname(os.path.abspath(__file__)); tex = os.path.join(here, '..', 'textures')
 bake = json.load(open(os.path.join(src, 'impostors-bake.json')))
-man = {}
+# merged into the existing manifest (a bake may cover only some specimens)
+mp = os.path.join(tex, 'impostors.json'); man = json.load(open(mp)) if os.path.exists(mp) else {}
 for id_, m in bake.items():
     files = {}
     for k in ('albedo', 'normal'):

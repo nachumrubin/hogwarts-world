@@ -187,6 +187,15 @@ first visit to a deployed build pays the generation time.
   JSON download. Software adapters are flagged: SwiftShader timings are not GPU performance. See "Hardware benchmark
   procedure" in `review/CHANGES-phase-4.3.md`.
 
+## LOD transition fidelity (Phase 4.3)
+
+* Report: `review/CHANGES-phase-4.3.md` (the pine root cause, corrections, the 20 protocol measurements before and
+  after, the angular set, transitions, the benchmark and the open deficiencies). Evidence: `review/lod/`
+  (`lod-metrics.md`, `lod-angular.md`, `before-after-*.jpg`, `impostor-contours.jpg`, `transitions/`,
+  `pine-diagnostics-before.json`). Tools: `tools/evidence/diag.js` with `tools/diag_metrics.py` (shading diagnostics,
+  `viewer.diag`), `tools/evidence/transitions.js`, `tools/evidence/cardv.js`, `tools/evidence/impcontour.js`,
+  `tools/lod_compare.py`. Unit tests: `tests/treelab-lod.test.ts`.
+
 ## LOD consistency (Phase 4.2)
 
 * **Reference:** LOD0. `tools/evidence/lodcheck.js` renders both sides of every switch from one camera at the switch
