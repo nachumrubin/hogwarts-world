@@ -60,7 +60,7 @@ struct U {
   zen: vec4f,     // zenith colour, ambient scale
   hor: vec4f,     // horizon colour, shadow strength
   env: vec4f,     // studio backdrop, -, -, -
-  fx: vec4f,      // LOD cross-fade: amount (1 = fully shown), 1 = the outgoing side (complementary pattern), -, -
+  fx: vec4f,      // LOD cross-fade: amount (1 = fully shown), 1 = the outgoing side (complementary pattern), diagnostic mode, card shadow offset (share of the card's width; negative: no projected-area correction)
 };
 // LOD transitions: a 4 × 4 ordered-dither pattern splits the pixels between the outgoing and incoming LODs, the two
 // sides exactly complementary, so a tree is never doubled or holed while it fades (render/viewer.ts Draw.fade)
@@ -384,9 +384,15 @@ fn ggx(N: vec3f, V: vec3f, L: vec3f, rough: f32) -> f32 {
       sf.rough = 0.6;
     }
     let N = sf.n;
+    // diagnostic 14: the sun shadow on the ground alone (shadow continuity across LODs); otherwise everything but
+    // foliage masked (viewer.diag)
+    if (u.fx.z > 13.5 && kind == 1u) { return vec4f(vec3f(mix(1.0, shadow(i.wp, n), u.hor.w)), 1.0); }
+    if (u.fx.z > 0.5) { return vec4f(1.0, 0.0, 1.0, 1.0); }
     // impostor bake (render/impostor.ts): unlit albedo, or tree-local normal with ambient occlusion
     if (mode == 6u) { return vec4f(srgb(sf.alb), 1.0); }
-    if (mode == 7u) { return vec4f(octEnc(rotY(N, -u.cam.w)) * 0.5 + 0.5, 0.5 * sf.ao * select(1.0, mix(0.5, 1.0, smoothstep(0.0, 1.2, i.lp.y)), kind == 0u), 1.0); }
+    // (b: occlusion alone, for wood and leaves alike: render/impostor.ts tells them apart by colour. Packing a wood/leaf
+    // flag into b made filtering between a twig texel and a leaf texel pass through 'leaf, no sky': black contours)
+    if (mode == 7u) { return vec4f(octEnc(rotY(N, -u.cam.w)) * 0.5 + 0.5, sf.ao * select(1.0, mix(0.5, 1.0, smoothstep(0.0, 1.2, i.lp.y)), kind == 0u), 1.0); }
     let V = normalize(u.cam.xyz - i.wp);
     let sh = mix(1.0, shadow(i.wp, n), u.hor.w);
     let ndl = max(dot(N, L), 0.0) * smoothstep(-0.05, 0.1, dot(n, L));   // the geometric side decides (no light leaks)
@@ -465,8 +471,10 @@ fn inst(i: FIn) -> Inst {
 }
 struct FOut {
   @builtin(position) cp: vec4f, @location(0) wp: vec3f, @location(1) uv: vec2f,
-  @location(2) n: vec3f, @location(3) tx: vec3f, @location(4) ty: vec3f, @location(5) e: vec3f,   // exposure, variation, along
+  @location(2) n: vec3f, @location(3) tx: vec3f, @location(4) ty: vec3f, @location(5) e: vec4f,   // exposure, variation, along, card tilt
+  @location(6) cs: f32,   // cards: width (m)
 };
+fn rotAx(v: vec3f, k: vec3f, a: f32) -> vec3f { return v * cos(a) + cross(k, v) * sin(a) + k * dot(k, v) * (1.0 - cos(a)); }
 fn qrot(q: vec4f, v: vec3f) -> vec3f { let t = 2.0 * cross(q.xyz, v); return v + q.w * t + cross(q.xyz, t); }
 fn folLocal(i: FIn, n: Inst) -> array<vec3f, 3> {   // position, normal, (unused)
   let k = u32(u.off.w + 0.5);
@@ -490,9 +498,12 @@ fn folLocal(i: FIn, n: Inst) -> array<vec3f, 3> {   // position, normal, (unused
   let col = c - gx * floor(c / gx); let row = floor(c / gx);
   o.uv = vec2f((col + i.t.x + 0.5) / gx, (row + 1.0 - i.t.y * 0.999) / gy);
   o.n = rotY(qrot(n.q, L[1]), u.cam.w); o.tx = rotY(qrot(n.q, vec3f(1.0, 0.0, 0.0)), u.cam.w); o.ty = rotY(qrot(n.q, vec3f(0.0, 1.0, 0.0)), u.cam.w);
-  o.e = vec3f(n.e, n.v, i.t.y);
+  // spray cards (k 5, atlas cells 0–1): the card's tilt about the spray axis (foliage.ts sprayCard; r1 = 1: none)
+  let tl = select(0.0, (n.r1 - 0.5) * 3.14159265, k5(i) && n.r1 < 0.99 && n.cell < 1.5);
+  o.e = vec4f(n.e, n.v, i.t.y, tl); o.cs = n.sx;
   return o;
 }
+fn k5(i: FIn) -> bool { return u32(u.off.w + 0.5) == 5u; }
 @vertex fn vsFolShadow(i: FIn) -> FOut {
   var o: FOut;
   let n = inst(i);
@@ -501,29 +512,54 @@ fn folLocal(i: FIn, n: Inst) -> array<vec3f, 3> {   // position, normal, (unused
   o.cp = u.sm * vec4f(wp, 1.0); o.wp = wp;
   let c = n.cell; let gx = max(u.env.z, 1.0); let gy = max(u.env.w, 1.0);
   o.uv = vec2f((c - gx * floor(c / gx) + i.t.x + 0.5) / gx, (floor(c / gx) + 1.0 - i.t.y * 0.999) / gy);
-  o.n = vec3f(0.0); o.tx = vec3f(0.0); o.ty = vec3f(0.0); o.e = vec3f(0.0);
+  o.n = vec3f(0.0); o.tx = vec3f(0.0); o.ty = vec3f(0.0); o.e = vec4f(0.0); o.cs = 0.0;
   return o;
 }
 @fragment fn fsFolShadow(i: FOut) {
   if (u32(u.off.w + 0.5) == 6u || u32(u.off.w + 0.5) == 8u) { return; }
   let a = textureSampleLevel(folAlb, barkSmp, i.uv, i32(u.env.y + 0.5), 1.0).a;
-  if (a * select(1.0, 2.5, u32(u.off.w + 0.5) == 7u) < 0.5) { discard; }
+  // needles are a texel or two wide: their alpha is boosted 2.5× in the shadow pass, needle fascicles (LOD0) and pine
+  // cards alike (Phase 4.3: pine cards had no boost, cast a fraction of LOD0's shadow, and pine LOD1 lost 5 % of its
+  // light to self-shadowing where LOD0 loses 18 %)
+  // (pine cards: in proportion to their main-pass boost over the fascicles', sunc.w = viewer.alphaBoost.needleCard, so a
+  // card casts as much more shadow as it covers more)
+  let pineCard = u32(u.off.w + 0.5) == 5u && u32(u.env.y + 0.5) == 5u;
+  let needles = u32(u.off.w + 0.5) == 7u || pineCard;
+  if (a * select(1.0, 2.5, needles) * select(1.0, u.sunc.w / 0.5, pineCard) < 0.5) { discard; }
 }
-fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
+fn folAlpha(a: f32, uv: vec2f, boost: f32, s: f32) -> f32 {
   // alpha-to-coverage with mip-aware sharpening: the opacity edge stays one pixel wide at every distance, and
-  // coverage is boosted with the mip level so thin leaves and needles do not dissolve far away
+  // coverage is boosted with the mip level so thin leaves and needles do not dissolve far away. s: a per-pixel coverage
+  // scale (spray cards' projected-area correction), applied after the edge width is measured
   let d = max(length(dpdx(uv)), length(dpdy(uv))) * 1024.0;
   let lvl = max(log2(max(d, 1e-4)), 0.0);
   let aa = a * (1.0 + boost * lvl);
-  return clamp((aa - 0.5) / max(fwidth(aa), 1e-4) + 0.5, 0.0, 1.0);
+  return clamp((aa * s - 0.5) / max(fwidth(aa) * s, 1e-4) + 0.5, 0.0, 1.0);
 }
 @fragment fn fsFol(i: FOut, @builtin(front_facing) ff: bool) -> @location(0) vec4f {
   let k = u32(u.off.w + 0.5); let layer = i32(u.env.y + 0.5); let mode = u32(u.mode.x + 0.5);
-  let A = textureSample(folAlb, barkSmp, i.uv, layer);
-  let Nt = textureSample(folNrm, barkSmp, i.uv, layer);
+  let dg = u32(u.fx.z + 0.5);
+  let A0 = textureSample(folAlb, barkSmp, i.uv, layer);
+  let Nt0 = textureSample(folNrm, barkSmp, i.uv, layer);
+  // diagnostic 12: full shading from the top mip only (no mip filtering, no distance boost): the filtering comparison
+  let A = select(A0, textureSampleLevel(folAlb, barkSmp, i.uv, layer, 0.0), dg == 12u || dg == 16u);
+  let Nt = select(Nt0, textureSampleLevel(folNrm, barkSmp, i.uv, layer, 0.0), dg == 12u || dg == 16u);
   // needles are 2–3 texels wide: their coverage needs a much stronger boost with distance than broad leaves
   // distance boost on top of the coverage-preserving mips (viewer.alphaBoost, carried in sunc.w for foliage draws)
-  let alpha = select(folAlpha(A.a, i.uv, u.sunc.w), 1.0, k == 6u || k == 8u);
+  // LOD1 spray cards' projected-area correction (Phase 4.3): a card texel shows its leaf's area foreshortened twice, onto
+  // the card when the atlas was drawn (|n·n0|, n0 the card's front in the untilted spray frame) and by the card's
+  // own angle to the view (|nc·V|), where LOD0 shows the same leaf at |n·V|. Scaling the texel's coverage by
+  // r = |n·V| / (|n·n0| |nc·V|) gives the cards LOD0's projected leaf area in every direction (the V pair's fixed
+  // angles under-represented it from above and over-represented it from the side). Untilted cards (LOD0's interior
+  // cards) are left as they are, and so is the birch (layer 4): its hanging curtains overlap so much that the
+  // correction, which assumes leaves do not hide each other, over-covered it from above (+8 points).
+  let tiltC = k == 5u && i.e.w != 0.0;
+  let Vc = normalize(u.cam.xyz - i.wp); let Bc = normalize(i.ty);
+  let n0c = rotAx(normalize(i.n), Bc, -i.e.w); let tnc = Nt0.xy * 2.0 - 1.0; let zc = Nt0.z;
+  let Nfc = normalize(rotAx(normalize(i.tx), Bc, -i.e.w) * tnc.x + Bc * tnc.y + n0c * zc + n0c * 1e-3);
+  let rA = select(1.0, clamp(abs(dot(Nfc, Vc)) / max(max(zc, 0.2) * abs(dot(normalize(i.n), Vc)), 0.05), 0.33, 3.0), tiltC && u.fx.w >= 0.0 && layer != 4);
+  let alpha = select(folAlpha(A.a, i.uv, select(u.sunc.w, 0.0, dg == 12u || dg == 16u), rA), 1.0, k == 6u || k == 8u);
+  let mipL = clamp(log2(max(max(length(dpdx(i.uv)), length(dpdy(i.uv))) * 1024.0, 1e-4)) / 8.0, 0.0, 1.0);
   if (mode == 2u) { return vec4f(0.0, 0.0, 0.0, alpha); }
   var Ng = normalize(i.n); if (!ff) { Ng = -Ng; }
   if (mode == 4u) { return vec4f(Ng * 0.5 + 0.5, alpha); }
@@ -531,7 +567,10 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
   let sunC = u.sunc.xyz * u.sun.w;
   // a card stands for a spray's volume of leaves around its plane: its shadow is tested a spray's depth towards the
   // sun, so the crossed partner card and the card itself do not shadow it (they did: LOD1 crowns were far darker)
-  let wpS = select(i.wp, i.wp + L * 0.35, k == 5u);
+  // (Phase 4.3: half the card's width, the distance to its V partner, not a fixed 0.35 m: the fixed offset exceeded a
+  // whole pine spray, so pine cards were never shadowed by their own spray while LOD0's needles were: pine LOD1 came
+  // out 20 % too bright once its normals and albedo were right)
+  let wpS = select(i.wp, i.wp + L * abs(u.fx.w) * i.cs, k == 5u);
   let sh = mix(1.0, shadow(wpS, select(Ng, L, k == 5u)), u.hor.w);
   let exposure = i.e.x; let vari = i.e.y;
   if (mode != 0u && mode < 6u) {
@@ -542,11 +581,12 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
     return vec4f(srgb(aces(c * 0.55)), alpha);
   }
   if (k == 6u) {
+    if (u.fx.z > 0.5) { return vec4f(1.0, 0.0, 1.0, 1.0); }
     // twiglets: smooth young bark, species colour
     var tw = vec3f(0.13, 0.11, 0.085);
     if (u32(u.mode.y + 0.5) == 2u) { tw = vec3f(0.09, 0.045, 0.03); }
     if (mode == 6u) { return vec4f(srgb(tw), 1.0); }
-    if (mode == 7u) { return vec4f(octEnc(rotY(Ng, -u.cam.w)) * 0.5 + 0.5, 0.5 * mix(0.55, 1.0, exposure), 1.0); }
+    if (mode == 7u) { return vec4f(octEnc(rotY(Ng, -u.cam.w)) * 0.5 + 0.5, mix(0.55, 1.0, exposure), 1.0); }
     let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * Ng.y) * (0.6 + 0.4 * Ng.y) * u.zen.w;
     let c = tw * (sunC * max(dot(Ng, L), 0.0) * sh + sky * mix(0.6, 1.0, exposure));
     if (!fadeKeep(i.cp.xy)) { discard; }
@@ -562,13 +602,24 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
   // in the translucency channel, the share of leaves whose upper side faces the card's front (mip-averaged). The
   // visible side of each texel's leaves depends on the view: from the card's back, its upper sides become undersides.
   // Undersides are paler and transmit, exactly as on LOD0's leaves
-  var under = 0.0;
+  // Phase 4.3: the stored normal is folded to the card's front hemisphere (its z is rebuilt ≥ 0), and the translucency
+  // channel holds the share of the texel's leaves whose folded side is their upper side. Seen from the folded side
+  // (N·V ≥ 0) a texel shows that share of upper sides, from the other side the rest; the visible normal is the folded
+  // normal or its mirror, as LOD0 turns each leaf's normal to the side it is seen from.
+  var under = 0.0; var cardLen = 1.0;
   if (k == 5u) {
     let fr = Nt.w;
-    let Ng0 = normalize(i.n);
-    let Nl = normalize(T * tn.x + B * tn.y + Ng0 * (2.0 * fr - 1.0) * sqrt(max(1.0 - dot(tn, tn), 0.0)) + Ng0 * 1e-3);
-    under = select(fr, 1.0 - fr, ff);
-    N = select(Nl, -Nl, dot(Nl, V) < 0.0);
+    // the atlas leaves are shaded in the untilted spray frame: the card's front and across axes turned back about the
+    // spray axis (B) by the card's tilt, so the leaves keep LOD0's attitude to the light however their card leans
+    let Ng0 = rotAx(normalize(i.n), B, -i.e.w);   // the card's front normal (the vertex normal, not turned to the face)
+    let Tr = rotAx(T, B, -i.e.w);
+    // the filtered mean of the texel's leaf normals (z stored, b channel): its length is how aligned they are
+    let Nm = Tr * tn.x + B * tn.y + Ng0 * Nt.z + Ng0 * 1e-3;
+    cardLen = clamp(length(Nm), 0.05, 1.0);
+    let Nf = Nm / length(Nm);
+    let seenF = dot(Nf, V) >= 0.0;
+    under = select(fr, 1.0 - fr, seenF);
+    N = select(-Nf, Nf, seenF);
   }
   // pigmentation: per-shoot variation (yellower ↔ bluer, lighter ↔ darker); undersides paler, greyer
   var alb = A.rgb * (1.0 + 0.18 * vari) * mix(vec3f(1.0), vec3f(1.12, 1.05, 0.8), clamp(vari, 0.0, 1.0) * 0.5);
@@ -580,16 +631,25 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
   // the resolved alpha. A fractional alpha was stored below its coverage and brightened the impostors by up to 1.5×)
   let ab = select(0.0, 1.0, alpha >= 0.5);
   if (mode == 6u) { return vec4f(srgb(alb), ab); }
-  if (mode == 7u) { return vec4f(octEnc(rotY(N, -u.cam.w)) * 0.5 + 0.5, 0.5 + 0.5 * mix(0.3, 1.0, exposure), ab); }
-  let rough = clamp(Nt.z * select(1.0, 1.25, !ff), 0.3, 1.0);
-  let ndl = max(dot(N, L), 0.0);
+  if (mode == 7u) { return vec4f(octEnc(rotY(N, -u.cam.w)) * 0.5 + 0.5, mix(0.3, 1.0, exposure), ab); }
+  // (cards: b holds the normal's z; their roughness is the species' sprite mean)
+  let rCard = select(select(0.43, 0.35, layer == 4), 0.40, layer == 5);
+  let rough = clamp(select(Nt.z, rCard, k == 5u) * select(1.0, 1.25, !ff), 0.3, 1.0);
+  // a card texel's leaves spread their normals: the sun's diffuse and transmitted light follow the mean normal's
+  // projection (its length × cosine), not a unit normal's
+  // (the texel as a mixture: the share cardLen along the mean normal, the rest spread evenly over the hemisphere facing
+  // the viewer, whose mean of max(n·L, 0) is (1 + V·L) / 4)
+  let ndl = max(dot(N, L), 0.0) * cardLen + (1.0 - cardLen) * 0.25 * (1.0 + dot(V, L));
   // transmission: sun through the blade when it lights the far face (thin, so most of the light passes the veins)
-  let back = max(-dot(select(Ng, N, k == 5u), L), 0.0);
+  // (transmission keeps the mean normal's projection alone: light through the spread share of a tuft passes other
+  // needles of the same tuft first)
+  let back = max(-dot(select(Ng, N, k == 5u), L), 0.0) * cardLen;
   // transmitted light is tested for shadow on the leaf's sunlit side (offset towards the sun), not the visible side:
   // tested on the visible (dark) side every backlit leaf shadowed itself and the crown edge never glowed
   let shT = select(mix(1.0, shadow(i.wp, -Ng), u.hor.w), sh, k == 5u);
-  // (cards: the translucency channel holds the leaf-side share; their leaves transmit like the scans' mean, 0.72)
-  let transCol = alb * vec3f(1.6, 1.8, 0.6) * select(Nt.w, 0.72, k == 5u);
+  // (cards: the translucency channel holds the leaf-side share; their leaves transmit like the scans' mean, 0.75 for
+  // all three species, measured on the sprite atlases)
+  let transCol = alb * vec3f(1.6, 1.8, 0.6) * select(Nt.w, 0.75, k == 5u);
   // sky light reaching a leaf is attenuated by the crown above it (exposure), but a leaf crown is not a black box:
   // leaves pass on roughly half the light they intercept (reflectance + transmittance ≈ 0.2–0.4 in the green), so
   // the interior also receives light scattered between leaves; and a thin blade transmits the sky above it to its
@@ -599,10 +659,39 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
   let sky = mix(u.hor.xyz, u.zen.xyz, 0.5 + 0.5 * N.y) * (0.65 + 0.35 * N.y) * u.zen.w;
   let bounce = vec3f(0.10, 0.10, 0.06) * (0.5 - 0.5 * N.y) * u.zen.w;
   let scatter = skyUp * (1.0 - exposure) * 0.3 + sunC * (1.0 - sh) * exposure * 0.06;
-  var c = alb * (sunC * ndl * sh + (sky + bounce) * ao + scatter) + sunC * shT * transCol * back * (0.5 + 0.8 * pow(max(dot(V, -L), 0.0), 3.0));
-  c += transCol * skyUp * (0.25 + 0.45 * max(-N.y, 0.0)) * ao;
-  c += sunC * sh * ggx(N, V, L, rough) * PI * 0.35;
-  if (u.env.x < 0.5) { let dd = length(u.cam.xyz - i.wp); c = mix(c, u.hor.xyz * 0.9, 1.0 - exp(-dd * 0.002)); }
+  // shading terms (kept apart for the diagnostics, viewer.diag)
+  let sunT = sunC * shT * transCol * back * (0.5 + 0.8 * pow(max(dot(V, -L), 0.0), 3.0));
+  let skyT = transCol * skyUp * (0.25 + 0.45 * max(-N.y, 0.0)) * ao;
+  let direct = alb * sunC * ndl * sh + sunC * sh * ggx(N, V, L, rough) * PI * 0.35;
+  let ambient = alb * ((sky + bounce) * ao + scatter);
+  var c = direct + ambient + sunT + skyT;
+  if (dg > 0u && dg != 12u) {
+    if (!fadeKeep(i.cp.xy)) { discard; }
+    // linear outputs are written as srgb(value × exposure × 0.5) without the tone curve, so ratios survive decoding
+    let lin = u.mode.w * 0.5;
+    let underVis = select(select(0.0, 1.0, !ff), under, k == 5u);
+    switch dg {
+      case 1u: { return vec4f(srgb(alb), alpha); }                                  // unlit albedo (undersides paled)
+      case 2u: { return vec4f(N * 0.5 + 0.5, alpha); }                              // world-space shading normal
+      case 3u: { return vec4f(underVis, 1.0 - underVis, 0.0, alpha); }              // red underside, green upper side
+      case 4u: { return vec4f(srgb(direct * lin), alpha); }                         // direct sun only
+      case 5u: { return vec4f(srgb((ambient + skyT) * lin), alpha); }               // ambient only (sky, bounce, scatter)
+      case 6u: { return vec4f(srgb((direct + ambient) * lin), alpha); }             // transmission disabled
+      case 7u: {                                                                    // self-shadowing disabled
+        let c7 = alb * (sunC * ndl + (sky + bounce) * ao + skyUp * (1.0 - exposure) * 0.3) + sunC * transCol * back * (0.5 + 0.8 * pow(max(dot(V, -L), 0.0), 3.0)) + skyT + sunC * ggx(N, V, L, rough) * PI * 0.35;
+        return vec4f(srgb(c7 * lin), alpha); }
+      case 8u: { return vec4f(1.0, 1.0, 1.0, alpha); }
+      case 16u: { return vec4f(1.0, 1.0, 1.0, alpha); }                             // coverage from the top mip, no boost
+      case 15u: { return vec4f(srgb(aces(c * u.mode.w)), alpha); }                 // the normal output (no fog), black background                              // alpha coverage
+      case 9u: { return vec4f(vec3f(ndl), alpha); }                                 // N·L
+      case 10u: { return vec4f(vec3f(abs(dot(Ng, V))), alpha); }                     // blade / card facing |Ng·V|
+      case 11u: { return vec4f(vec3f(mipL), alpha); }                               // mip level / 8
+      case 13u: { return vec4f(srgb(c * lin), alpha); }                             // full shading, linear
+      case 14u: { return vec4f(1.0, 0.0, 1.0, alpha); }                             // (ground shadow only)
+      default: { return vec4f(srgb(c * lin), alpha); }
+    }
+  }
+  if (u.env.x < 0.5 && dg != 12u) { let dd = length(u.cam.xyz - i.wp); c = mix(c, u.hor.xyz * 0.9, 1.0 - exp(-dd * 0.002)); }
   if (!fadeKeep(i.cp.xy)) { discard; }
   return vec4f(srgb(aces(c * u.mode.w)), alpha);
 }
@@ -622,6 +711,7 @@ fn folAlpha(a: f32, uv: vec2f, boost: f32) -> f32 {
 struct SkyOut { @builtin(position) p: vec4f, @location(0) uv: vec2f };
 @vertex fn vsSky(@builtin(vertex_index) k: u32) -> SkyOut { var o: SkyOut; let p = vec2f(f32(i32(k & 1u) * 4 - 1), f32(i32(k >> 1u) * 4 - 1)); o.p = vec4f(p, 1.0, 1.0); o.uv = p; return o; }
 @fragment fn fsSky(i: SkyOut) -> @location(0) vec4f {
+  if (u.fx.z > 0.5 && (u.fx.z < 13.5 || u.fx.z > 14.5)) { return vec4f(0.0, 0.0, 0.0, 1.0); }   // diagnostics: black background (coverage-exact terms)
   let mode = u32(u.mode.x + 0.5);
   if (mode == 2u) { return vec4f(1.0); }
   if (mode == 3u || mode == 4u || mode == 5u) { return vec4f(0.12, 0.12, 0.13, 1.0); }
@@ -700,9 +790,10 @@ export class Viewer {
     this.folAlb = one('rgba8unorm-srgb'); this.folNrm = one('rgba8unorm');
     this.rebind();
     if (this.hasTs) {
-      this.qs = d.createQuerySet({ type: 'timestamp', count: 2 });
-      this.qbuf = d.createBuffer({ size: 16, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
-      this.qread = [0, 1].map(() => d.createBuffer({ size: 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }));
+      // timestamps: 0–1 main pass (or, split, its bark and ground part), 2–3 shadow pass, 4–5 foliage, 6–7 impostors and sky
+      this.qs = d.createQuerySet({ type: 'timestamp', count: 8 });
+      this.qbuf = d.createBuffer({ size: 64, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC });
+      this.qread = [0, 1].map(() => d.createBuffer({ size: 64, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }));
     }
   }
 
@@ -748,7 +839,10 @@ export class Viewer {
     return this.uploadFoliage({ ...f, sets });
   }
   /** alpha boost per mip level on top of the coverage-preserving mips (leaves and cards; needles) */
-  alphaBoost = { leaf: 0.15, needle: 0.5 };
+  /** alpha boost per mip level (folAlpha): broad leaves, needle fascicles (LOD0), pine spray cards (LOD1). Pine cards
+   *  are calibrated (Phase 4.3, tools/evidence/cardv.js): at a distance every LOD0 fascicle renders as an opaque blob of its
+   *  quad (≈ 2 × 1 px at the LOD0 → LOD1 switch), far more than its needles cover, and the cards must match that */
+  alphaBoost = { leaf: 0.15, needle: 0.5, needleCard: 1.5 };
   /** card boundaries: true = hull-fitted outlines (tools/foliage_textures.py card_hulls), false = full quads */
   hullCards = true;
   uploadFoliage(f: FoliageLod): GpuFoliage {
@@ -805,7 +899,7 @@ export class Viewer {
       d.queue.copyExternalImageToTexture({ source: bmp }, { texture: tex as GPUTexture, origin: [0, 0, k], premultipliedAlpha: false }, [S, S]);
       bmp.close();
     })));
-    this.mips(alb, nrm, n, levels);
+    this.mips(alb, nrm, n, levels, false, 0, new Set(man.layers.flatMap((l, k) => (l.id.startsWith('card-') ? [k] : []))));
     const scaled = this.alphaScaled(alb, n, levels, man.layers.map((l) => l.alphaScale ?? []), man.layers.map((l) => l.grid ?? [4, 2]));
     this.folAlb.destroy(); this.folNrm.destroy(); this.folAlb = scaled; this.folNrm = nrm; this.rebind();
     let bytes = 0; for (let l = 0; l < levels; l++) bytes += Math.max(1, S >> l) ** 2 * 4 * n * 2;
@@ -880,7 +974,7 @@ export class Viewer {
     return dst;
   }
   private mipsRange(alb: GPUTexture, nrm: GPUTexture, layer: number, levels: number): void { this.mips(alb, nrm, layer + 1, levels, true, layer); }
-  mips(alb: GPUTexture, nrm: GPUTexture, layers: number, levels: number, plain = false, first = 0): void {
+  mips(alb: GPUTexture, nrm: GPUTexture, layers: number, levels: number, plain = false, first = 0, pick: Set<number> = new Set()): void {
     const d = this.device;
     const code = /* wgsl */ `
       @group(0) @binding(0) var src: texture_2d<f32>;
@@ -897,14 +991,25 @@ export class Viewer {
         let len = length(nn) / 4.0; let m = normalize(nn);
         // Toksvig: the normals' spread at this scale becomes roughness
         return vec4f(m.xy * 0.5 + 0.5, sqrt(min(1.0, r2 / 4.0 + (1.0 - len) * 2.0)), ao / 4.0);
+      }
+      // spray-card layers (Phase 4.3): x, y and z of the folded normal (b holds z) and the leaf-side share are plain
+      // averages, so a coarse texel holds the mean of its leaves' normals, shorter the more they spread (no Toksvig
+      // renormalisation: the renderer uses the vector's length)
+      @fragment fn pick(i: O) -> @location(0) vec4f {
+        let q = vec2i(i.p.xy) * 2; var r2 = 0.0; var ao = 0.0;
+        for (var k = 0; k < 4; k++) { let t = textureLoad(src, q + vec2i(k & 1, k >> 1), 0); r2 += t.z * t.z; ao += t.w; }
+        var m = vec4f(0.0);
+        for (var k = 0; k < 4; k++) { m += textureLoad(src, q + vec2i(k & 1, k >> 1), 0); }
+        return m / 4.0;
       }`;
     const m = d.createShaderModule({ code });
     const pipes = new Map<GPUTexture, GPURenderPipeline>();
     for (const [t, entry] of [[alb, 'albedo'], [nrm, plain ? 'albedo' : 'normal']] as [GPUTexture, string][]) pipes.set(t, d.createRenderPipeline({ layout: 'auto', vertex: { module: m, entryPoint: 'vs' }, fragment: { module: m, entryPoint: entry, targets: [{ format: t.format }] }, primitive: { topology: 'triangle-list' } }));
+    const pickPipe = pick.size ? d.createRenderPipeline({ layout: 'auto', vertex: { module: m, entryPoint: 'vs' }, fragment: { module: m, entryPoint: 'pick', targets: [{ format: nrm.format }] }, primitive: { topology: 'triangle-list' } }) : null;
     const smp = d.createSampler({ minFilter: 'linear', magFilter: 'linear' });
     const enc = d.createCommandEncoder();
     for (const t of [alb, nrm]) for (let k = first; k < layers; k++) for (let l = 1; l < levels; l++) {
-      const pipe = pipes.get(t)!;
+      const pipe = t === nrm && pickPipe && pick.has(k) ? pickPipe : pipes.get(t)!;
       const bg = d.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: t.createView({ dimension: '2d', baseArrayLayer: k, arrayLayerCount: 1, baseMipLevel: l - 1, mipLevelCount: 1 }) }, ...(t === alb || plain ? [{ binding: 1, resource: smp }] : [])] });
       const pass = enc.beginRenderPass({ colorAttachments: [{ view: t.createView({ dimension: '2d', baseArrayLayer: k, arrayLayerCount: 1, baseMipLevel: l, mipLevelCount: 1 }), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
       pass.setPipeline(pipe); pass.setBindGroup(0, bg); pass.draw(3); pass.end();
@@ -962,7 +1067,7 @@ export class Viewer {
     const u = new Float32Array(68);
     u.set(vp, 0); u.set(this.shadowVP, 16); u.set([cam[0], cam[1], cam[2], yaw], 32); u.set([s[0] / sl, s[1] / sl, s[2] / sl, L.intensity], 36);
     u.set([this.bakeMode ?? MODES.indexOf(this.mode), mat, this.tex ? 1 : 0, L.exposure], 40); u.set([off[0], off[1], off[2], kind], 44);
-    u.set([...L.sunColor, (kind === 5 && fol[0] === 5) || kind === 7 ? this.alphaBoost.needle : kind === 4 || kind === 5 || kind === 8 ? this.alphaBoost.leaf : L.fill], 48); u.set([...L.zenith, L.ambient], 52); u.set([...L.horizon, this.shadowOff ? 0 : L.shadow], 56); u.set([L.studio ? 1 : 0, fol[0], fol[1], fol[2]], 60); u.set([fade, fadeOut ? 1 : 0, 0, 0], 64);
+    u.set([...L.sunColor, kind === 5 && fol[0] === 5 ? this.alphaBoost.needleCard : kind === 7 ? this.alphaBoost.needle : kind === 4 || kind === 5 || kind === 8 ? this.alphaBoost.leaf : L.fill], 48); u.set([...L.zenith, L.ambient], 52); u.set([...L.horizon, this.shadowOff ? 0 : L.shadow], 56); u.set([L.studio ? 1 : 0, fol[0], fol[1], fol[2]], 60); u.set([fade, fadeOut ? 1 : 0, this.diag, this.cardAreaCorrection ? this.cardShadowOffset : -this.cardShadowOffset], 64);
     this.device.queue.writeBuffer(this.ubuf, slot * US, u);
   }
 
@@ -973,12 +1078,24 @@ export class Viewer {
     return { w, h, msaa: d.createTexture({ size: [w, h], format: this.format, sampleCount: 4, usage: GPUTextureUsage.RENDER_ATTACHMENT }), depth: d.createTexture({ size: [w, h], format: 'depth32float', sampleCount: 4, usage: GPUTextureUsage.RENDER_ATTACHMENT }) };
   }
 
+  /** spray cards: shadow lookup offset towards the sun, as a share of the card's width (Phase 4.3, fsFol) */
+  cardShadowOffset = 0.5;
+  /** LOD1 spray cards: projected-area coverage correction (fsFol; carried as the sign of fx.w) */
+  cardAreaCorrection = true;
+  /** benchmark: time the main pass as three passes (bark and ground, foliage, impostors and sky) */
+  splitPasses = false;
+  /** shadow-map renders so far (the regression tests check that it is redrawn only when its casters change) */
+  shadowDrawn = 0;
+  /** foliage shading diagnostics (Phase 4.3; fsFol): 0 off, 1 albedo, 2 normal, 3 side, 4 direct, 5 ambient,
+   *  6 no transmission, 7 no self-shadow, 8 alpha, 9 N·L, 10 facing, 11 mip level, 12 top mip only, 13 full linear,
+   *  14 the sun shadow on the ground alone (everything else magenta) */
+  diag = 0;
   /** impostor bake: 6 = unlit albedo, 7 = tree-local normal + occlusion (null: the display mode) */
   bakeMode: number | null = null;
   /** draw the extra passes (impostors) in bake modes too: diagnostics of their albedo and normals */
   extraInBake = false;
   /** extra passes drawn after the foliage (impostors): main pass and shadow pass */
-  extra: { main: (pass: GPURenderPassEncoder) => { calls: number; tris: number }; shadow: (pass: GPURenderPassEncoder) => void } | null = null;
+  extra: { main: (pass: GPURenderPassEncoder) => { calls: number; tris: number }; shadow: (pass: GPURenderPassEncoder) => void; count?: (pass: GPURenderPassEncoder) => void } | null = null;
   private encode(enc: GPUCommandEncoder, view: GPUTextureView, tg: Target, vp: Float32Array, cam: number[], draws: Draw[], timed: boolean): number {
     const bake = this.bakeMode !== null;
     // uniform slots: 0 global, then one per draw, then one per foliage set
@@ -991,22 +1108,27 @@ export class Viewer {
       this.writeU(next, vp, cam, KIND[set.kind], m.offset, m.mat ?? 0, [set.layer, set.grid[0], set.grid[1]], m.yaw ?? 0, m.fade ?? 1, m.fadeOut ?? false);
       fslots.push({ draw: m, set, slot: next++ });
     }
+    const tsSlot = timed && this.hasTs ? (this.qbusy[0] ? (this.qbusy[1] ? -1 : 1) : 0) : -1;
+    const tsw = (b: number) => (tsSlot >= 0 ? { querySet: this.qs!, beginningOfPassWriteIndex: b, endOfPassWriteIndex: b + 1 } : undefined);
     if (this.shadowDirty && !bake && !this.shadowOff) {
-      const p = enc.beginRenderPass({ colorAttachments: [], depthStencilAttachment: { view: this.shadowTex.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' } });
+      const p = enc.beginRenderPass({ colorAttachments: [], depthStencilAttachment: { view: this.shadowTex.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'store' }, timestampWrites: tsw(2) });
       p.setPipeline(this.shadowPipe);
       draws.forEach((m, k) => { if (m.kind === 1 || m.castShadow === false) return; p.setBindGroup(0, this.bgs[1], [(1 + k) * US]); p.setVertexBuffer(0, m.mesh.vbuf); p.setIndexBuffer(m.mesh.ibuf, 'uint32'); p.drawIndexed(m.mesh.indexCount); });
       // foliage casts alpha-tested shadows
       p.setPipeline(this.folShadow);
       for (const f of fslots) { const t = this.templates[f.set.tmpl]; p.setBindGroup(0, this.bgs[1], [f.slot * US]); p.setVertexBuffer(0, t.buf); p.setVertexBuffer(1, f.set.buf, f.set.offset); p.draw(t.count, f.set.count); }
       this.extra?.shadow(p);
-      p.end(); this.shadowDirty = false;
+      p.end(); this.shadowDirty = false; this.shadowDrawn++;
     }
-    const tsSlot = timed && this.hasTs ? (this.qbusy[0] ? (this.qbusy[1] ? -1 : 1) : 0) : -1;
-    const pass = enc.beginRenderPass({
-      colorAttachments: [{ view: tg.msaa.createView(), resolveTarget: view, loadOp: 'clear', storeOp: 'discard', clearValue: [0, 0, 0, bake ? 0 : 1] }],
-      depthStencilAttachment: { view: tg.depth.createView(), depthClearValue: 1, depthLoadOp: 'clear', depthStoreOp: 'discard' },
-      timestampWrites: tsSlot >= 0 ? { querySet: this.qs!, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 } : undefined,
+    // benchmark split (splitPasses): bark and ground, foliage, impostors and sky as three passes with their own
+    // timestamps. The attachments are stored and reloaded between them, which costs bandwidth a single pass does not
+    const split = this.splitPasses && timed && !bake;
+    const begin = (first: boolean, ts: number) => enc.beginRenderPass({
+      colorAttachments: [{ view: tg.msaa.createView(), resolveTarget: split && ts < 6 ? undefined : view, loadOp: first ? 'clear' : 'load', storeOp: split && ts < 6 ? 'store' : 'discard', clearValue: [0, 0, 0, bake ? 0 : 1] }],
+      depthStencilAttachment: { view: tg.depth.createView(), depthClearValue: 1, depthLoadOp: first ? 'clear' : 'load', depthStoreOp: split && ts < 6 ? 'store' : 'discard' },
+      timestampWrites: tsw(ts),
     });
+    let pass = begin(true, 0);
     let calls = 0, tris = 0, verts = 0;
     const wire = this.mode === 'wire';
     draws.forEach((m, k) => {
@@ -1016,15 +1138,17 @@ export class Viewer {
       else { pass.setPipeline(this.pipe); pass.setIndexBuffer(m.mesh.ibuf, 'uint32'); pass.drawIndexed(m.mesh.indexCount); }
       calls++; tris += m.mesh.triangles; verts += m.mesh.vertices;
     });
+    if (split) { pass.end(); pass = begin(false, 4); }
     if (!wire) {
       pass.setPipeline(this.folPipe);
       for (const f of fslots) { const t = this.templates[f.set.tmpl]; pass.setBindGroup(0, this.bgs[0], [f.slot * US]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, f.set.buf, f.set.offset); pass.draw(t.count, f.set.count); calls++; tris += t.tris * f.set.count; }
     }
+    if (split) { pass.end(); pass = begin(false, 6); }
     if (!wire && (!bake || this.extraInBake) && this.extra) { const e = this.extra.main(pass); calls += e.calls; tris += e.tris; }
     if (!bake) { pass.setPipeline(this.sky); pass.setBindGroup(0, this.bgs[0], [0]); pass.draw(3); calls++; }
     pass.end();
     if (timed) { this.drawCalls = calls; this.tris = tris; this.verts = verts; }
-    if (tsSlot >= 0) { enc.resolveQuerySet(this.qs!, 0, 2, this.qbuf!, 0); enc.copyBufferToBuffer(this.qbuf!, 0, this.qread[tsSlot], 0, 16); }
+    if (tsSlot >= 0) { enc.resolveQuerySet(this.qs!, 0, 8, this.qbuf!, 0); enc.copyBufferToBuffer(this.qbuf!, 0, this.qread[tsSlot], 0, 64); }
     return tsSlot;
   }
 
@@ -1078,22 +1202,39 @@ export class Viewer {
   /** Rebuild one layer's mip chain of a pair of colour textures (impostor atlases): plain averaging. */
   mipsLayer(a: GPUTexture, b: GPUTexture, layer: number, levels: number): void { this.mipsRange(a, b, layer, levels); }
   get uniformLayout(): GPUBindGroupLayout { return this.bgl; }
-  /** Benchmark: render `frames` frames of a draw list offscreen at w×h, one at a time; per frame the wall time from
-   *  submit to completion and (where the adapter has timestamp queries) the GPU time of the main pass. */
-  async benchFrames(w: number, h: number, vp: Float32Array, cam: number[], frames: number, draws: Draw[] = this.draws): Promise<{ wall: number[]; gpu: number[]; calls: number; tris: number }> {
+  /** Benchmark: render `frames` frames of a draw list offscreen at w×h, one at a time. Per frame: the CPU time to
+   *  record and submit the commands, the wall time from submit to completion and, where the adapter has timestamp
+   *  queries, the GPU time of each pass (shadow; main, or with `split` its bark-and-ground, foliage and impostor-and-sky
+   *  parts). `shadowEvery`: re-render the shadow map every frame (a moving sun) or only when its casters change.
+   *  `before(k)` runs ahead of each frame (a moving camera: LOD selection, culling); its time is reported apart. */
+  async benchFrames(w: number, h: number, vp: Float32Array | ((k: number) => { vp: Float32Array; cam: number[] }), cam: number[], frames: number, draws: Draw[] | null = null, o: { split?: boolean; shadowEvery?: boolean; before?: (k: number) => void } = {}): Promise<{ wall: number[]; cpu: number[]; pre: number[]; gpu: number[]; pass: Record<string, number[]>; calls: number; tris: number; shadowRenders: number }> {
     const d = this.device, tg = this.target(w, h, null);
     const color = d.createTexture({ size: [w, h], format: this.format, usage: GPUTextureUsage.RENDER_ATTACHMENT });
-    const one = (timed: boolean) => { const enc = d.createCommandEncoder(); const slot = this.encode(enc, color.createView(), tg, vp, cam, draws, timed); d.queue.submit([enc.finish()]); return slot; };
-    this.shadowDirty = true; one(false); await d.queue.onSubmittedWorkDone();
-    const wall: number[] = [], gpu: number[] = [];
-    for (let k = 0; k < frames; k++) {
-      // the shadow map is re-rendered every frame, as a moving sun or camera-fitted cascade would need
-      this.shadowDirty = !this.shadowOff;
-      const t0 = performance.now(); const slot = one(true); await d.queue.onSubmittedWorkDone(); wall.push(performance.now() - t0);
-      if (slot >= 0) { const b = this.qread[slot]; await b.mapAsync(GPUMapMode.READ); const a = new BigInt64Array(b.getMappedRange()); const ms = Number(a[1] - a[0]) / 1e6; b.unmap(); if (ms > 0) gpu.push(ms); }
-    }
+    const at = (k: number) => (typeof vp === 'function' ? vp(k) : { vp, cam });
+    const one = (k: number, timed: boolean) => { const c = at(k); const enc = d.createCommandEncoder(); const slot = this.encode(enc, color.createView(), tg, c.vp, c.cam, draws ?? this.draws, timed); d.queue.submit([enc.finish()]); return slot; };
+    this.shadowDirty = true; one(0, false); await d.queue.onSubmittedWorkDone();
+    const wall: number[] = [], cpu: number[] = [], pre: number[] = [], gpu: number[] = [];
+    const pass: Record<string, number[]> = { shadow: [], main: [], bark: [], foliage: [], impostorsSky: [] };
+    const keepSplit = this.splitPasses; this.splitPasses = !!o.split;
+    const s0 = this.shadowDrawn;
+    try {
+      for (let k = 0; k < frames; k++) {
+        const tp = performance.now(); o.before?.(k); pre.push(performance.now() - tp);
+        if (o.shadowEvery ?? true) this.shadowDirty = !this.shadowOff;
+        const t0 = performance.now(); const slot = one(k, true); const t1 = performance.now(); await d.queue.onSubmittedWorkDone();
+        cpu.push(t1 - t0); wall.push(performance.now() - t0);
+        if (slot >= 0) {
+          const b = this.qread[slot]; await b.mapAsync(GPUMapMode.READ); const a = new BigInt64Array(b.getMappedRange().slice(0));
+          b.unmap();
+          const ms = (i: number) => (a[i + 1] > a[i] ? Number(a[i + 1] - a[i]) / 1e6 : 0);
+          if (ms(2) > 0) pass.shadow.push(ms(2));
+          if (o.split) { pass.bark.push(ms(0)); pass.foliage.push(ms(4)); pass.impostorsSky.push(ms(6)); gpu.push(ms(0) + ms(4) + ms(6) + ms(2)); }
+          else { pass.main.push(ms(0)); gpu.push(ms(0) + ms(2)); }
+        }
+      }
+    } finally { this.splitPasses = keepSplit; }
     color.destroy(); tg.msaa.destroy(); tg.depth.destroy(); this.shadowDirty = true;
-    return { wall, gpu, calls: this.drawCalls, tris: this.tris };
+    return { wall, cpu, pre, gpu, pass, calls: this.drawCalls, tris: this.tris, shadowRenders: this.shadowDrawn - s0 };
   }
   /** Render a draw list offscreen at w×h and return a PNG blob. Does not touch the canvas. */
   async renderImage(w: number, h: number, vp: Float32Array, cam: number[], draws: Draw[] = this.draws): Promise<Blob> {
@@ -1139,7 +1280,7 @@ export class Viewer {
   /** Overdraw at w×h for a draw list: every fragment rasterized (bark) or passing the alpha test (foliage) is
    *  counted per pixel, with no depth rejection, so the figure is an upper bound on shading work that does not depend
    *  on the GPU (draw order and early depth rejection decide how much of it a real GPU actually shades). */
-  async measureOverdraw(w: number, h: number, vp: Float32Array, cam: number[], draws: Draw[] = this.draws): Promise<{ coverage: number; foliageCoverage: number; meanFoliage: number; p95Foliage: number; maxFoliage: number; meanAll: number; rasterized: number; shadedFraction: number; fragments: number }> {
+  async measureOverdraw(w: number, h: number, vp: Float32Array, cam: number[], draws: Draw[] = this.draws): Promise<{ coverage: number; foliageCoverage: number; meanFoliage: number; p95Foliage: number; maxFoliage: number; meanAll: number; rasterized: number; shadedFraction: number; fragments: number; impostorFragments: number; impostorCoverage: number }> {
     const d = this.device;
     if (!this.countPipes) {
       const m = d.createShaderModule({ code: SHADER });
@@ -1170,6 +1311,7 @@ export class Viewer {
         pass.setPipeline(this.countPipes.fol); pass.setBindGroup(0, this.bgs[0], [slot * US]); pass.setVertexBuffer(0, t.buf); pass.setVertexBuffer(1, set.buf, set.offset); pass.draw(t.count, set.count); slot++;
       }
     }
+    this.extra?.count?.(pass);
     pass.end();
     const bpr = Math.ceil(w * 8 / 256) * 256;
     const buf = d.createBuffer({ size: bpr * h, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
@@ -1178,9 +1320,10 @@ export class Viewer {
     await buf.mapAsync(GPUMapMode.READ);
     const u16 = new Uint16Array(buf.getMappedRange());
     const half = (x: number) => { const e = (x >> 10) & 31, f = x & 1023; return e === 0 ? f / 16777216 : (1 + f / 1024) * 2 ** (e - 15); };
-    let cov = 0, fcov = 0, fsum = 0, asum = 0, fmax = 0, rast = 0; const hist = new Uint32Array(512);
+    let cov = 0, fcov = 0, fsum = 0, asum = 0, fmax = 0, rast = 0, imp = 0, icov = 0; const hist = new Uint32Array(512);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const o = (y * bpr) / 2 + x * 4, r = half(u16[o]), g = half(u16[o + 1]); rast += half(u16[o + 2]);
+      const ia = half(u16[o + 3]); if (ia > 0) { imp += ia; icov++; }
       if (r + g > 0) { cov++; asum += r + g; }
       if (g > 0) { fcov++; fsum += g; fmax = Math.max(fmax, g); hist[Math.min(511, Math.round(g))]++; }
     }
@@ -1189,7 +1332,7 @@ export class Viewer {
     // rasterized: foliage fragments per foliage-covered pixel, alpha-rejected ones included; shadedFraction: the share
     // of rasterized foliage fragments that pass the alpha test (the rest is wasted card area)
     return { coverage: cov / (w * h), foliageCoverage: fcov / (w * h), meanFoliage: fcov ? fsum / fcov : 0, p95Foliage: p95, maxFoliage: fmax, meanAll: cov ? asum / cov : 0,
-      rasterized: fcov ? rast / fcov : 0, shadedFraction: rast ? fsum / rast : 0, fragments: rast };
+      rasterized: fcov ? rast / fcov : 0, shadedFraction: rast ? fsum / rast : 0, fragments: rast, impostorFragments: imp, impostorCoverage: icov / (w * h) };
   }
   /** Set to receive a PNG of the next frame presented to the canvas. */
   readback: ((b: Blob) => void) | null = null;

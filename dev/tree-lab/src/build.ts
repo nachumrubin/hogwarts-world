@@ -109,7 +109,7 @@ function crownPoi(f: Foliage, min: V3, max: V3): Poi['crown'] {
 }
 
 /** `density`: crown-density scale for the density experiments (fullness × density; 1 = the specimen as defined). */
-export function buildSpecimen(id: string, lods: number[] = [0, 1, 2], density = 1): BuiltSpecimen {
+export function buildSpecimen(id: string, lods: number[] = [0, 1, 2], density = 1, fol: Record<string, unknown> | null = null): BuiltSpecimen {
   const def = specimen(id);
   const t0 = performance.now();
   const { sk, info } = def.grow();
@@ -126,7 +126,8 @@ export function buildSpecimen(id: string, lods: number[] = [0, 1, 2], density = 
     meshes.push({ v: new Float32Array(o.v), i: new Uint32Array(o.i), tris: o.i.length / 3, verts: o.count, ms });
     meshMs.push(ms);
   }
-  const foliage = growFoliage(sk, density === 1 ? def.foliage : { ...def.foliage, fullness: (def.foliage.fullness ?? 1) * density });
+  // fol: foliage-spec overrides for experiments (Lab.setFoliageOverride; never cached)
+  const foliage = growFoliage(sk, { ...def.foliage, ...(density === 1 ? {} : { fullness: (def.foliage.fullness ?? 1) * density }), ...(fol ?? {}) });
   const diag = diagnose(sk, chains, info, growMs, meshMs);
   const min: V3 = [1e9, 1e9, 1e9], max: V3 = [-1e9, -1e9, -1e9];
   for (const n of sk.nodes) if (!n.root) for (let k = 0; k < 3; k++) { min[k] = Math.min(min[k], n.p[k] - n.r); max[k] = Math.max(max[k], n.p[k] + n.r); }

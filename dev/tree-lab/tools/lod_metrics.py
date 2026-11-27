@@ -56,7 +56,8 @@ def metrics(d):
         # perceived crown brightness: mean luma over the shared crown envelope, gaps included (what the eye integrates
         # once leaves are near or below a pixel)
         Y = np.array([0.2126, 0.7152, 0.0722]); ea, eb = (A[0][env] @ Y).mean(), (B[0][env] @ Y).mean()
-        sa, sb = st[names[0]], st[names[1]]
+        dflt = {'triangles': 0, 'instanceBytes': 0, 'overdraw': {}}
+        sa, sb = st.get(names[0], dflt), st.get(names[1], dflt)
         out[key] = {'sides': names, 'crownCoverage': [round(ca * 100, 1), round(cb * 100, 1)], 'coverageDiffPts': round((cb - ca) * 100, 2),
                     'coverageRelDiffPct': round((cb - ca) / max(ca, 1e-9) * 100, 1), 'silhouetteIoU': round(float(iou), 3),
                     'luminance': [round(float(la), 4), round(float(lb), 4)], 'luminanceDiffPct': round((lb - la) / la * 100, 1), 'deltaE': round(de, 2), 'envelopeLuminanceDiffPct': round((eb - ea) / ea * 100, 1),

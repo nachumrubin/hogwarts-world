@@ -42,7 +42,7 @@ collection keeps growing in the background, so switching between them is instant
 | `lod` | `0` · `1` · `2` |
 | `live` | `0` renders on demand only (default is continuous frames, for real FPS) |
 | `shadow` | shadow-map size, default 4096 |
-| `bench` | run the benchmark on load: `oak-b` · `pine` · `birch` · `stand12` · `stand50` · `stand200` · `suite` (every scene × both cameras); with `cam=ground\|aerial`, `res=1920x1080`, `shadow=0\|1024\|2048\|4096`, `frames=120`. The result is in `window.__benchResult` |
+| `bench` | run the benchmark on load: `oak-b` · `pine` · `birch` · `stand12` · `stand50` · `stand200` · `suite` (every scene × both cameras); with `cam=ground\|aerial`, `res=1920x1080`, `shadow=0\|1024\|2048\|4096`, `frames=120`, `chain=B\|A\|both` (three-level, four-level LOD), `motion=1` (moving camera). The result is in `window.__benchResult` |
 
 ### Controls
 
@@ -176,10 +176,16 @@ first visit to a deployed build pays the generation time.
   Pre-baked atlases (`textures/impostor.*.webp`, `tools/evidence/bake-impostors.js` + `tools/impostor_atlas.py`) load
   when their fingerprint matches the generated specimen; otherwise the lab bakes them itself.
 * **Stands:** the review stand (12 trees) and generated stands of 50 and 200 trees (Poisson-disc, mixed species).
-* **Benchmark** (Inspect panel, or `?bench=`): scene, camera (ground 1.7 m or aerial 80 m), resolution, shadow
-  map, frames; records adapter, GPU timestamps (where the browser has them), frame time median and p95, draw calls,
-  triangles, instances, resident memory and the LOD distribution, and downloads JSON. Software adapters are flagged:
-  SwiftShader timings are not GPU performance.
+* **Benchmark** (Inspect panel, or `?bench=`; Phase 4.3 extended it): scene, camera (ground 1.7 m or aerial 80 m),
+  resolution, shadow map, frames, LOD chain (three-level default, four-level, or both for comparison) and camera
+  motion (static, or moving along its path with LOD selection, hysteresis and cross-fades every frame and the shadow
+  map redrawn only when its casters change). Records, as median / p95 / p99: CPU frame time (command recording and
+  submission; LOD selection and culling when moving), wall time per frame, and GPU pass times from timestamp queries
+  (shadow pass, main pass, and in a second run the main pass split into bark-and-ground, foliage and
+  impostors-and-sky passes); also draw calls, triangles, foliage and impostor pixel workloads (fragments rasterized,
+  counted without depth rejection), allocated GPU memory, shadow-map redraws and trees per LOD at the start and end.
+  JSON download. Software adapters are flagged: SwiftShader timings are not GPU performance. See "Hardware benchmark
+  procedure" in `review/CHANGES-phase-4.3.md`.
 
 ## LOD consistency (Phase 4.2)
 

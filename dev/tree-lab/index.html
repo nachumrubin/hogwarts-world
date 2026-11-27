@@ -65,10 +65,12 @@
       <div class="row"><label for="bCam">Camera</label><select id="bCam"><option value="ground">Ground level (1.7 m)</option><option value="aerial">Aerial (broom flight, 80 m)</option></select></div>
       <div class="row"><label for="bRes">Resolution</label><select id="bRes"><option value="1280x720">1280 × 720</option><option value="1920x1080" selected>1920 × 1080</option><option value="2560x1440">2560 × 1440</option><option value="3840x2160">3840 × 2160</option></select></div>
       <div class="row"><label for="bShadow">Shadow map</label><select id="bShadow"><option value="0">off</option><option value="1024">1024²</option><option value="2048" selected>2048²</option><option value="4096">4096²</option></select></div>
+      <div class="row"><label for="bChain">LOD chain</label><select id="bChain"><option value="B" selected>Three-level (default)</option><option value="A">Four-level (clump cards)</option><option value="both">Both, for comparison</option></select></div>
+      <div class="row"><label for="bMotion">Camera</label><select id="bMotion"><option value="0">Static</option><option value="1">Moving (LOD transitions)</option></select></div>
       <div class="row"><label for="bFrames">Frames</label><select id="bFrames"><option>30</option><option selected>120</option><option>300</option></select></div>
       <button id="benchBtn" class="wide accent">Run benchmark · export JSON</button>
       <button id="stand200Btn" class="wide">Explore the 200-tree stand (projected-size LOD, impostors)</button>
-      <p class="note" id="benchNote">Offscreen frames, one at a time; GPU timestamps where the browser exposes them. Results download as JSON. URL: ?bench=stand200&amp;cam=aerial&amp;res=1920x1080&amp;shadow=2048&amp;frames=120 runs on load.</p>
+      <p class="note" id="benchNote">Offscreen frames, one at a time: CPU, wall and per-pass GPU times (timestamps where the browser exposes them) as median, p95 and p99; draw calls, triangles, foliage and impostor pixels, memory, trees per LOD. Results download as JSON. URL: ?bench=stand200&amp;cam=aerial&amp;res=1920x1080&amp;shadow=2048&amp;frames=120&amp;chain=both&amp;motion=1 runs on load.</p>
     </section>
     <section class="capture"><h2>Evidence capture</h2>
       <button id="sheetBtn" class="wide">Structural sheet · this specimen</button>

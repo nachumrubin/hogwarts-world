@@ -1,6 +1,7 @@
 // LOD consistency check: for each specimen and each LOD boundary, both sides rendered at the boundary's projected size
 // with the same camera, lit and as silhouettes (tools/lod_metrics.py measures coverage, overlap, luminance, colour).
-// window.__args: { ids, scale (screen = 900 × scale), boundaries }
+// window.__args: { ids, scale (screen = 900 × scale), boundaries, angles ([tag, elevation rad]), azs (azimuths, rad;
+// names carry the azimuth unless it is the protocol's 0.6), light, noShadow }
 const lab = window.__lab, out = {}, a = window.__args || {};
 const ids = a.ids || ['oak-a', 'oak-b', 'oak-c', 'pine', 'birch'];
 const S = Math.round(900 * (a.scale || 1));
@@ -19,20 +20,23 @@ for (const id of ids) {
   const k = S / (2 * Math.tan((45 * Math.PI) / 360));
   for (const [sw, lo, hi] of bounds) {
     const px = P[sw] * S / 900, dist = (Ht / px) * k;
-    for (const [tag, el] of (a.angles || [['eye', 0.12]])) {
-      const o = { target: t, az: 0.6, el, dist };
-      lab.scene.eye = [t[0] + Math.sin(0.6) * Math.cos(el) * dist, t[1] + Math.sin(el) * dist, t[2] + Math.cos(0.6) * Math.cos(el) * dist];
+    for (const az of (a.azs || [0.6])) for (const [tag0, el] of (a.angles || [['eye', 0.12]])) {
+      const tag = az === 0.6 ? tag0 : `${tag0}@${az.toFixed(1)}`;
+      const o = { target: t, az, el, dist };
+      lab.scene.eye = [t[0] + Math.sin(az) * Math.cos(el) * dist, t[1] + Math.sin(el) * dist, t[2] + Math.cos(az) * Math.cos(el) * dist];
       for (const l of [lo, hi]) {
         force(l);
         const name = `${id}-b${sw}-${tag}-${l === 3 ? 'imp' : 'lod' + l}`;
         let od = {};
-        out[`lod/${name}.png`] = await window.__b64(await lab.shoot('three', 'lit', { width: S, height: S, light: LT, orbit: o, overdraw: (r) => { od = r; } }));
-        out[`lod/${name}-sil.png`] = await window.__b64(await lab.shoot('three', 'silhouette', { width: S, height: S, orbit: o }));
+        const shot = await window.__b64(await lab.shoot('three', 'lit', { width: S, height: S, light: LT, orbit: o, overdraw: (r) => { od = r; } }));
+        window.__emit(`lod/${name}.png`, shot);
+        window.__emit(`lod/${name}-sil.png`, await window.__b64(await lab.shoot('three', 'silhouette', { width: S, height: S, orbit: o })));
         lab.scene.apply(0);
         const dr = lab.viewer.draws.filter((d) => d.kind === 0);
         stats[name] = { id, boundary: sw, side: l, px: P[sw], foliageInstances: dr.reduce((x, d) => x + (d.foliage?.instances ?? 0), 0) + lab.impostors.count,
           triangles: dr.reduce((x, d) => x + d.mesh.triangles + (d.foliage?.triangles ?? 0), 0) + 2 * lab.impostors.count,
           instanceBytes: dr.reduce((x, d) => x + (d.foliage?.bytes ?? 0), 0) + 32 * lab.impostors.count, overdraw: od };
+        window.__emit('lod/lod-stats.json', stats);
       }
     }
   }

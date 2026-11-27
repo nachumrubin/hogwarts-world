@@ -5,10 +5,16 @@
 // view ray meets that frame's own projection plane, so the image changes with direction as the tree would and never
 // visibly turns with the camera. Lit at run time (sun, sky, translucency), casts shadows (frames towards the sun).
 import { SHADER, type Viewer, type Draw } from './viewer.ts';
+import { impostorCasts } from '../lab/lodstate.ts';
 
 export const IMP_N = 9, IMP_FRAME = 112, IMP_SIZE = IMP_N * IMP_FRAME;
 /** self-shadowing exponent (see fsImp) */
-export const IMP_SELF = 0.6;
+const Q = typeof location !== 'undefined' ? new URLSearchParams(location.search) : null;
+export const IMP_SELF = +(Q?.get('impSelf') ?? 1.0);
+/** impostor alpha: share of the sharpened (0.5-threshold) alpha mixed into the unsharpened coverage (see impAlpha) */
+export const IMP_SHARP = +(Q?.get('impSharp') ?? 0.0);
+/** atlas encoding version (part of the pre-baked atlas fingerprint): 2 = occlusion alone in the normal's b channel */
+export const IMP_ENC = 2;
 type V3 = [number, number, number];
 export interface ImpostorSpec { id: string; layer: number; center: V3; radius: number; ms: number; loaded?: boolean }
 
@@ -42,7 +48,7 @@ function ortho(c: V3, R: number, d: V3): Float32Array {
 }
 
 const WGSL = /* wgsl */ `
-const IMP_SELF = ${IMP_SELF};
+const IMP_SELF = ${IMP_SELF.toFixed(3)};
 const IN = ${IMP_N}.0;
 const IPAD = ${PAD};
 @group(1) @binding(0) var impAlb: texture_2d_array<f32>;
@@ -106,16 +112,29 @@ fn impSample(i: IOut) -> array<vec4f, 2> {
   return array<vec4f, 2>(a, n);
 }
 fn impAlpha(a: f32, uv: vec2f) -> f32 {
-  // the same mip-aware alpha as the leaves (render/viewer.ts folAlpha, leaf boost): far impostors keep their coverage
+  // coverage straight to alpha-to-coverage: the frames are coverage-weighted (resolved MSAA, box-filtered mips) and
+  // blended by weight, so their alpha is the mean coverage, and passing it on unchanged keeps that mean at every
+  // distance. Sharpening it to a hard 0.5 threshold (as the leaves do) rounded every half-covered texel up and every
+  // frame-blend mismatch to the union: the oak impostors gained 7–12 points of coverage. Only when the atlas is
+  // magnified past 2× (closer than the impostor range) is the edge sharpened, so that it does not look blurred.
   let d = max(length(dpdx(uv)), length(dpdy(uv))) * ${IMP_SIZE}.0;
-  let aa = a * (1.0 + 0.15 * max(log2(max(d, 1e-4)), 0.0));
-  return clamp((aa - 0.5) / max(fwidth(aa), 1e-4) + 0.5, 0.0, 1.0);
+  let lvl = log2(max(d, 1e-4));
+  let sharp = clamp((a - 0.5) / max(fwidth(a), 1e-4) + 0.5, 0.0, 1.0);
+  return mix(a, sharp, max(${IMP_SHARP.toFixed(3)}, clamp(-lvl - 1.0, 0.0, 1.0)));
 }
-@fragment fn fsImpShadow(i: IOut) { let s = impSample(i); if (s[0].a < 0.5) { discard; } }
+// pixel workload (render/viewer.ts measureOverdraw): every rasterized impostor fragment, counted in alpha
+@fragment fn fsImpCount(i: IOut) -> @location(0) vec4f { return vec4f(0.0, 0.0, 0.0, 1.0); }
+@fragment fn fsImpShadow(i: IOut) {
+  // during a cross-fade only the side with more weight casts (render/viewer.ts draws: castShadow), so the shadow is
+  // never the union of both representations: outgoing until halfway, incoming from halfway
+  if (select((i.fade.x < 0.5), (i.fade.x >= 0.5), i.fade.y > 0.5)) { discard; }
+  let s = impSample(i); if (s[0].a < 0.5) { discard; }
+}
 @fragment fn fsImp(i: IOut) -> @location(0) vec4f {
   let s = impSample(i); let A = s[0]; let Nn = s[1];
   let alpha = impAlpha(A.a, i.uv0);
   if (u32(u.mode.x + 0.5) == 2u) { return vec4f(0.0, 0.0, 0.0, alpha); }   // silhouette mode
+  if (u.fx.z > 13.5) { return vec4f(1.0, 0.0, 1.0, 1.0); }                   // diagnostic 14: ground shadow only
   // the atlas holds coverage-weighted (resolved MSAA) values: divide by coverage
   let cov = max(A.a, 1e-3); let ncov = max(Nn.a, 1e-3);
   let ab = A.rgb / cov;
@@ -125,16 +144,17 @@ fn impAlpha(a: f32, uv: vec2f) -> f32 {
   let N = rotY(octDec(Nn.xy / ncov * 2.0 - 1.0), i.yaw);   // the visible face's normal
   if (u32(u.mode.x + 0.5) == 6u) { return vec4f(srgb(alb), alpha); }   // albedo view (the bake modes' counterpart)
   if (u32(u.mode.x + 0.5) == 7u) { return vec4f(octEnc(rotY(N, -i.yaw)) * 0.5 + 0.5, Nn.z / ncov, alpha); }
-  // b: bark and twigs 0…0.5 (occlusion × 0.5), leaves 0.5…1 (0.5 + crown occlusion × 0.5, occlusion = mix(0.3, 1, exposure))
-  let bz = clamp(Nn.z / ncov, 0.0, 1.0); let leaf = smoothstep(0.42, 0.58, bz);
-  let occ = select(bz * 2.0, bz * 2.0 - 1.0, bz > 0.5);
-  let expo = mix(clamp(occ, 0.0, 1.0), clamp((occ - 0.3) / 0.7, 0.0, 1.0), leaf);
+  // b: occlusion (wood: bark occlusion; leaves: mix(0.3, 1, crown exposure)); leaf or wood by colour: leaves and
+  // needles are green (g > r), bark and twigs brown or white (g ≤ r). Filtering blends the two smoothly
+  let occ = clamp(Nn.z / ncov, 0.0, 1.0);
+  let leaf = smoothstep(0.0, 0.05, (alb.g - alb.r) / max(alb.g + alb.r, 1e-4));
+  let expo = mix(occ, clamp((occ - 0.3) / 0.7, 0.0, 1.0), leaf);
   let L = normalize(u.sun.xyz); let V = normalize(u.cam.xyz - i.wp);
   let sunC = u.sunc.xyz * u.sun.w;
   // shadows from other trees: tested a crown radius towards the sun (the quad is not the crown's surface)
   let shO = mix(1.0, shadow(i.wp + L * i.rad, L), u.hor.w);
   // the crown's shadow on itself (the geometry gets it from the shadow map): a leaf's chance of direct sun follows
-  // its sky exposure; IMP_SELF is that exponent, measured against LOD2 (tools/lod_metrics.py)
+  // its sky exposure; IMP_SELF is that exponent, measured against LOD1 (Phase 4.3: 1.0, tools/evidence/lodcheck.js variants)
   let sh = shO * mix(1.0, pow(expo, IMP_SELF), leaf * u.hor.w);
   // from here on the leaf shading of render/viewer.ts fsFol, term for term
   let ndl = max(dot(N, L), 0.0); let back = max(-dot(N, L), 0.0);
@@ -160,7 +180,7 @@ fn impAlpha(a: f32, uv: vec2f) -> f32 {
 export class Impostors {
   specs = new Map<string, ImpostorSpec>();
   private alb: GPUTexture; private nrm: GPUTexture; private spec: GPUBuffer; private quad: GPUBuffer;
-  private pipe: GPURenderPipeline; private shadowPipe: GPURenderPipeline;
+  private pipe: GPURenderPipeline; private shadowPipe: GPURenderPipeline; private countPipe: GPURenderPipeline;
   private bg!: GPUBindGroup; private bg0: GPUBindGroup[] = [];
   private viewer: Viewer; private levels: number;
   /** current instances: x, y, z, yaw, layer, scale, 0, 0 per tree */
@@ -188,11 +208,14 @@ export class Impostors {
       primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'less' }, multisample: { count: 4, alphaToCoverageEnabled: true } });
     this.shadowPipe = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsImpShadow', buffers: vb }, fragment: { module: m, entryPoint: 'fsImpShadow', targets: [] },
       primitive: { topology: 'triangle-list', cullMode: 'none' }, depthStencil: { format: 'depth32float', depthWriteEnabled: true, depthCompare: 'less', depthBias: 2, depthBiasSlopeScale: 2 } });
+    const add: GPUBlendState = { color: { operation: 'add', srcFactor: 'one', dstFactor: 'one' }, alpha: { operation: 'add', srcFactor: 'one', dstFactor: 'one' } };
+    this.countPipe = d.createRenderPipeline({ layout, vertex: { module: m, entryPoint: 'vsImp', buffers: vb }, fragment: { module: m, entryPoint: 'fsImpCount', targets: [{ format: 'rgba16float', blend: add }] }, primitive: { topology: 'triangle-list', cullMode: 'none' } });
     const smp = d.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
     this.bg = d.createBindGroup({ layout: bgl1, entries: [{ binding: 0, resource: this.alb.createView({ dimension: '2d-array' }) }, { binding: 1, resource: this.nrm.createView({ dimension: '2d-array' }) }, { binding: 2, resource: smp }, { binding: 3, resource: { buffer: this.spec } }] });
     viewer.extra = {
       main: (pass) => this.draw(pass, false),
       shadow: (pass) => { this.draw(pass, true); },
+      count: (pass) => { if (!this.count || !this.inst) return; pass.setPipeline(this.countPipe); pass.setBindGroup(0, this.viewer.globalBindGroup(false), [0]); pass.setBindGroup(1, this.bg); pass.setVertexBuffer(0, this.quad); pass.setVertexBuffer(1, this.inst); pass.draw(6, this.count); },
     };
   }
   has(id: string): boolean { return this.specs.has(id); }
@@ -254,7 +277,8 @@ export class Impostors {
     if (!this.inst || this.inst.size < a.byteLength) { this.inst?.destroy(); this.inst = d.createBuffer({ size: Math.max(256, a.byteLength * 2), usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST }); }
     d.queue.writeBuffer(this.inst, 0, a);
     // shadows change with the trees, not with a cross-fade's dither amounts
-    const key = list.map((t) => t.slice(0, 6).join(',') + (t[7] && (t[6] ?? 1) >= 0.5 ? 'x' : '')).join('|');
+    // (the casting side: an outgoing impostor casts until halfway through its fade, an incoming one from halfway)
+    const key = list.map((t) => t.slice(0, 6).join(',') + (impostorCasts(t) ? '' : 'x')).join('|');
     if (key !== this.key) { this.key = key; this.viewer.shadowDirty = true; }
   }
   private draw(pass: GPURenderPassEncoder, shadow: boolean): { calls: number; tris: number } {

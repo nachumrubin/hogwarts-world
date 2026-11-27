@@ -5768,8 +5768,8 @@
      5.3495
     ]
    ],
-   "albedo": "foliage.card-oak.albedo.webp?69814e2b77",
-   "normal": "foliage.card-oak.normal.webp?1021645018"
+   "albedo": "foliage.card-oak.albedo.webp?2d9f445f28",
+   "normal": "foliage.card-oak.normal.webp?f04e579898"
   },
   {
    "id": "card-birch",
@@ -5918,8 +5918,8 @@
      8.3617
     ]
    ],
-   "albedo": "foliage.card-birch.albedo.webp?2e10c61981",
-   "normal": "foliage.card-birch.normal.webp?a11279120d"
+   "albedo": "foliage.card-birch.albedo.webp?b1d088340a",
+   "normal": "foliage.card-birch.normal.webp?5f49a3772f"
   },
   {
    "id": "card-pine",
@@ -6080,8 +6080,8 @@
      18.2304
     ]
    ],
-   "albedo": "foliage.card-pine.albedo.webp?5875fd7a9b",
-   "normal": "foliage.card-pine.normal.webp?10321f86a3"
+   "albedo": "foliage.card-pine.albedo.webp?36c183fda7",
+   "normal": "foliage.card-pine.normal.webp?5e43767701"
   }
  ]
 }

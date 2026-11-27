@@ -79,12 +79,15 @@ export function bindUI(lab: Lab): void {
     const [w, hh] = ($('bRes') as HTMLSelectElement).value.split('x').map(Number);
     const o = { width: w, height: hh, shadow: +($('bShadow') as HTMLSelectElement).value, frames: +($('bFrames') as HTMLSelectElement).value };
     const scene = ($('bScene') as HTMLSelectElement).value, camera = ($('bCam') as HTMLSelectElement).value as 'ground' | 'aerial';
+    const ch = ($('bChain') as HTMLSelectElement).value, chains = (ch === 'both' ? ['B', 'A'] : [ch]) as ('A' | 'B')[], motion = ($('bMotion') as HTMLSelectElement).value === '1';
     ($('benchBtn') as HTMLButtonElement).disabled = true;
     try {
       busy(true, 'Benchmark running…');
-      const res = scene === 'suite' ? await lab.benchSuite(o, (r) => busy(true, `Benchmark: ${(r.settings as { scene: string }).scene} ${(r.settings as { camera: string }).camera} done`)) : [await lab.bench({ scene, camera, ...o })];
-      const first = res[0] as { adapter: { name: string; software: boolean }; frameMs: { median: number }; gpuMs: { median: number } | null };
-      $('benchNote').textContent = `${first.adapter.name}${first.adapter.software ? ' (software — not GPU performance)' : ''}: median ${first.frameMs.median?.toFixed(2)} ms${first.gpuMs ? `, GPU ${first.gpuMs.median?.toFixed(2)} ms` : ''}${res.length > 1 ? ` (first of ${res.length})` : ''}`;
+      const res: Record<string, unknown>[] = [];
+      if (scene === 'suite') res.push(...await lab.benchSuite({ ...o, chains, motion }, (r) => busy(true, `Benchmark: ${(r.settings as { scene: string }).scene} ${(r.settings as { camera: string }).camera} ${(r.settings as { chain: string }).chain} done`)));
+      else for (const chain of chains) res.push(await lab.bench({ scene, camera, chain, motion, ...o }));
+      const first = res[0] as { adapter: { name: string; software: boolean }; frameMs: { median: number; p99: number }; gpuMs: { frame: { median: number } } | null };
+      $('benchNote').textContent = `${first.adapter.name}${first.adapter.software ? ' (software — not GPU performance)' : ''}: median ${first.frameMs.median?.toFixed(2)} ms, p99 ${first.frameMs.p99?.toFixed(2)} ms${first.gpuMs ? `, GPU ${first.gpuMs.frame?.median?.toFixed(2)} ms` : ''}${res.length > 1 ? ` (first of ${res.length})` : ''}`;
       download(new Blob([JSON.stringify(res, null, 1)], { type: 'application/json' }), `treelab-bench-${scene}-${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.json`);
     } finally { busy(false); ($('benchBtn') as HTMLButtonElement).disabled = false; }
   });

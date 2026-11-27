@@ -1,6 +1,7 @@
 // Lab scene: specimen store (generation in a worker, GPU upload per LOD on demand), layouts (one specimen or a
 // comparison line-up at true scale on a common ground level), ground with a 5 m grid, 1.8 m figure and 10 m ranging
 // pole as scale references.
+import { stepLod, type LodState } from './lodstate.ts';
 import { MeshOut } from '../framework/mesher.ts';
 import { groundAt } from '../framework/math.ts';
 import { SPECIES, type SpeciesDef } from '../species/index.ts';
@@ -31,6 +32,8 @@ export class SpecimenStore {
   private commit: string;
   /** crown-density scale (density experiments): ≠ 1 rebuilds specimens with that fullness scale, uncached */
   density = 1;
+  /** foliage-spec overrides (experiments, e.g. { cardV: 0.45 }): rebuilds uncached */
+  folOverride: Record<string, unknown> | null = null;
   /** bumped by reset(): a build started before it is discarded when it arrives */
   private generation = 0;
   constructor(workerUrl: string | URL, parallel = 2, commit = 'dev') {
@@ -45,7 +48,7 @@ export class SpecimenStore {
       const run = () => {
         this.running++; const gen0 = this.generation;
         // a specimen built earlier by this same build (commit) comes from the persistent cache
-        cacheGet(this.density === 1 ? this.commit : 'dev', id).then((hit) => {
+        cacheGet(this.density === 1 && !this.folOverride ? this.commit : 'dev', id).then((hit) => {
           if (hit && gen0 === this.generation) { this.running--; this.next(); e.built = hit; e.fromCache = true; resolve(hit); this.onBuilt(id); return; }
           this.running--; spawn();
         });
@@ -57,10 +60,10 @@ export class SpecimenStore {
         w.onmessage = (m) => {
           w.terminate(); this.running--; this.next();
           if (m.data.job !== job || gen !== this.generation) return;
-          if (m.data.ok) { e.built = m.data.built; resolve(e.built!); this.onBuilt(id); if (this.density === 1) cachePut(this.commit, id, m.data.built).catch(() => {}); } else { e.error = m.data.error; reject(new Error(m.data.error)); }
+          if (m.data.ok) { e.built = m.data.built; resolve(e.built!); this.onBuilt(id); if (this.density === 1 && !this.folOverride) cachePut(this.commit, id, m.data.built).catch(() => {}); } else { e.error = m.data.error; reject(new Error(m.data.error)); }
         };
         w.onerror = (err) => { w.terminate(); this.running--; this.next(); e.error = err.message; reject(new Error(err.message || 'worker failed')); };
-        w.postMessage({ id, job, density: this.density });
+        w.postMessage({ id, job, density: this.density, fol: this.folOverride });
       };
       if (this.running < this.parallel) run(); else this.queue.push(run);
     });
@@ -266,7 +269,7 @@ export class LabScene {
   /** LOD transitions in stand mode: hysteresis band (± share of each threshold) and cross-fade duration (s) */
   transition = { hysteresis: 0.12, fade: 0.6 };
   /** per placed tree: current LOD, the LOD fading out, fade progress 0…1 */
-  private lodState = new Map<number, { lod: number; prev: number; t: number }>();
+  private lodState = new Map<number, LodState>();
   /** true while any tree is cross-fading (the live view then re-applies every frame) */
   fading = false;
   resetTransitions(): void { this.lodState.clear(); this.fading = false; }
@@ -293,18 +296,9 @@ export class LabScene {
         if (planes && planes.some((q) => q[0] * c[0] + q[1] * c[1] + q[2] * c[2] + q[3] < -r)) { this.lodCounts[4]++; return; }
         const px = (H / Math.max(Math.hypot(this.eye[0] - c[0], this.eye[1] - c[1], this.eye[2] - c[2]), 1)) * k;
         const hasImp = this.impostors?.has(p.id) ?? false;
-        const base = (x: number) => (x >= P[0] ? 0 : x >= P[1] ? 1 : x >= P[2] ? 2 : hasImp ? 3 : 2);
-        const st = this.lodState.get(idx);
-        l = base(px);
-        if (st && l !== st.lod) {
-          // hysteresis: move to finer detail only once past the threshold by h, to coarser only once below it by h
-          const t2 = l < st.lod ? base(px / (1 + h)) : base(px / (1 - h));
-          l = l < st.lod ? Math.min(st.lod, t2) : Math.max(st.lod, t2);
-        }
-        if (!st) this.lodState.set(idx, { lod: l, prev: -1, t: 1 });
-        else if (l !== st.lod) { st.prev = st.lod; st.lod = l; st.t = dt === undefined ? 1 : 0; }
-        else if (st.t < 1) st.t = dt === undefined ? 1 : Math.min(1, st.t + dt / this.transition.fade);
-        const s2 = this.lodState.get(idx)!;
+        // hysteresis and cross-fades: lab/lodstate.ts (unit-tested)
+        const s2 = stepLod(px, P, h, hasImp, this.lodState.get(idx), dt, this.transition.fade);
+        this.lodState.set(idx, s2); l = s2.lod;
         this.lodCounts[l]++;
         if (s2.t < 1 && s2.prev >= 0) {
           fading = true;

@@ -1,0 +1,722 @@
+{
+ "birch-b0-eye": {
+  "sides": [
+   "birch-b0-eye-lod0",
+   "birch-b0-eye-lod1"
+  ],
+  "crownCoverage": [
+   57.8,
+   58.9
+  ],
+  "coverageDiffPts": 1.08,
+  "coverageRelDiffPct": 1.9,
+  "silhouetteIoU": 0.717,
+  "luminance": [
+   0.134,
+   0.1315
+  ],
+  "luminanceDiffPct": -1.9,
+  "deltaE": 1.12,
+  "envelopeLuminanceDiffPct": 2.8,
+  "triangles": [
+   1736574,
+   240482
+  ],
+  "instanceBytes": [
+   3922160,
+   861320
+  ],
+  "overdraw": [
+   1.83,
+   1.8
+  ],
+  "rasterized": [
+   6.86,
+   19.58
+  ]
+ },
+ "birch-b0-over": {
+  "sides": [
+   "birch-b0-over-lod0",
+   "birch-b0-over-lod1"
+  ],
+  "crownCoverage": [
+   68.4,
+   66.6
+  ],
+  "coverageDiffPts": -1.75,
+  "coverageRelDiffPct": -2.6,
+  "silhouetteIoU": 0.789,
+  "luminance": [
+   0.1028,
+   0.1039
+  ],
+  "luminanceDiffPct": 1.0,
+  "deltaE": 0.44,
+  "envelopeLuminanceDiffPct": 0.8,
+  "triangles": [
+   1736574,
+   240482
+  ],
+  "instanceBytes": [
+   3922160,
+   861320
+  ],
+  "overdraw": [
+   2.54,
+   2.63
+  ],
+  "rasterized": [
+   8.54,
+   27.71
+  ]
+ },
+ "birch-b1-eye": {
+  "sides": [
+   "birch-b1-eye-lod1",
+   "birch-b1-eye-imp"
+  ],
+  "crownCoverage": [
+   69.1,
+   74.0
+  ],
+  "coverageDiffPts": 4.89,
+  "coverageRelDiffPct": 7.1,
+  "silhouetteIoU": 0.777,
+  "luminance": [
+   0.2304,
+   0.2282
+  ],
+  "luminanceDiffPct": -0.9,
+  "deltaE": 1.46,
+  "envelopeLuminanceDiffPct": -3.7,
+  "triangles": [
+   240482,
+   2
+  ],
+  "instanceBytes": [
+   861320,
+   32
+  ],
+  "overdraw": [
+   1.8,
+   0
+  ],
+  "rasterized": [
+   20.01,
+   0
+  ]
+ },
+ "birch-b1-over": {
+  "sides": [
+   "birch-b1-over-lod1",
+   "birch-b1-over-imp"
+  ],
+  "crownCoverage": [
+   73.7,
+   81.9
+  ],
+  "coverageDiffPts": 8.21,
+  "coverageRelDiffPct": 11.1,
+  "silhouetteIoU": 0.82,
+  "luminance": [
+   0.1989,
+   0.2082
+  ],
+  "luminanceDiffPct": 4.7,
+  "deltaE": 2.57,
+  "envelopeLuminanceDiffPct": 3.1,
+  "triangles": [
+   240482,
+   2
+  ],
+  "instanceBytes": [
+   861320,
+   32
+  ],
+  "overdraw": [
+   2.57,
+   0
+  ],
+  "rasterized": [
+   27.94,
+   0
+  ]
+ },
+ "oak-a-b0-eye": {
+  "sides": [
+   "oak-a-b0-eye-lod0",
+   "oak-a-b0-eye-lod1"
+  ],
+  "crownCoverage": [
+   59.4,
+   57.0
+  ],
+  "coverageDiffPts": -2.4,
+  "coverageRelDiffPct": -4.0,
+  "silhouetteIoU": 0.698,
+  "luminance": [
+   0.0911,
+   0.0922
+  ],
+  "luminanceDiffPct": 1.1,
+  "deltaE": 0.35,
+  "envelopeLuminanceDiffPct": 8.5,
+  "triangles": [
+   2123801,
+   230630
+  ],
+  "instanceBytes": [
+   4408360,
+   558640
+  ],
+  "overdraw": [
+   1.83,
+   1.51
+  ],
+  "rasterized": [
+   4.73,
+   10.83
+  ]
+ },
+ "oak-a-b0-over": {
+  "sides": [
+   "oak-a-b0-over-lod0",
+   "oak-a-b0-over-lod1"
+  ],
+  "crownCoverage": [
+   69.5,
+   59.2
+  ],
+  "coverageDiffPts": -10.23,
+  "coverageRelDiffPct": -14.7,
+  "silhouetteIoU": 0.642,
+  "luminance": [
+   0.0919,
+   0.084
+  ],
+  "luminanceDiffPct": -8.5,
+  "deltaE": 4.59,
+  "envelopeLuminanceDiffPct": -2.3,
+  "triangles": [
+   2123801,
+   230630
+  ],
+  "instanceBytes": [
+   4408360,
+   558640
+  ],
+  "overdraw": [
+   1.85,
+   1.5
+  ],
+  "rasterized": [
+   4.83,
+   10.9
+  ]
+ },
+ "oak-a-b1-eye": {
+  "sides": [
+   "oak-a-b1-eye-lod1",
+   "oak-a-b1-eye-imp"
+  ],
+  "crownCoverage": [
+   56.8,
+   67.7
+  ],
+  "coverageDiffPts": 10.93,
+  "coverageRelDiffPct": 19.2,
+  "silhouetteIoU": 0.579,
+  "luminance": [
+   0.2049,
+   0.1942
+  ],
+  "luminanceDiffPct": -5.2,
+  "deltaE": 2.51,
+  "envelopeLuminanceDiffPct": -11.8,
+  "triangles": [
+   230630,
+   2
+  ],
+  "instanceBytes": [
+   558640,
+   32
+  ],
+  "overdraw": [
+   1.52,
+   0
+  ],
+  "rasterized": [
+   10.95,
+   0
+  ]
+ },
+ "oak-a-b1-over": {
+  "sides": [
+   "oak-a-b1-over-lod1",
+   "oak-a-b1-over-imp"
+  ],
+  "crownCoverage": [
+   51.6,
+   63.6
+  ],
+  "coverageDiffPts": 11.95,
+  "coverageRelDiffPct": 23.1,
+  "silhouetteIoU": 0.613,
+  "luminance": [
+   0.1845,
+   0.1766
+  ],
+  "luminanceDiffPct": -4.3,
+  "deltaE": 1.96,
+  "envelopeLuminanceDiffPct": -3.7,
+  "triangles": [
+   230630,
+   2
+  ],
+  "instanceBytes": [
+   558640,
+   32
+  ],
+  "overdraw": [
+   1.5,
+   0
+  ],
+  "rasterized": [
+   10.91,
+   0
+  ]
+ },
+ "oak-b-b0-eye": {
+  "sides": [
+   "oak-b-b0-eye-lod0",
+   "oak-b-b0-eye-lod1"
+  ],
+  "crownCoverage": [
+   68.5,
+   67.7
+  ],
+  "coverageDiffPts": -0.84,
+  "coverageRelDiffPct": -1.2,
+  "silhouetteIoU": 0.749,
+  "luminance": [
+   0.0777,
+   0.0843
+  ],
+  "luminanceDiffPct": 8.5,
+  "deltaE": 1.58,
+  "envelopeLuminanceDiffPct": 8.6,
+  "triangles": [
+   2315340,
+   291734
+  ],
+  "instanceBytes": [
+   4795300,
+   754960
+  ],
+  "overdraw": [
+   2.06,
+   1.73
+  ],
+  "rasterized": [
+   6.28,
+   12.43
+  ]
+ },
+ "oak-b-b0-over": {
+  "sides": [
+   "oak-b-b0-over-lod0",
+   "oak-b-b0-over-lod1"
+  ],
+  "crownCoverage": [
+   71.9,
+   63.2
+  ],
+  "coverageDiffPts": -8.7,
+  "coverageRelDiffPct": -12.1,
+  "silhouetteIoU": 0.69,
+  "luminance": [
+   0.085,
+   0.0794
+  ],
+  "luminanceDiffPct": -6.6,
+  "deltaE": 3.68,
+  "envelopeLuminanceDiffPct": -1.5,
+  "triangles": [
+   2315340,
+   291734
+  ],
+  "instanceBytes": [
+   4795300,
+   754960
+  ],
+  "overdraw": [
+   1.98,
+   1.63
+  ],
+  "rasterized": [
+   5.93,
+   11.8
+  ]
+ },
+ "oak-b-b1-eye": {
+  "sides": [
+   "oak-b-b1-eye-lod1",
+   "oak-b-b1-eye-imp"
+  ],
+  "crownCoverage": [
+   63.3,
+   73.1
+  ],
+  "coverageDiffPts": 9.76,
+  "coverageRelDiffPct": 15.4,
+  "silhouetteIoU": 0.674,
+  "luminance": [
+   0.1993,
+   0.1937
+  ],
+  "luminanceDiffPct": -2.8,
+  "deltaE": 1.64,
+  "envelopeLuminanceDiffPct": -9.0,
+  "triangles": [
+   291734,
+   2
+  ],
+  "instanceBytes": [
+   754960,
+   32
+  ],
+  "overdraw": [
+   1.7,
+   0
+  ],
+  "rasterized": [
+   12.36,
+   0
+  ]
+ },
+ "oak-b-b1-over": {
+  "sides": [
+   "oak-b-b1-over-lod1",
+   "oak-b-b1-over-imp"
+  ],
+  "crownCoverage": [
+   58.9,
+   66.3
+  ],
+  "coverageDiffPts": 7.39,
+  "coverageRelDiffPct": 12.6,
+  "silhouetteIoU": 0.671,
+  "luminance": [
+   0.1821,
+   0.178
+  ],
+  "luminanceDiffPct": -2.2,
+  "deltaE": 1.69,
+  "envelopeLuminanceDiffPct": -1.7,
+  "triangles": [
+   291734,
+   2
+  ],
+  "instanceBytes": [
+   754960,
+   32
+  ],
+  "overdraw": [
+   1.61,
+   0
+  ],
+  "rasterized": [
+   11.7,
+   0
+  ]
+ },
+ "oak-c-b0-eye": {
+  "sides": [
+   "oak-c-b0-eye-lod0",
+   "oak-c-b0-eye-lod1"
+  ],
+  "crownCoverage": [
+   50.9,
+   48.5
+  ],
+  "coverageDiffPts": -2.38,
+  "coverageRelDiffPct": -4.7,
+  "silhouetteIoU": 0.712,
+  "luminance": [
+   0.0952,
+   0.1019
+  ],
+  "luminanceDiffPct": 7.1,
+  "deltaE": 1.99,
+  "envelopeLuminanceDiffPct": 8.5,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   2.05,
+   1.64
+  ],
+  "rasterized": [
+   4.99,
+   11.77
+  ]
+ },
+ "oak-c-b0-over": {
+  "sides": [
+   "oak-c-b0-over-lod0",
+   "oak-c-b0-over-lod1"
+  ],
+  "crownCoverage": [
+   61.9,
+   50.5
+  ],
+  "coverageDiffPts": -11.38,
+  "coverageRelDiffPct": -18.4,
+  "silhouetteIoU": 0.618,
+  "luminance": [
+   0.0972,
+   0.0899
+  ],
+  "luminanceDiffPct": -7.6,
+  "deltaE": 3.85,
+  "envelopeLuminanceDiffPct": -0.2,
+  "triangles": [
+   1266368,
+   134908
+  ],
+  "instanceBytes": [
+   2684200,
+   339640
+  ],
+  "overdraw": [
+   1.86,
+   1.5
+  ],
+  "rasterized": [
+   4.68,
+   10.94
+  ]
+ },
+ "oak-c-b1-eye": {
+  "sides": [
+   "oak-c-b1-eye-lod1",
+   "oak-c-b1-eye-imp"
+  ],
+  "crownCoverage": [
+   54.1,
+   61.2
+  ],
+  "coverageDiffPts": 7.09,
+  "coverageRelDiffPct": 13.1,
+  "silhouetteIoU": 0.634,
+  "luminance": [
+   0.2395,
+   0.2399
+  ],
+  "luminanceDiffPct": 0.2,
+  "deltaE": 2.02,
+  "envelopeLuminanceDiffPct": -2.1,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   1.61,
+   0
+  ],
+  "rasterized": [
+   11.5,
+   0
+  ]
+ },
+ "oak-c-b1-over": {
+  "sides": [
+   "oak-c-b1-over-lod1",
+   "oak-c-b1-over-imp"
+  ],
+  "crownCoverage": [
+   57.8,
+   65.1
+  ],
+  "coverageDiffPts": 7.37,
+  "coverageRelDiffPct": 12.8,
+  "silhouetteIoU": 0.561,
+  "luminance": [
+   0.2138,
+   0.2163
+  ],
+  "luminanceDiffPct": 1.2,
+  "deltaE": 1.34,
+  "envelopeLuminanceDiffPct": 0.6,
+  "triangles": [
+   134908,
+   2
+  ],
+  "instanceBytes": [
+   339640,
+   32
+  ],
+  "overdraw": [
+   1.47,
+   0
+  ],
+  "rasterized": [
+   10.54,
+   0
+  ]
+ },
+ "pine-b0-eye": {
+  "sides": [
+   "pine-b0-eye-lod0",
+   "pine-b0-eye-lod1"
+  ],
+  "crownCoverage": [
+   57.2,
+   50.6
+  ],
+  "coverageDiffPts": -6.63,
+  "coverageRelDiffPct": -11.6,
+  "silhouetteIoU": 0.872,
+  "luminance": [
+   0.0883,
+   0.07
+  ],
+  "luminanceDiffPct": -20.8,
+  "deltaE": 4.73,
+  "envelopeLuminanceDiffPct": 10.2,
+  "triangles": [
+   1468041,
+   271163
+  ],
+  "instanceBytes": [
+   12419720,
+   742280
+  ],
+  "overdraw": [
+   1.94,
+   1.47
+  ],
+  "rasterized": [
+   47.27,
+   19.08
+  ]
+ },
+ "pine-b0-over": {
+  "sides": [
+   "pine-b0-over-lod0",
+   "pine-b0-over-lod1"
+  ],
+  "crownCoverage": [
+   67.5,
+   57.2
+  ],
+  "coverageDiffPts": -10.32,
+  "coverageRelDiffPct": -15.3,
+  "silhouetteIoU": 0.826,
+  "luminance": [
+   0.0996,
+   0.0598
+  ],
+  "luminanceDiffPct": -40.0,
+  "deltaE": 8.62,
+  "envelopeLuminanceDiffPct": -14.4,
+  "triangles": [
+   1468041,
+   271163
+  ],
+  "instanceBytes": [
+   12419720,
+   742280
+  ],
+  "overdraw": [
+   1.48,
+   1.33
+  ],
+  "rasterized": [
+   36.28,
+   17.58
+  ]
+ },
+ "pine-b1-eye": {
+  "sides": [
+   "pine-b1-eye-lod1",
+   "pine-b1-eye-imp"
+  ],
+  "crownCoverage": [
+   37.4,
+   38.9
+  ],
+  "coverageDiffPts": 1.5,
+  "coverageRelDiffPct": 4.0,
+  "silhouetteIoU": 0.659,
+  "luminance": [
+   0.2052,
+   0.2007
+  ],
+  "luminanceDiffPct": -2.2,
+  "deltaE": 0.74,
+  "envelopeLuminanceDiffPct": 2.9,
+  "triangles": [
+   271163,
+   2
+  ],
+  "instanceBytes": [
+   742280,
+   32
+  ],
+  "overdraw": [
+   1.44,
+   0
+  ],
+  "rasterized": [
+   19.21,
+   0
+  ]
+ },
+ "pine-b1-over": {
+  "sides": [
+   "pine-b1-over-lod1",
+   "pine-b1-over-imp"
+  ],
+  "crownCoverage": [
+   58.3,
+   52.6
+  ],
+  "coverageDiffPts": -5.68,
+  "coverageRelDiffPct": -9.7,
+  "silhouetteIoU": 0.497,
+  "luminance": [
+   0.181,
+   0.1825
+  ],
+  "luminanceDiffPct": 0.8,
+  "deltaE": 0.5,
+  "envelopeLuminanceDiffPct": 2.3,
+  "triangles": [
+   271163,
+   2
+  ],
+  "instanceBytes": [
+   742280,
+   32
+  ],
+  "overdraw": [
+   1.32,
+   0
+  ],
+  "rasterized": [
+   18.61,
+   0
+  ]
+ }
+}

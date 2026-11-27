@@ -197,7 +197,12 @@ def build():
         print(lid, 'outline triangles per sprite', [len(p) // 6 for p in polys])
         print(lid, len(meta), files)
     for lid, card in build_cards(sheets):
-        files = save(lid, card, card['t'] * (card['a'] > 0.05))
+        # card normal maps store the folded normal's z in the blue channel (Phase 4.3) instead of roughness (the renderer
+        # uses each species' sprite mean, 0.43 oak, 0.35 birch, 0.40 pine): filtering then averages whole normals, and the
+        # averaged vector's length keeps the spread of the needles' and leaves' normals (render/viewer.ts fsFol). With z
+        # rebuilt from a filtered x, y as unit length, every distant needle texel faced the card's front.
+        card['r'] = np.clip(card['n'][..., 2], 0, 1)
+        files = save(lid, card, card['t'])   # (dilated: mips must not average zeros into the side share)
         man['layers'].append({'id': lid, 'source': 'composited from the sprite layers (tools/foliage_textures.py)', 'grid': [2, 2], 'quadrants': ['spray', 'spray', 'clump from above', 'clump from the side'],
                               'hulls': card_hulls(card['a']), 'alphaScale': alpha_scales(card['a'], (2, 2)), **files})
         print(lid, files)
@@ -366,9 +371,12 @@ def twig(dst, pts, width, colour):
         a = np.clip(width / 2 + 0.5 - d, 0, 1)
         region = (slice(y0, y1), slice(x0, x1)); A = a[..., None]
         dst['col'][region] = np.asarray(colour, np.float32) * A + dst['col'][region] * (1 - A)
-        dst['a'][region] = np.maximum(dst['a'][region], a)
+        # premultiplied 'over', like paste3d (the card divides by coverage when it is complete); the twig's normal is
+        # the card's (folded side = its upper side)
+        if 'n' in dst: dst['n'][region] = np.array([0, 0, 1], np.float32) * A + dst['n'][region] * (1 - A)
         dst['r'][region] = 0.7 * a + dst['r'][region] * (1 - a)
-        dst['t'][region] = dst['t'][region] * (1 - a)
+        dst['t'][region] = 1.0 * a + dst['t'][region] * (1 - a)
+        dst['a'][region] = a + dst['a'][region] * (1 - a)
 
 
 def quadrant(card, q):
@@ -510,15 +518,24 @@ def paste3d(dst, sp, base, w, a, nb, length_px, ws=1.0, needle=False):
     # side each texel shows, so a card seen from below shows undersides, as LOD0's leaves do (render/viewer.ts fsFol)
     # the blade normal perturbed by the scan's normal map the way the renderer does it (render/viewer.ts fsFol:
     # normalize(Ng + (T nx + B ny) * 0.8))
-    N = np.asarray(nb)[None, None, :] + (nx[..., None] * np.asarray(w) + ny[..., None] * np.asarray(a)) * 0.8
-    N = N / np.maximum(np.linalg.norm(N, axis=-1, keepdims=True), 1e-6)
-    front = 1.0 if nb[2] >= 0 else 0.0
-    if needle: front = 0.5   # a needle fascicle has no upper side: seen equally from both sides
+    # (Phase 4.3: the blade's own normal, without the scan's normal map: filtered card normals are used at their mean
+    # length, which must measure the spread between leaves, as LOD0 shows it; LOD0 filters a leaf's normal-map detail
+    # away and renormalises, so that detail must not darken the cards)
+    N = np.broadcast_to(np.asarray(nb, np.float64), nx.shape + (3,)).copy()
+    # Phase 4.3: the normal is stored folded to the card's front hemisphere (z ≥ 0), so that only its in-plane part
+    # needs storing and the renderer can rebuild z ≥ 0 from it; the translucency channel holds whether that folded side
+    # is the blade's upper side. Needle blades are treated exactly like leaves: LOD0 pales the back of a needle blade
+    # as it does a leaf's underside. (Phase 4.2 stored the unfolded normal's x, y and, for needles, a side share of 0.5:
+    # the renderer rebuilt z from (2·share − 1) = 0 and every pine card normal lay in the card plane, which darkened
+    # pine LOD1 by 21 % at eye level and 40 % from above.)
+    up_side = (N[..., 2] >= 0).astype(np.float32)
+    N = N * np.where(N[..., 2:3] >= 0, 1.0, -1.0)
+    front = up_side
     region = (slice(y0, y1), slice(x0, x1)); A = al[..., None]
     dst['col'][region] = col * A + dst['col'][region] * (1 - A)
     dst['n'][region] = N * A + dst['n'][region] * (1 - A)
     dst['r'][region] = samp(sp['r']) * al + dst['r'][region] * (1 - al)
-    dst['t'][region] = front * al + dst['t'][region] * (1 - al)
+    dst['t'][region] = front * al + dst['t'][region] * (1 - al)   # (per texel: the folded side is the upper side)
     dst['a'][region] = al + dst['a'][region] * (1 - al)
 
 
@@ -659,10 +676,16 @@ def build_cards(sheets):
     out = []
     for lid in ('oak', 'birch', 'pine'):
         r = np.random.default_rng({'oak': 5, 'birch': 6, 'pine': 7}[lid])
-        card = {'col': np.zeros((N, N, 3), np.float32), 'a': np.zeros((N, N), np.float32), 'n': np.dstack([np.zeros((N, N)), np.zeros((N, N)), np.ones((N, N))]).astype(np.float32), 'r': np.full((N, N), 0.6, np.float32), 't': np.zeros((N, N), np.float32)}
+        # every channel is composited premultiplied ('over' from zero, paste3d) and divided by the coverage afterwards.
+        # (Phase 4.2 started the normal at (0, 0, 1), the roughness at 0.6 and the colour at black and kept the result
+        # as straight values: every partly covered texel was darkened, and two-to-three-texel needles are mostly partly
+        # covered texels: pine card albedo was 13 % below its needles' and edge texels up to 38 %)
+        card = {'col': np.zeros((N, N, 3), np.float32), 'a': np.zeros((N, N), np.float32), 'n': np.zeros((N, N, 3), np.float32), 'r': np.zeros((N, N), np.float32), 't': np.zeros((N, N), np.float32)}
         for q in range(2): spray_card3d(quadrant(card, q), sheets[lid], lid, r)
         clump_card3d(quadrant(card, 2), sheets[lid], lid, np.random.default_rng(77), view='top')
         clump_card3d(quadrant(card, 3), sheets[lid], lid, np.random.default_rng(77), view='side')
+        cov = np.maximum(card['a'], 1e-6)
+        card['col'] /= cov[..., None]; card['n'] /= cov[..., None]; card['r'] /= cov; card['t'] /= cov
         m = card['a'] > 0.35
         _, (iy, ix) = ndimage.distance_transform_edt(~m, return_indices=True)
         for key in ('col', 'n', 'r', 't'): card[key] = card[key][iy, ix]

@@ -20,7 +20,7 @@ const log = [];
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
 page.on('console', (m) => log.push(m.text())); page.on('pageerror', (e) => log.push(`pageerror ${e.message}`));
-const q = new URLSearchParams({ specimen: 'oak-a', view: 'three', live: '0', shadow: process.env.SHADOW || '2048' });
+const q = new URLSearchParams({ specimen: 'oak-a', view: 'three', live: '0', shadow: process.env.SHADOW || '2048', ...Object.fromEntries(new URLSearchParams(process.env.QUERY || '')) });
 const t0 = Date.now();
 await page.goto(`http://127.0.0.1:${PORT}/dev/tree-lab/?${q}`, { waitUntil: 'load' });
 await page.waitForFunction('window.__labReady || window.__labError', { timeout: 1800000, polling: 500 });

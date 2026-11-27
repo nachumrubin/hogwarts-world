@@ -2,6 +2,7 @@
 //   &view=front|side|rear|three|top|trunk|junction  &mode=lit (materials, default)|clay|silhouette|wire|normals|hierarchy
 //   &light=studio|day|overcast|low  &lod=0..2  &live=0  &shadow=4096  &ui=0 (viewport only, for headless capture)
 //   &bench=oak-b|pine|birch|stand12|stand50|stand200|suite &cam=ground|aerial &res=1920x1080 &shadow=2048 &frames=120
+//   &chain=B|A|both (three- or four-level LOD) &motion=1 (moving camera: LOD selection and cross-fades every frame)
 // window.__lab exposes the controller for the headless capture script (capture.mjs).
 import { Lab, MODES, COMMIT } from './lab/lab.ts';
 import { PROTOCOL } from './lab/capture.ts';
@@ -39,8 +40,12 @@ async function main() {
   if (q.get('bench')) {
     const [w, h] = (q.get('res') || '1920x1080').split('x').map(Number);
     const o = { width: w, height: h, shadow: +(q.get('shadow') ?? 2048), frames: +(q.get('frames') || 120) };
-    const sc = q.get('bench')!;
-    lab.bench && ((window as any).__benchResult = sc === 'suite' ? await lab.benchSuite(o) : [await lab.bench({ scene: sc, camera: (q.get('cam') as 'ground' | 'aerial') || 'ground', ...o })]);
+    const sc = q.get('bench')!, ch = q.get('chain') || 'B', motion = q.get('motion') === '1';
+    const chains = (ch === 'both' ? ['B', 'A'] : [ch]) as ('A' | 'B')[];
+    const res: Record<string, unknown>[] = [];
+    if (sc === 'suite') res.push(...await lab.benchSuite({ ...o, chains, motion }));
+    else for (const chain of chains) res.push(await lab.bench({ scene: sc, camera: (q.get('cam') as 'ground' | 'aerial') || 'ground', chain, motion, ...o }));
+    (window as any).__benchResult = res;
     console.log('benchmark done');
   }
   // keep growing the rest of the collection in the background so switching is instant
