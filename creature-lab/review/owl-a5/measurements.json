@@ -1,0 +1,85 @@
+{
+  "width": 640,
+  "height": 500,
+  "perched": [
+    [
+      0.15095349351293774,
+      0.3081375040835126,
+      0.3030955924378424
+    ],
+    [
+      0.15142891149591756,
+      0.29089164978125326,
+      0.3268443826766065
+    ]
+  ],
+  "spread": [
+    [
+      0.9165286103472465,
+      0.3080321486066716,
+      0.32520131393922636
+    ],
+    [
+      0.9131736978067018,
+      0.2905921339322451,
+      0.3249922527157735
+    ]
+  ],
+  "rows": [
+    {
+      "revision": "A.4",
+      "lod": 0,
+      "triangles": 51468,
+      "calls": 14,
+      "textureBytes": 5242876,
+      "medianMs": 95.19999999925494,
+      "p95Ms": 100.30000000074506
+    },
+    {
+      "revision": "A.5",
+      "lod": 0,
+      "triangles": 54156,
+      "calls": 14,
+      "textureBytes": 5242876,
+      "medianMs": 102.09999999776483,
+      "p95Ms": 140.69999999925494
+    },
+    {
+      "revision": "A.4",
+      "lod": 1,
+      "triangles": 28312,
+      "calls": 14,
+      "textureBytes": 5242876,
+      "medianMs": 76.39999999850988,
+      "p95Ms": 90.5
+    },
+    {
+      "revision": "A.5",
+      "lod": 1,
+      "triangles": 28632,
+      "calls": 14,
+      "textureBytes": 5242876,
+      "medianMs": 82.89999999850988,
+      "p95Ms": 97.70000000298023
+    },
+    {
+      "revision": "A.4",
+      "lod": 2,
+      "triangles": 10242,
+      "calls": 14,
+      "textureBytes": 5242876,
+      "medianMs": 23.199999999254942,
+      "p95Ms": 54.899999998509884
+    },
+    {
+      "revision": "A.5",
+      "lod": 2,
+      "triangles": 10130,
+      "calls": 14,
+      "textureBytes": 5242876,
+      "medianMs": 24.800000000745058,
+      "p95Ms": 57.30000000074506
+    }
+  ],
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+}

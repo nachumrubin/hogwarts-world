@@ -1,0 +1,50 @@
+:root {
+  color-scheme: dark;
+  font: 16px/1.5 system-ui, sans-serif;
+  background: #161d1c;
+  color: #edf2ec;
+  accent-color: #e9bf85;
+}
+* { box-sizing: border-box }
+body { margin: 0 }
+main { max-width: 1080px; margin: auto; padding: 28px clamp(14px,4vw,48px) 60px }
+header, .transport, .views, .scrub, nav {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+header { justify-content: space-between; margin-bottom: 1.2rem }
+header h1 { font: normal clamp(2.2rem,6vw,3.8rem)/1 Georgia,serif; margin: .15em 0 }
+h2 { font: normal 1.8rem/1.2 Georgia,serif }
+a { color: #f1c991; text-underline-offset: .18em }
+button, select {
+  font: inherit;
+  color: inherit;
+  background: #273331;
+  border: 1px solid #53645e;
+  padding: .34rem .62rem;
+  border-radius: .35rem;
+}
+button { cursor: pointer }
+button[aria-current=true] { background: #e9bf85; color: #182321; border-color: #e9bf85 }
+:focus-visible { outline: 2px solid #f4d19f; outline-offset: 2px }
+.player { overflow:hidden; background: #202a28; border: 1px solid #46544e; border-radius: .5rem }
+.stage { position:relative; aspect-ratio: 16/9; background: #596862 }
+.stage canvas { display:block; width:100%; height:100% }
+.stage span { position:absolute; top:.75rem; left:.85rem; padding:.2rem .6rem; border-radius:.25rem; background:#192523e0; pointer-events:none }
+.transport, .views, .scrub, .player nav { padding: .6rem .92rem }
+.views { border-top: 1px solid #46544e }
+.scrub input { flex:1; width:100%; min-width:8rem }
+output { margin-inline-start:auto; font-variant-numeric: tabular-nums }
+p { max-width: 78ch }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums }
+th, td { text-align:left; padding:.35rem 1rem .35rem .2rem; border-bottom:1px solid #53645e }
+img,video { display:block; width:100%; border-radius:.25rem; background:#46544e }
+figure { margin:1.2rem 0 }
+figcaption { margin-top:.35rem }
+.grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:1rem }
+section + section { margin-top:1.75rem }
+
+#measurements { overflow-x: auto }
+pre { overflow-x: auto }

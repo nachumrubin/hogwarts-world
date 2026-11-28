@@ -1,0 +1,622 @@
+{
+  "face": {
+    "region": "face",
+    "adapter": "swiftshader",
+    "timestamp": true,
+    "textureBytes": 6990504,
+    "maskFill": 0.5270967483520508,
+    "frames": [
+      {
+        "mode": "macro",
+        "revision": "e2",
+        "triangles": 735612,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 44887128,
+        "indexBytes": 11514096,
+        "timing": [
+          {
+            "gpu": 2922.166136,
+            "draw": 2923.5,
+            "readback": 3.2000000029802322,
+            "present": 0.5999999940395355
+          },
+          {
+            "gpu": 2866.757857,
+            "draw": 2870.0999999940395,
+            "readback": 3.5,
+            "present": 0.8000000044703484
+          }
+        ]
+      },
+      {
+        "mode": "macro",
+        "revision": "e3",
+        "triangles": 640576,
+        "draws": 4,
+        "studyTriangles": 30268,
+        "overdraw": {
+          "footprintPixels": 583913,
+          "meanLayers": 6.316029956517495,
+          "opacityFraction": 0.5176991065087521
+        },
+        "vertexBytes": 46738296,
+        "indexBytes": 10373664,
+        "timing": [
+          {
+            "gpu": 2375.335639,
+            "draw": 2376.5,
+            "readback": 2.7999999970197678,
+            "present": 0.6000000014901161
+          },
+          {
+            "gpu": 2604.903556,
+            "draw": 2607,
+            "readback": 3,
+            "present": 0.7000000029802322
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e2",
+        "triangles": 460544,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 28966256,
+        "indexBytes": 7213824,
+        "timing": [
+          {
+            "gpu": 1551.376851,
+            "draw": 1552.7999999970198,
+            "readback": 2.600000001490116,
+            "present": 0.29999999701976776
+          },
+          {
+            "gpu": 1514.944175,
+            "draw": 1518.1999999955297,
+            "readback": 3.399999998509884,
+            "present": 0.5
+          },
+          {
+            "gpu": 1472.344811,
+            "draw": 1474.5,
+            "readback": 3.100000001490116,
+            "present": 0.5
+          },
+          {
+            "gpu": 1573.603882,
+            "draw": 1582.7999999970198,
+            "readback": 4.199999995529652,
+            "present": 0.8000000044703484
+          },
+          {
+            "gpu": 1389.384865,
+            "draw": 1390.3000000044703,
+            "readback": 2.5999999940395355,
+            "present": 0.4000000059604645
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e3",
+        "triangles": 392012,
+        "draws": 4,
+        "studyTriangles": 10860,
+        "overdraw": {
+          "footprintPixels": 11749,
+          "meanLayers": 5.9972763639458675,
+          "opacityFraction": 0.537984058669916
+        },
+        "vertexBytes": 29610944,
+        "indexBytes": 6391440,
+        "timing": [
+          {
+            "gpu": 1094.935944,
+            "draw": 1095.7999999970198,
+            "readback": 2.5,
+            "present": 0.4000000059604645
+          },
+          {
+            "gpu": 1179.033013,
+            "draw": 1180.6000000014901,
+            "readback": 2.7000000029802322,
+            "present": 0.29999999701976776
+          },
+          {
+            "gpu": 1182.560264,
+            "draw": 1183.8999999985099,
+            "readback": 2.7000000029802322,
+            "present": 0.3999999985098839
+          },
+          {
+            "gpu": 1096.695134,
+            "draw": 1098.3999999985099,
+            "readback": 2.899999998509884,
+            "present": 0.29999999701976776
+          },
+          {
+            "gpu": 1207.175577,
+            "draw": 1210.2000000029802,
+            "readback": 3.0999999940395355,
+            "present": 0.30000000447034836
+          }
+        ]
+      }
+    ],
+    "uniformDispatch": [
+      {
+        "gpu": 1186.141925,
+        "draw": 1187.1999999955297,
+        "readback": 2.8000000044703484,
+        "present": 0.29999999701976776
+      },
+      {
+        "gpu": 1019.024199,
+        "draw": 1020.2000000029802,
+        "readback": 2.4000000059604645,
+        "present": 0.3999999985098839
+      },
+      {
+        "gpu": 1289.956333,
+        "draw": 1291.2999999970198,
+        "readback": 1.4000000059604645,
+        "present": 0.3999999985098839
+      },
+      {
+        "gpu": 1163.545061,
+        "draw": 1164.2000000029802,
+        "readback": 2.5999999940395355,
+        "present": 0.4000000059604645
+      },
+      {
+        "gpu": 1227.514063,
+        "draw": 1230.2000000029802,
+        "readback": 3.5,
+        "present": 0.6000000014901161
+      }
+    ]
+  },
+  "chest": {
+    "region": "chest",
+    "adapter": "swiftshader",
+    "timestamp": true,
+    "textureBytes": 5592404,
+    "maskFill": 0.5578145980834961,
+    "frames": [
+      {
+        "mode": "macro",
+        "revision": "e2",
+        "triangles": 735612,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 44887128,
+        "indexBytes": 11514096,
+        "timing": [
+          {
+            "gpu": 3815.076744,
+            "draw": 3849.60000000149,
+            "readback": 3.0999999940395355,
+            "present": 0.8000000044703484
+          },
+          {
+            "gpu": 4124.768512,
+            "draw": 4128.9000000059605,
+            "readback": 4,
+            "present": 1.7000000029802322
+          }
+        ]
+      },
+      {
+        "mode": "macro",
+        "revision": "e3",
+        "triangles": 582756,
+        "draws": 4,
+        "studyTriangles": 9264,
+        "overdraw": {
+          "footprintPixels": 617866,
+          "meanLayers": 4.118316916612987,
+          "opacityFraction": 0.5645635934187127
+        },
+        "vertexBytes": 45600456,
+        "indexBytes": 9679824,
+        "timing": [
+          {
+            "gpu": 3562.379933,
+            "draw": 3563.5999999940395,
+            "readback": 3,
+            "present": 1
+          },
+          {
+            "gpu": 3537.139442,
+            "draw": 3539.5,
+            "readback": 3,
+            "present": 1.1000000014901161
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e2",
+        "triangles": 460544,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 28966256,
+        "indexBytes": 7213824,
+        "timing": [
+          {
+            "gpu": 1295.792198,
+            "draw": 1303.8000000044703,
+            "readback": 7.5999999940395355,
+            "present": 4
+          },
+          {
+            "gpu": 1239.416005,
+            "draw": 1241,
+            "readback": 2.6999999955296516,
+            "present": 0.6000000014901161
+          },
+          {
+            "gpu": 1310.81192,
+            "draw": 1312.3999999985099,
+            "readback": 3.399999998509884,
+            "present": 0.7999999970197678
+          },
+          {
+            "gpu": 1104.276821,
+            "draw": 1105.7999999970198,
+            "readback": 2.600000001490116,
+            "present": 0.6000000014901161
+          },
+          {
+            "gpu": 1293.546199,
+            "draw": 1295,
+            "readback": 2.7999999970197678,
+            "present": 0.4000000059604645
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e3",
+        "triangles": 357096,
+        "draws": 4,
+        "studyTriangles": 4632,
+        "overdraw": {
+          "footprintPixels": 33845,
+          "meanLayers": 3.969448958487221,
+          "opacityFraction": 0.5741378435116332
+        },
+        "vertexBytes": 29373872,
+        "indexBytes": 5972448,
+        "timing": [
+          {
+            "gpu": 1010.652907,
+            "draw": 1043.6000000014901,
+            "readback": 4,
+            "present": 1.6000000014901161
+          },
+          {
+            "gpu": 1018.667062,
+            "draw": 1020.1000000014901,
+            "readback": 1,
+            "present": 0.5
+          },
+          {
+            "gpu": 1082.584149,
+            "draw": 1083.3000000044703,
+            "readback": 1.2999999970197678,
+            "present": 0.5
+          },
+          {
+            "gpu": 945.825421,
+            "draw": 978.7000000029802,
+            "readback": 1.0999999940395355,
+            "present": 0.5
+          },
+          {
+            "gpu": 1040.011518,
+            "draw": 1042.3999999985099,
+            "readback": 3.100000001490116,
+            "present": 0.3999999985098839
+          }
+        ]
+      }
+    ]
+  },
+  "coat": {
+    "region": "coat",
+    "adapter": "swiftshader",
+    "timestamp": true,
+    "textureBytes": 1398100,
+    "maskFill": 1,
+    "frames": [
+      {
+        "mode": "macro",
+        "revision": "e2",
+        "triangles": 735612,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 44887128,
+        "indexBytes": 11514096,
+        "timing": [
+          {
+            "gpu": 3644.182562,
+            "draw": 3644.89999999851,
+            "readback": 2,
+            "present": 0.7000000029802322
+          },
+          {
+            "gpu": 3238.507086,
+            "draw": 3240.89999999851,
+            "readback": 3.100000001490116,
+            "present": 0.6999999955296516
+          }
+        ]
+      },
+      {
+        "mode": "macro",
+        "revision": "e3",
+        "triangles": 735612,
+        "draws": 4,
+        "studyTriangles": 16860,
+        "overdraw": null,
+        "vertexBytes": 44887128,
+        "indexBytes": 11514096,
+        "timing": [
+          {
+            "gpu": 3681.228698,
+            "draw": 3682.7000000029802,
+            "readback": 2.7999999970197678,
+            "present": 0.6000000014901161
+          },
+          {
+            "gpu": 3995.076826,
+            "draw": 3999.10000000149,
+            "readback": 1.8000000044703484,
+            "present": 1
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e2",
+        "triangles": 460544,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 28966256,
+        "indexBytes": 7213824,
+        "timing": [
+          {
+            "gpu": 1321.201489,
+            "draw": 1323.1999999955297,
+            "readback": 3.7000000029802322,
+            "present": 1.3999999985098839
+          },
+          {
+            "gpu": 1375.555811,
+            "draw": 1376.7000000029802,
+            "readback": 2.7999999970197678,
+            "present": 0.5
+          },
+          {
+            "gpu": 1322.002643,
+            "draw": 1327.7999999970198,
+            "readback": 4.100000001490116,
+            "present": 1.7999999970197678
+          },
+          {
+            "gpu": 1339.000644,
+            "draw": 1343.1000000014901,
+            "readback": 3.6999999955296516,
+            "present": 1.6000000014901161
+          },
+          {
+            "gpu": 1215.512643,
+            "draw": 1217.1000000014901,
+            "readback": 2.7000000029802322,
+            "present": 0.6999999955296516
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e3",
+        "triangles": 460544,
+        "draws": 4,
+        "studyTriangles": 9884,
+        "overdraw": null,
+        "vertexBytes": 28966256,
+        "indexBytes": 7213824,
+        "timing": [
+          {
+            "gpu": 1204.352587,
+            "draw": 1205.7000000029802,
+            "readback": 3,
+            "present": 0.3999999985098839
+          },
+          {
+            "gpu": 1353.663767,
+            "draw": 1354.6999999955297,
+            "readback": 2.899999998509884,
+            "present": 0.7000000029802322
+          },
+          {
+            "gpu": 1219.353892,
+            "draw": 1224.6000000014901,
+            "readback": 4.700000002980232,
+            "present": 2.1999999955296516
+          },
+          {
+            "gpu": 1257.060341,
+            "draw": 1258.3000000044703,
+            "readback": 2.899999998509884,
+            "present": 0.3999999985098839
+          },
+          {
+            "gpu": 1410.945736,
+            "draw": 1413.8999999985099,
+            "readback": 3.7999999970197678,
+            "present": 1.7000000029802322
+          }
+        ]
+      }
+    ]
+  },
+  "tail": {
+    "region": "tail",
+    "adapter": "swiftshader",
+    "timestamp": true,
+    "textureBytes": 5592404,
+    "maskFill": 0.49455928802490234,
+    "frames": [
+      {
+        "mode": "macro",
+        "revision": "e2",
+        "triangles": 735612,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 44887128,
+        "indexBytes": 11514096,
+        "timing": [
+          {
+            "gpu": 2995.995812,
+            "draw": 2997.4000000059605,
+            "readback": 3.100000001490116,
+            "present": 0.8000000044703484
+          },
+          {
+            "gpu": 3094.630723,
+            "draw": 3095.89999999851,
+            "readback": 3.100000001490116,
+            "present": 0.6000000014901161
+          }
+        ]
+      },
+      {
+        "mode": "macro",
+        "revision": "e3",
+        "triangles": 713688,
+        "draws": 4,
+        "studyTriangles": 3132,
+        "overdraw": {
+          "footprintPixels": 101426,
+          "meanLayers": 8.317423540315106,
+          "opacityFraction": 0.5320998486119572
+        },
+        "vertexBytes": 43884192,
+        "indexBytes": 11251008,
+        "timing": [
+          {
+            "gpu": 2246.27617,
+            "draw": 2247.60000000149,
+            "readback": 1.5,
+            "present": 0.7999999970197678
+          },
+          {
+            "gpu": 2365.44069,
+            "draw": 2367.6999999955297,
+            "readback": 1.5,
+            "present": 1
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e2",
+        "triangles": 460544,
+        "draws": 3,
+        "studyTriangles": 0,
+        "overdraw": null,
+        "vertexBytes": 28966256,
+        "indexBytes": 7213824,
+        "timing": [
+          {
+            "gpu": 1234.007091,
+            "draw": 1238,
+            "readback": 3.3000000044703484,
+            "present": 0.7999999970197678
+          },
+          {
+            "gpu": 1298.379888,
+            "draw": 1299.6000000014901,
+            "readback": 2.7000000029802322,
+            "present": 0.3999999985098839
+          },
+          {
+            "gpu": 1289.99323,
+            "draw": 1290.8999999985099,
+            "readback": 2.899999998509884,
+            "present": 0.3999999985098839
+          },
+          {
+            "gpu": 1250.306112,
+            "draw": 1252,
+            "readback": 3,
+            "present": 0.3999999985098839
+          },
+          {
+            "gpu": 1230.230829,
+            "draw": 1231.1000000014901,
+            "readback": 1.1999999955296516,
+            "present": 0.4000000059604645
+          }
+        ]
+      },
+      {
+        "mode": "game",
+        "revision": "e3",
+        "triangles": 451638,
+        "draws": 4,
+        "studyTriangles": 610,
+        "overdraw": {
+          "footprintPixels": 9983,
+          "meanLayers": 3.234097966543123,
+          "opacityFraction": 0.5360305273554282
+        },
+        "vertexBytes": 28504608,
+        "indexBytes": 7106952,
+        "timing": [
+          {
+            "gpu": 1227.203922,
+            "draw": 1229.3000000044703,
+            "readback": 2.899999998509884,
+            "present": 0.29999999701976776
+          },
+          {
+            "gpu": 1291.730477,
+            "draw": 1292.8999999985099,
+            "readback": 2.899999998509884,
+            "present": 0.3999999985098839
+          },
+          {
+            "gpu": 1151.161306,
+            "draw": 1152.5,
+            "readback": 2.6999999955296516,
+            "present": 0.30000000447034836
+          },
+          {
+            "gpu": 1309.888882,
+            "draw": 1313.4000000059605,
+            "readback": 3.0999999940395355,
+            "present": 0.8000000044703484
+          },
+          {
+            "gpu": 1309.9334,
+            "draw": 1312.2000000029802,
+            "readback": 1.4000000059604645,
+            "present": 1.0999999940395355
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merperson Redesign · Creature Lab</title>
+<style>
+:root {color-scheme: dark; background:#141c1b; color:#f0ebdf; font:16px/1.5 system-ui,sans-serif}
+main {width:min(72rem, calc(100% - 2rem)); margin:2.5rem auto 5rem}
+header {border-bottom:1px solid #43504a; padding-bottom:1.3rem}
+h1,h2,h3 {line-height:1.18; font-family:Georgia,serif}
+h1 {font-size:clamp(2.6rem,7vw,4.25rem); margin:.25em 0}
+h2 {font-size:2rem; margin-top:1.65em}
+h3 {font-size:1.25rem; margin-bottom:.5rem}
+a {color:#e5c485; text-underline-offset:.22em}
+p {max-width:72ch}
+.comparison {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem}
+figure {margin:0}
+figcaption {margin:.25rem 0; color:#bcc6bb}
+img,video {display:block; width:100%; border:1px solid #46544c; box-sizing:border-box}
+video {max-width:48rem; margin:0 auto}
+table {border-collapse:collapse; width:100%; min-width:36rem; text-align:left}
+th,td {border-bottom:1px solid #43504a; padding:.6rem .5rem}
+.table-wrap {overflow-x:auto}
+@media(max-width:40rem) {.comparison {display:block} figure+figure {margin-top:1rem}}
+</style>
+</head>
+<body><main>
+<header>
+  <p>Creature Lab 2.0 · Milestone A</p>
+  <h1>Merperson redesign</h1>
+  <p>Compare the human facial structure, linked shoulder and arm surfaces, and tail movement against the published prototype.</p>
+  <p><a href="../../standalone.html">Open the candidate Lab</a> · <a href="#motion">Watch the swim</a> · <a href="#measurements">View measurements</a></p>
+</header>
+<h2 id="motion">Swim and banking turn</h2>
+<video controls playsinline preload="metadata" poster="merperson-after-three-quarter-clay.png" aria-label="Six-second merperson animation, treading water, swimming, banking and returning to idle">
+  <source src="merperson-swim.mp4" type="video/mp4">
+</video>
+<p>Treading water for the first second, forward swim from 1.0 to 3.15 seconds, banked turn from 3.15 to 4.85 seconds, then back to idle. The clip uses the candidate Lab renderer, production materials and studio lights. The camera tracks the root so the stroke and banking stay visible.</p>
+<h2>Lab runtime</h2>
+<p>The baseline comes from the published GitHub Pages Lab. The candidate comes from an HTTP preview of the same application entry point. Both show the habitat at one simulated second of idle with the same perspective camera.</p>
+<section aria-label="Lake Shelf"><h3>Lake Shelf</h3><div class="comparison"><figure><a href="runtime-published.png"><img src="runtime-published.png" alt="Baseline. Creature Lab merperson at the Lake Shelf" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="runtime-after.png"><img src="runtime-after.png" alt="Candidate. Creature Lab merperson at the Lake Shelf" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<h2>Matched inspection plates</h2>
+<p>Both revisions are at LOD 0 after one simulated second of idle. Each pair shares an orthographic camera, scale, exposure, background, and studio lights.</p>
+<section aria-label="Front clay"><h3>Front clay</h3><div class="comparison"><figure><a href="merperson-before-front-clay.png"><img src="merperson-before-front-clay.png" alt="Baseline. Full figure viewed directly from the front" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-front-clay.png"><img src="merperson-after-front-clay.png" alt="Candidate. Full figure viewed directly from the front" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<section aria-label="Side clay"><h3>Side clay</h3><div class="comparison"><figure><a href="merperson-before-side-clay.png"><img src="merperson-before-side-clay.png" alt="Baseline. Full profile including the tail and caudal fin" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-side-clay.png"><img src="merperson-after-side-clay.png" alt="Candidate. Full profile including the tail and caudal fin" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<section aria-label="Three-quarter clay"><h3>Three-quarter clay</h3><div class="comparison"><figure><a href="merperson-before-three-quarter-clay.png"><img src="merperson-before-three-quarter-clay.png" alt="Baseline. Head, shoulder and tail volumes together" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-three-quarter-clay.png"><img src="merperson-after-three-quarter-clay.png" alt="Candidate. Head, shoulder and tail volumes together" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<section aria-label="Front silhouette"><h3>Front silhouette</h3><div class="comparison"><figure><a href="merperson-before-front-silhouette.png"><img src="merperson-before-front-silhouette.png" alt="Baseline. Outline of the face, arms, hands and tail" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-front-silhouette.png"><img src="merperson-after-front-silhouette.png" alt="Candidate. Outline of the face, arms, hands and tail" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<section aria-label="Side silhouette"><h3>Side silhouette</h3><div class="comparison"><figure><a href="merperson-before-side-silhouette.png"><img src="merperson-before-side-silhouette.png" alt="Baseline. Outline of the hair, trunk and caudal fin" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-side-silhouette.png"><img src="merperson-after-side-silhouette.png" alt="Candidate. Outline of the hair, trunk and caudal fin" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<section aria-label="Face and gills"><h3>Face and gills</h3><div class="comparison"><figure><a href="merperson-before-face-clay.png"><img src="merperson-before-face-clay.png" alt="Baseline. Three-quarter facial anatomy and fin ears" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-face-clay.png"><img src="merperson-after-face-clay.png" alt="Candidate. Three-quarter facial anatomy and fin ears" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<section aria-label="Shoulder and webbed hand"><h3>Shoulder and webbed hand</h3><div class="comparison"><figure><a href="merperson-before-shoulder-hand-clay.png"><img src="merperson-before-shoulder-hand-clay.png" alt="Baseline. Deltoid, elbow, wrist, thumb and finger webbing" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-shoulder-hand-clay.png"><img src="merperson-after-shoulder-hand-clay.png" alt="Candidate. Deltoid, elbow, wrist, thumb and finger webbing" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<section aria-label="Torso-to-tail transition"><h3>Torso-to-tail transition</h3><div class="comparison"><figure><a href="merperson-before-tail-junction-clay.png"><img src="merperson-before-tail-junction-clay.png" alt="Baseline. Abdomen and muscular tail base" loading="lazy"></a><figcaption>Baseline</figcaption></figure><figure><a href="merperson-after-tail-junction-clay.png"><img src="merperson-after-tail-junction-clay.png" alt="Candidate. Abdomen and muscular tail base" loading="lazy"></a><figcaption>Candidate</figcaption></figure></div></section>
+<h2 id="measurements">Performance</h2>
+<div class="table-wrap"><table><caption>Baseline → Candidate</caption><thead><tr><th scope="col">Configuration</th><th scope="col">Triangles</th><th scope="col">Draw calls</th><th scope="col">Geometry (KiB)</th><th scope="col">CPU update (ms)</th></tr></thead><tbody>
+<tr><th scope="row">LOD 0 · 1 specimen</th><td>18,980 → 45,674</td><td>41 → 20</td><td>373 → 1,204</td><td>0.443 → 0.004</td></tr>
+<tr><th scope="row">LOD 1 · 1 specimen</th><td>7,604 → 18,248</td><td>41 → 20</td><td>154 → 480</td><td>0.099 → 0.003</td></tr>
+<tr><th scope="row">LOD 2 · 1 specimen</th><td>2,590 → 7,112</td><td>41 → 19</td><td>58 → 194</td><td>0.030 → 0.005</td></tr>
+<tr><th scope="row">LOD 1 · 2 specimens</th><td>15,208 → 36,496</td><td>82 → 40</td><td>307 → 960</td><td>0.191 → 0.007</td></tr>
+</tbody></table></div>
+<p>Each run uses the 640 × 480 neutral Lab viewport. The CPU column reports median time per simulation step, including the Lab camera and habitat update. Geometry bytes count the visible specimen buffers at the active LOD. No specimen geometry buffer was replaced during steady swimming. Allocation rates and actual GPU residency were not measured. The available renderer was Chromium ANGLE/SwiftShader. Hardware GPU cost remains unmeasured.</p>
+<p><a href="performance-before.json">Baseline measurements</a> · <a href="performance-after.json">Candidate measurements</a></p>
+<p>Baseline commit <code>15f35c013aaf9e59ec0ed73fd8fc6a1f30b9bc98</code>.</p>
+</main></body></html>

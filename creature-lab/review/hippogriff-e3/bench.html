@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hippogriff surface benchmark</title><style>body{max-width:60rem;margin:5vh auto;padding:1rem;background:#202526;color:#f2eee6;font:16px/1.5 system-ui}button,select{font:inherit;padding:.4rem}pre{overflow:auto}a{color:#a8ddd3}.lab{position:absolute;width:16px;height:16px;visibility:hidden}</style>
+<h1>Run the surface comparison on this GPU</h1><p>Use a WebGPU browser on HTTPS or localhost. Each run samples the same two cameras and pose as the review exports. The results identify the adapter and report timestamp availability.</p>
+<label>Study <select><option value="face">Face and eye</option><option value="chest">Chest</option><option value="coat">Coat</option><option value="tail">Tail</option></select></label>
+<button>Measure</button> <a hidden download="hippogriff-e3-timings.json">Save measurements</a>
+<p role="status"></p><pre></pre><div class="lab"><canvas></canvas></div><script type="module" src="bench.js"></script></html>

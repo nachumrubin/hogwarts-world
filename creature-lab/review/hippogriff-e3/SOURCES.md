@@ -1,0 +1,7 @@
+# Surface asset provenance
+
+**coat.png** is adapted from *Jument boulonnaise.jpg*, a 4000 × 2900 photograph by Amélie Tsaag Valren. It is distributed under Creative Commons Attribution-ShareAlike 4.0 International. The derivative coat map carries the same license. The flank crop spans source pixels (2080, 1088) to (2592, 1600). The bake converts it to grayscale, removes broad lighting, packs hair contrast, a roughness proxy and a directional gradient into RGB, downsamples and mirrors the crop. The photograph supplies short-coat structure. The grey pigmentation comes from the project's E.2 map. The Boulonnais photograph is an artistic material reference, not a calibrated reflectance or roughness scan. [Photograph and author credit](https://commons.wikimedia.org/wiki/File:Jument_boulonnaise.jpg) · [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
+
+**face.png, chest.png, tail.png and iris.png** are original study artwork baked for this project. The feathers are built from separately drawn barbs, rachises and down on transparent backgrounds. The tail cells contain tapered groups of strokes with staggered ends. The iris disk contains radial pigmentation, a collarette and a dark limbus. The studies use the approved project geometry and E.2 undercoat. No third-party feather, eye or tail image is embedded.
+
+To reproduce the atlases, run `python bake.py "/path/to/Jument boulonnaise.jpg"` with Pillow and NumPy installed.

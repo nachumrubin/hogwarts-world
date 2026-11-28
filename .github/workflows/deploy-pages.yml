@@ -1,0 +1,102 @@
+name: Deploy Creature Lab and Tree Lab to GitHub Pages
+
+# GitHub Pages serves one artifact per deployment, and each deployment replaces the whole site, so both labs are
+# built here into a single site:
+#   /hogwarts-world/              Creature Lab (this branch)
+#   /hogwarts-world/dev/tree-lab/ Tree Lab (world-v2-webgpu, dev/tree-lab)
+# A push to creature-lab redeploys both. Tree Lab updates on world-v2-webgpu dispatch this workflow (from
+# request-pages-deploy.yml on that branch) with the commit to publish. Neither lab overwrites the other.
+
+on:
+  push:
+    branches: [creature-lab]
+    paths:
+      - 'creature-lab/**'
+      - '.github/workflows/deploy-pages.yml'
+      - 'tools/build-creature-lab.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+    inputs:
+      tree_lab_ref:
+        description: 'Tree Lab source (branch or commit on world-v2-webgpu)'
+        required: false
+        default: 'world-v2-webgpu'
+
+permissions:
+  actions: read
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: hogwarts-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout creature-lab branch
+        uses: actions/checkout@v4
+      - name: Checkout Tree Lab source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tree_lab_ref || 'world-v2-webgpu' }}
+          path: tree-lab-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: node tools/build-creature-lab.mjs --pages
+      - name: Build Tree Lab into dev/tree-lab/
+        working-directory: tree-lab-src
+        run: |
+          npm ci
+          node dev/tree-lab/build.mjs --pages "$GITHUB_WORKSPACE/dist/creature-lab-pages/dev/tree-lab"
+          echo "Tree Lab $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload site
+        id: upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-${{ github.run_attempt }}
+          path: dist/creature-lab-pages
+      - name: Wait for Pages artifact indexing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact_id }}
+          ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
+        run: |
+          # deploy-pages looks the artifact up by name; the listing can lag the upload, so wait for that exact query
+          for delay in 1 2 4 8 16 30 30; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=$ARTIFACT_NAME" \
+              --jq '.artifacts[].id' | grep -Fxq "$ARTIFACT_ID"; then
+              sleep 5
+              exit 0
+            fi
+            sleep "$delay"
+          done
+          echo "::error::Pages artifact is not indexed yet"
+          exit 1
+      - name: Deploy
+        id: deployment
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+      - name: Retry deploy after an artifact lookup race
+        id: retry
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+      - name: Deploy (retry)
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}

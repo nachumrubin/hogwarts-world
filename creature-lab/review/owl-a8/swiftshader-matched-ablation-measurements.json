@@ -1,0 +1,104 @@
+{
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "baselineCommit": "2e36fdfde1a0ca0f2403c2649d2c1fa774b82232",
+  "adapterClass": "swiftshader",
+  "resolution": [
+    640,
+    500
+  ],
+  "warmupFrames": 14,
+  "framesPerRun": 42,
+  "method": "Update, draw and synchronous RGBA readback. Median of per-run medians and p95s. The distant camera projects the same pose at 39% of the matched image scale.",
+  "rows": [
+    {
+      "lod": 2,
+      "variant": "A7",
+      "coverage": "matched",
+      "triangles": 10158,
+      "calls": 14,
+      "vertices": 7737,
+      "geometryBytes": 421692,
+      "morphBytes": 140208,
+      "textureBytes": 5242876,
+      "medianMs": 38.0,
+      "p95Ms": 71.59999999962747,
+      "medianAnimationMs": 0.09999999962747097,
+      "medianRangeMs": [
+        36.09999999962747,
+        39.15000000037253
+      ]
+    },
+    {
+      "lod": 2,
+      "variant": "A7 no transmission",
+      "coverage": "matched",
+      "triangles": 10158,
+      "calls": 14,
+      "vertices": 7737,
+      "geometryBytes": 421692,
+      "morphBytes": 140208,
+      "textureBytes": 5242876,
+      "medianMs": 33.450000000186265,
+      "p95Ms": 65.59999999962747,
+      "medianAnimationMs": 0.09999999962747097,
+      "medianRangeMs": [
+        30.40000000037253,
+        35.0
+      ]
+    },
+    {
+      "lod": 2,
+      "variant": "A8 full wing finish",
+      "coverage": "matched",
+      "triangles": 10158,
+      "calls": 14,
+      "vertices": 7737,
+      "geometryBytes": 425724,
+      "morphBytes": 140208,
+      "textureBytes": 5592400,
+      "medianMs": 57.799999999813735,
+      "p95Ms": 75.30000000074506,
+      "medianAnimationMs": 0.09999999962747097,
+      "medianRangeMs": [
+        55.89999999944121,
+        58.34999999962747
+      ]
+    },
+    {
+      "lod": 2,
+      "variant": "A8",
+      "coverage": "matched",
+      "triangles": 10158,
+      "calls": 14,
+      "vertices": 7737,
+      "geometryBytes": 425724,
+      "morphBytes": 140208,
+      "textureBytes": 5592400,
+      "medianMs": 33.80000000074506,
+      "p95Ms": 64.90000000037253,
+      "medianAnimationMs": 0.09999999962747097,
+      "medianRangeMs": [
+        26.699999999254942,
+        34.35000000055879
+      ]
+    },
+    {
+      "lod": 2,
+      "variant": "A8 fold morph only",
+      "coverage": "matched",
+      "triangles": 10158,
+      "calls": 14,
+      "vertices": 7737,
+      "geometryBytes": 425724,
+      "morphBytes": 140208,
+      "textureBytes": 5592400,
+      "medianMs": 32.15000000037253,
+      "p95Ms": 64.40000000037253,
+      "medianAnimationMs": 0.09999999962747097,
+      "medianRangeMs": [
+        31.700000000186265,
+        34.00000000093132
+      ]
+    }
+  ]
+}

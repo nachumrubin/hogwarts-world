@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: A7 playback is deterministic across timestep sizes and timeline rewinds
+ok 1 - A7 playback is deterministic across timestep sizes and timeline rewinds
+  ---
+  duration_ms: 1728.276037
+  type: 'test'
+  ...
+# Subtest: A7 holds and returns both foot anchors and respects A6 clearance throughout the sequence
+ok 2 - A7 holds and returns both foot anchors and respects A6 clearance throughout the sequence
+  ---
+  duration_ms: 2668.859116
+  type: 'test'
+  ...
+# Subtest: A7 finishes contact before honoring a new flight request during landing
+ok 3 - A7 finishes contact before honoring a new flight request during landing
+  ---
+  duration_ms: 183.385268
+  type: 'test'
+  ...
+# Subtest: A7 glide sheds its wingbeat and blinks have asymmetric timing and long holds
+ok 4 - A7 glide sheds its wingbeat and blinks have asymmetric timing and long holds
+  ---
+  duration_ms: 110.789916
+  type: 'test'
+  ...
+# Subtest: A7 can land from different points on the circuit and from interrupted takeoff
+ok 5 - A7 can land from different points on the circuit and from interrupted takeoff
+  ---
+  duration_ms: 433.334274
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5468.374795

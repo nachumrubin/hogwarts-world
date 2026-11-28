@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Equine anatomy and grazing · Creature Lab</title>
+  <style>
+    :root{color-scheme:dark;background:#192120;color:#eeeae1;font:100%/1.5 system-ui,sans-serif}
+    *{box-sizing:border-box}body{margin:0}main{max-width:78rem;margin:auto;padding:clamp(1rem,4vw,3.25rem)}
+    a{color:#e6cda1}nav,.controls,.transport{display:flex;align-items:center;gap:.75rem 1.5rem;flex-wrap:wrap}
+    h1,h2{font:normal clamp(2.2rem,4.6vw,3.75rem)/1.12 Georgia,serif;margin:1.5rem 0 .5rem}
+    h2{font-size:1.8rem}p{max-width:76ch}label{display:inline-flex;align-items:center;gap:.5rem}
+    select,button{font:inherit;padding:.45rem .65rem;background:#26342f;color:inherit;border:1px solid #77857c;border-radius:.25rem}
+    .controls{padding:1rem 0;border-top:1px solid #56625b;margin-top:1.5rem}button{cursor:pointer}
+    .pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+    figure{margin:0;min-width:0}figcaption{display:flex;align-items:baseline;justify-content:space-between;gap:.4rem;padding:.25rem 0}
+    figcaption a{font-size:.875rem}figure :is(img,video){width:100%;height:auto;display:block;background:#e4e3dc}
+    .transport{padding:.8rem 0;border-bottom:1px solid #56625b}.transport label:nth-child(2){flex:1}.transport input{width:100%;accent-color:#e6cda1}
+    output{font-variant-numeric:tabular-nums}.scroll{overflow-x:auto}table{border-collapse:collapse;font-variant-numeric:tabular-nums}
+    th,td{text-align:left;padding:.45rem .85rem .45rem 0;border-bottom:1px solid #45564d}
+    [hidden]{display:none!important}@media(max-width:620px){.pair{gap:.45rem}figcaption{flex-wrap:wrap}.controls,.transport{gap:.6rem}}
+  </style>
+</head>
+<body><main>
+<nav aria-label="Lab navigation"><a href="../../">Creature Lab</a><a href="../stage-1b/">Stage 1B archive</a></nav>
+<h1>Equine anatomy and grazing</h1>
+<p>Compare the two rigs at the same instant. Use the ground grid to follow each planted hoof through the stride, or select the unicorn neck close-ups to inspect the bend at the withers.</p>
+<div class="controls">
+<label for="species">Specimen <select id="species"><option value="centaur">Centaur</option><option value="unicorn">Unicorn</option></select></label>
+<label for="test">Visual test <select id="test"></select></label>
+</div>
+<div class="pair">
+<figure><figcaption>Before · Stage 1B <a target="_blank" rel="noopener">Open file</a></figcaption><video playsinline muted preload="auto"></video><img hidden alt=""></figure>
+<figure><figcaption>Revised <a target="_blank" rel="noopener">Open file</a></figcaption><video playsinline muted preload="auto"></video><img hidden alt=""></figure>
+</div>
+<div class="transport">
+<button type="button" id="play">Play pair</button>
+<label>Time <input type="range" id="time" min="0" max="96" value="0" step="1"></label><output for="time" id="readout">0.00 s</output>
+<label>Playback <select id="speed"><option value="0.25">¼×</option><option value="0.5">½×</option><option value="1" selected>1×</option></select></label>
+</div>
+<p id="caption"></p>
+<h2>Measured movement</h2>
+<p>At full graze, the middle of the Stage 1B neck lost about half its cross-sectional area. In the revised rig, each section rotates as a unit along a curved centreline. The table compares each section with its own standing area at high detail.</p>
+<div class="scroll"><table><thead><tr><th>Cross-section</th><th>Before · halfway</th><th>Revised · halfway</th><th>Before · full graze</th><th>Revised · full graze</th></tr></thead><tbody>
+<tr><td>Root</td><td>-0.85%</td><td>0.00%</td><td>-2.29%</td><td>0.00%</td></tr>
+<tr><td>Lower neck</td><td>-8.13%</td><td>0.00%</td><td>-23.25%</td><td>0.00%</td></tr>
+<tr><td>Middle</td><td>-16.44%</td><td>0.00%</td><td>-50.37%</td><td>0.00%</td></tr>
+<tr><td>Upper middle</td><td>-12.23%</td><td>0.00%</td><td>-25.48%</td><td>0.00%</td></tr>
+<tr><td>Upper neck</td><td>-5.26%</td><td>0.00%</td><td>-1.95%</td><td>0.00%</td></tr>
+<tr><td>Poll</td><td>-3.36%</td><td>0.00%</td><td>3.11%</td><td>0.00%</td></tr>
+</tbody></table></div>
+<p>In the flat-floor walking and turning tests, the largest displacement of a sole vertex during a continuous stance fell from 57.2 cm to below 0.01 mm for the centaur and from 22.0 cm to below 0.01 mm for the unicorn. The tests include changes in playback speed and transitions between actions.</p>
+<p><a href="measurements.json">Per-station and gait measurements</a> · <a href="https://github.com/nachumrubin/hogwarts-world/blob/creature-lab/creature-lab/review/equine-correction/README.md">Method and intersection checks</a></p>
+</main>
+<script type="module">
+const byId=id=>document.getElementById(id);
+const species=byId('species'), test=byId('test'), play=byId('play'), time=byId('time');
+const videos=Array.from(document.querySelectorAll('video'));
+const tests=[
+  ['walk-side','Side walk'], ['walk-three-quarter','Three-quarter walk'], ['joints','Joint pivots and foot contact'],
+  ['graze','Lower, graze and return'], ['neck-neutral','Neck · neutral'], ['neck-half','Neck · halfway down'], ['neck-full','Neck · full graze']
+];
+let sequence=0;
+function pause(){videos.forEach(v=>v.pause());play.textContent='Play pair'}
+function seek(t){for(const v of videos)if(v.readyState>=1)v.currentTime=t;time.value=Math.round(t*24);byId('readout').textContent=t.toFixed(2)+' s'}
+function loadTest(){
+  sequence++;pause();const still=test.value.startsWith('neck-');
+  document.querySelector('.transport').hidden=still;
+  document.querySelectorAll('figure').forEach((fig,i)=>{
+    const file=species.value+'-'+test.value+'-'+(i?'after':'before')+(still?'.png':'.mp4');
+    const video=videos[i],img=fig.querySelector('img');
+    video.hidden=still;img.hidden=!still;
+    if(still){img.src=file;img.alt=species.selectedOptions[0].text+', '+test.selectedOptions[0].text+', '+(i?'revised':'Stage 1B');video.removeAttribute('src');video.load()}
+    else{video.src=file;video.playbackRate=Number(byId('speed').value)}
+    fig.querySelector('a').href=file;
+  });
+  time.value=0;byId('readout').textContent='0.00 s';
+  byId('caption').textContent=still?'The cameras use the same view of equivalent grazing phases in both rigs.':
+    test.value==='joints'?'Blue marks the forelimbs and rust marks the hindlimbs. Dashed lines show the far limbs. Green marks a planted sole and its touchdown anchor. Amber marks a swinging hoof.':
+    test.value==='graze'?'Watch the crest, the poll, the muzzle and the supporting forefeet through the complete grazing cycle.':'Follow one hoof against a grid crossing during stance, then watch its clearance during swing.';
+}
+function setSpecies(){
+  const previous=test.value;
+  test.replaceChildren(...tests.slice(0,species.value==='centaur'?3:7).map(([v,label])=>new Option(label,v)));
+  if([...test.options].some(o=>o.value===previous)) test.value=previous;
+  loadTest();
+}
+play.onclick=async()=>{
+  if(!videos[0].paused){pause();return}
+  if(videos[0].ended)seek(0);
+  const current=sequence;
+  try{await Promise.all(videos.map(v=>v.play()));if(current===sequence)play.textContent='Pause pair'}
+  catch{if(current===sequence){pause();byId('caption').textContent='Use Open file to play either clip individually.'}}
+};
+videos[0].addEventListener('loadedmetadata',()=>{time.max=Math.round(videos[0].duration*24)});
+videos[0].addEventListener('timeupdate',()=>{
+  if(!videos[0].paused){
+    const t=videos[0].currentTime;time.value=Math.round(t*24);byId('readout').textContent=t.toFixed(2)+' s';
+    if(Math.abs(videos[1].currentTime-t)>.08 && !videos[1].seeking)videos[1].currentTime=t;
+  }
+});
+videos[0].addEventListener('ended',()=>{pause();seek(videos[0].duration)});
+time.oninput=()=>{pause();seek(Number(time.value)/24)};
+byId('speed').onchange=e=>videos.forEach(v=>v.playbackRate=Number(e.target.value));
+const params=new URLSearchParams(location.search);
+if(params.get('species')==='unicorn')species.value='unicorn';
+setSpecies();
+if([...test.options].some(o=>o.value===params.get('test'))){test.value=params.get('test');loadTest()}
+function remember(){history.replaceState(null,'','?'+new URLSearchParams({species:species.value,test:test.value}))}
+species.onchange=()=>{setSpecies();remember()};
+test.onchange=()=>{loadTest();remember()};
+</script></body></html>

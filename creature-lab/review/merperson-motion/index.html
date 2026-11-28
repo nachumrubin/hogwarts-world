@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merperson Motion Review · Creature Lab</title>
+<style>
+:root {color-scheme:dark;background:#141c1b;color:#f0ebdf;font:16px/1.5 system-ui,sans-serif}
+main {width:min(70rem,calc(100% - 2rem));margin:2.5rem auto 5rem}
+header {border-bottom:1px solid #43504a;padding-bottom:1.3rem}
+h1,h2 {line-height:1.15;font-family:Georgia,serif}
+h1 {font-size:clamp(2.6rem,7vw,4.25rem);margin:.25em 0}
+h2 {font-size:1.65rem;margin-top:1.8em}
+p {max-width:72ch}
+a {color:#e5c485;text-underline-offset:.22em}
+figure {margin:0}
+figcaption {margin:.35rem 0;color:#bcc6bb}
+video {display:block;width:100%;border:1px solid #46544c;box-sizing:border-box;background:#e4e3dc}
+.pair {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.entry video {max-width:42rem}
+button {margin-top:.6rem;color:#f0ebdf;background:#263731;border:1px solid #638172;padding:.45rem .8rem;border-radius:.25rem;cursor:pointer}
+@media(max-width:40rem) {.pair {display:block}figure+figure {margin-top:1rem}}
+</style>
+</head>
+<body><main>
+<header>
+  <p>Creature Lab · Milestone A follow-up</p>
+  <h1>Merperson swimming and articulation</h1>
+  <p><a href="../../standalone.html">Open the candidate Lab</a> · <a href="technical-report.md">Read the technical report</a></p>
+</header>
+<section>
+  <h2>Side view · matched fast-swim cycle</h2>
+  <p>Both clips use the same fixed side camera relative to the moving root, studio lighting, playback speed, and two-second lead-in.</p>
+  <div class="pair">
+    <figure><video id="before" controls playsinline muted preload="metadata" src="side-before.mp4" aria-label="Baseline fast swimming, side view"></video><figcaption>Baseline · original merperson rig</figcaption></figure>
+    <figure><video id="after" controls playsinline muted preload="metadata" src="side.mp4" aria-label="Candidate fast swimming, side view"></video><figcaption>Candidate · traveling tail stroke</figcaption></figure>
+  </div>
+  <button type="button" id="compare">Replay both</button>
+</section>
+<section class="entry">
+  <h2>Three-quarter view · cruise, accelerate, slow and glide</h2>
+  <video controls playsinline muted preload="metadata" src="three-quarter.mp4" aria-label="Merperson close three-quarter motion demonstrating cruise, fast swim and gliding"></video>
+  <p>Hover until 0.65 seconds, slow cruise to 2.45, fast swim to 4.60, then decelerate toward cruise. Glide begins at 6.10.</p>
+</section>
+<section class="entry">
+  <h2>Left and right turns, braking and hovering</h2>
+  <video controls playsinline muted preload="metadata" src="maneuvers.mp4" aria-label="Merperson banking left and right, braking and hovering"></video>
+  <p>Bank left at 0.55 seconds and right at 2.08. Accelerate at 3.70, brake at 4.80, then settle into a stationary hover from 6.25.</p>
+</section>
+<section class="entry">
+  <h2>Hand close-up · webbing and finger articulation</h2>
+  <video controls playsinline muted preload="metadata" src="hands.mp4" aria-label="Animated close-up of merperson wrist, fingers and flexible webbing"></video>
+  <p>Watch the sculling hand during the opening hover, the fingers fold during the swim, and the palm and digits flare as braking begins at 3.75 seconds.</p>
+</section>
+</main>
+<script>
+document.querySelector('#compare').addEventListener('click', async () => {
+  const videos = ['before', 'after'].map(id => document.getElementById(id));
+  for (const video of videos) {
+    video.pause();
+    video.currentTime = 0;
+  }
+  await Promise.allSettled(videos.map(video => video.play()));
+});
+</script></body>
+</html>

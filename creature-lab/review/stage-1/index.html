@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Equine anatomy review · Creature Lab</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#192120;color:#eceae2;font:16px/1.5 system-ui,sans-serif}
+main{max-width:1250px;margin:auto;padding:clamp(16px,4vw,54px)}h1,h2{font-family:Georgia,serif;font-weight:normal}
+h1{font-size:clamp(32px,5vw,56px);margin:.25em 0}h2{margin-bottom:.25em}a{color:#e0c99e}
+select{font:inherit;padding:.4em}label{margin-right:.5em}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+figure{margin:0}img,video{width:100%;height:auto;display:block}video{max-width:640px}summary{cursor:pointer;margin:.7em 0}
+table{border-collapse:collapse}th,td{padding:.4em .75em;text-align:left;border-bottom:1px solid #49514f}
+</style>
+<main>
+<a href="../">Bestiary review gallery</a>
+<h1>Equine anatomy review</h1>
+<p>Stage 1 · LOD 0 · Neutral studio · One second into idle for the centaur and unicorn, or wing extension for the hippogriff. Both columns use the same orthographic camera.</p>
+<label for="view">Inspection view</label><select id="view">
+<option value="three-quarter-neutral">Three-quarter clay</option><option value="front-neutral">Front clay</option>
+<option value="side-neutral">Side clay</option><option value="rear-neutral">Rear clay</option>
+<option value="detail-neutral">Anatomy close-up</option><option value="front-silhouette">Front silhouette</option>
+<option value="side-silhouette">Side silhouette</option></select>
+<div id="species"></div>
+<p><a href="https://github.com/nachumrubin/hogwarts-world/blob/creature-lab/creature-lab/review/stage-1/README.md">Review findings and timing results</a> · <a href="measurements.json">Measurements for all three LODs</a></p>
+</main>
+<script>
+const selector=document.querySelector('#view');
+for(const [id,movement] of [['centaur','Walk'],['unicorn','Graze to walk'],['hippogriff','Fold, extend and flap']]){
+  const title=id[0].toUpperCase()+id.slice(1),section=document.createElement('section');
+  section.innerHTML='<h2>'+title+'</h2><div class="pair"></div><details><summary>'+movement+' · 4 seconds</summary><video controls playsinline preload="none" src="'+id+'.mp4"></video></details>';
+  for(const [rev,label] of [['baseline','Before'],['lab','Stage 1']]){
+    const frame=document.createElement('figure');
+    frame.innerHTML='<figcaption>'+label+'</figcaption><a><img width="640" height="480"></a>';
+    function setView(){
+      const file=id+'-'+rev+'-'+selector.value+'.png';
+      frame.querySelector('a').href=file;
+      const img=frame.querySelector('img');img.src=file;img.alt=title+', '+label+', '+selector.selectedOptions[0].text;
+    }
+    setView();selector.addEventListener('change',setView);section.querySelector('.pair').append(frame);
+  }
+  document.querySelector('#species').append(section);
+}
+</script>
+</html>

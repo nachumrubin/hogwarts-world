@@ -1,0 +1,160 @@
+{
+  "browser": "156.0.8078.79",
+  "species": {
+    "centaur": {
+      "baseline": [
+        {
+          "lod": 0,
+          "draws": 45,
+          "triangles": 26072,
+          "medianMs": 82.55,
+          "p95Ms": 97.4
+        },
+        {
+          "lod": 1,
+          "draws": 45,
+          "triangles": 10184,
+          "medianMs": 19.15,
+          "p95Ms": 56.3
+        },
+        {
+          "lod": 2,
+          "draws": 45,
+          "triangles": 3614,
+          "medianMs": 12,
+          "p95Ms": 44.2
+        }
+      ],
+      "lab": [
+        {
+          "lod": 0,
+          "draws": 47,
+          "triangles": 35764,
+          "medianMs": 69.8,
+          "p95Ms": 83.3
+        },
+        {
+          "lod": 1,
+          "draws": 47,
+          "triangles": 14220,
+          "medianMs": 29,
+          "p95Ms": 60.2
+        },
+        {
+          "lod": 2,
+          "draws": 47,
+          "triangles": 4808,
+          "medianMs": 17.15,
+          "p95Ms": 48.6
+        }
+      ]
+    },
+    "unicorn": {
+      "baseline": [
+        {
+          "lod": 0,
+          "draws": 37,
+          "triangles": 19352,
+          "medianMs": 37.4,
+          "p95Ms": 69.7
+        },
+        {
+          "lod": 1,
+          "draws": 37,
+          "triangles": 7840,
+          "medianMs": 23.1,
+          "p95Ms": 56.4
+        },
+        {
+          "lod": 2,
+          "draws": 37,
+          "triangles": 2540,
+          "medianMs": 14.2,
+          "p95Ms": 45.5
+        }
+      ],
+      "lab": [
+        {
+          "lod": 0,
+          "draws": 36,
+          "triangles": 22676,
+          "medianMs": 51.4,
+          "p95Ms": 69.7
+        },
+        {
+          "lod": 1,
+          "draws": 36,
+          "triangles": 9116,
+          "medianMs": 20.8,
+          "p95Ms": 54.3
+        },
+        {
+          "lod": 2,
+          "draws": 36,
+          "triangles": 2950,
+          "medianMs": 12.35,
+          "p95Ms": 44
+        }
+      ]
+    },
+    "hippogriff": {
+      "baseline": [
+        {
+          "lod": 0,
+          "draws": 151,
+          "triangles": 25828,
+          "medianMs": 66.2,
+          "p95Ms": 80
+        },
+        {
+          "lod": 1,
+          "draws": 151,
+          "triangles": 11596,
+          "medianMs": 29.9,
+          "p95Ms": 65.1
+        },
+        {
+          "lod": 2,
+          "draws": 151,
+          "triangles": 4638,
+          "medianMs": 21.55,
+          "p95Ms": 54
+        }
+      ],
+      "lab": [
+        {
+          "lod": 0,
+          "draws": 59,
+          "triangles": 28568,
+          "medianMs": 69.95,
+          "p95Ms": 81.4
+        },
+        {
+          "lod": 1,
+          "draws": 59,
+          "triangles": 13124,
+          "medianMs": 32.15,
+          "p95Ms": 63.3
+        },
+        {
+          "lod": 2,
+          "draws": 59,
+          "triangles": 5342,
+          "medianMs": 23.75,
+          "p95Ms": 59.1
+        }
+      ]
+    }
+  },
+  "protocol": {
+    "renderer": "Chromium ANGLE SwiftShader, software WebGL 2",
+    "framebuffer": [
+      640,
+      480
+    ],
+    "devicePixelRatio": 1,
+    "scope": "One visible specimen, neutral studio lights, native materials, no habitat",
+    "action": "Walk, fixed 1/60 second steps",
+    "perLOD": "10 warm-up frames, then 30 measured frames. Wall time covers update, camera, draw and synchronous one-pixel readback. LOD 0, 1 and 2 in sequence. One before and one after run per species."
+  }
+}
