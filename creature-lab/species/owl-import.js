@@ -1,5 +1,7 @@
 import * as T from '../vendor/three.module.js';
+import {unzlibSync} from '../vendor/fflate.js';
 import {Owl} from './owl.js';
+import {pigment} from './owl-binding.js';
 import {loadTexturedGLB,texturedMaterial} from './textured-glb.js';
 
 export function loadOwlAsset(){
@@ -9,72 +11,70 @@ export function loadOwlAsset(){
   return loadTexturedGLB(url);
 }
 
+// Isolate the facial disc, crown and ruff. The lowest retained strip turns
+// inwards under the breast plumage, so head rotation never opens the collar.
+function facialDisc(asset){
+  const position=[],normal=[],uv=[],indices=[],mapped=new Map();
+  function vertex(id){
+    if(mapped.has(id))return mapped.get(id);
+    const k=3*id,y=asset.positions[k+1],t=T.MathUtils.smoothstep(y,.20,.37);
+    const index=position.length/3;
+    mapped.set(id,index);
+    const x=(asset.positions[k]-.44)*.20,z=(asset.positions[k+2]-.065)*.20;
+    const collarRadius=.033+.11*T.MathUtils.smoothstep(y,.31,.52);
+    const width=Math.min(1,collarRadius/Math.max(.0001,Math.hypot(x,z)))*t;
+    position.push(x*width,(y-.63)*.20,z*width);
+    normal.push(...asset.normals.subarray(k,k+3));
+    uv.push(...asset.uv.subarray(2*id,2*id+2));
+    return index;
+  }
+  for(let i=0;i<asset.indices.length;i+=3){
+    const a=asset.indices[i],b=asset.indices[i+1],c=asset.indices[i+2];
+    if(Math.max(...[a,b,c].map(j=>asset.positions[3*j+1]))<=.20)continue;
+    indices.push(vertex(a),vertex(b),vertex(c));
+  }
+  const geometry=new T.BufferGeometry();
+  geometry.setAttribute('position',new T.Float32BufferAttribute(position,3));
+  geometry.setAttribute('normal',new T.Float32BufferAttribute(normal,3));
+  geometry.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+  geometry.setIndex(indices);
+  return geometry;
+}
+
+let colors;
+function transferPigment(surfaces){
+  colors??=unzlibSync(Uint8Array.from(atob(pigment),c=>c.charCodeAt(0)));
+  const color=new T.Color();
+  let offset=0;
+  for(const mesh of surfaces){
+    const count=mesh.geometry.attributes.position.count,linear=new Float32Array(3*count);
+    for(let i=0;i<count;i++,offset+=3){
+      color.setRGB(colors[offset]/255,colors[offset+1]/255,colors[offset+2]/255,T.SRGBColorSpace);
+      // Let the original vane atlas provide the feather bars and fine relief.
+      color.multiplyScalar(.65).addScalar(.35).toArray(linear,3*i);
+    }
+    mesh.geometry.setAttribute('color',new T.BufferAttribute(linear,3));
+    mesh.material.vertexColors=true;
+  }
+  if(offset!==colors.length)throw Error('Barn owl rig no longer matches its baked plumage.');
+}
+
 export class ImportedOwl extends Owl {
   constructor(asset){
     super();
-    const geometry=new T.BufferGeometry();
-    geometry.setAttribute('position',new T.BufferAttribute(asset.positions.slice(),3));
-    geometry.setAttribute('normal',new T.BufferAttribute(asset.normals.slice(),3));
-    geometry.setAttribute('uv',new T.BufferAttribute(asset.uv,2));
-    geometry.setIndex(new T.BufferAttribute(asset.indices,1));
-    const scale=.34/1.90065485;
-    // The perched torso faces source +X. Its face is turned toward +Z.
-    // Centre the two toe pads on the old perch frame before binding.
-    geometry.translate(-.28,.90,0);
-    geometry.rotateY(-Math.PI/2);
-    geometry.scale(scale,scale,scale);
-    const vertex=new T.Vector3(),up=new T.Vector3(0,1,0);
-    const pivot=new T.Vector3(0,.23,.028);
-    const positions=geometry.attributes.position,normals=geometry.attributes.normal;
-    for(let i=0;i<positions.count;i++){
-      vertex.fromBufferAttribute(positions,i);
-      const turn=Math.PI/2*T.MathUtils.smoothstep(vertex.y,.20,.252);
-      vertex.sub(pivot).applyAxisAngle(up,turn).add(pivot);
-      positions.setXYZ(i,vertex.x,vertex.y,vertex.z);
-      vertex.fromBufferAttribute(normals,i).applyAxisAngle(up,turn);
-      normals.setXYZ(i,vertex.x,vertex.y,vertex.z);
-    }
-
-    // Keep the procedural pose controller and replace its visible surfaces.
-    for(const {mesh} of this.parts)mesh.visible=false;
-    // The scan fuses the folded feathers to the breast. The legacy wing rig
-    // supplies separate flight feathers, including its folded-to-open morphs.
-    this.flightFeathers=this.wings.flatMap(wing=>wing.joints.flatMap(joint=>
-      joint.children.filter(child=>child.isMesh)));
-    const joints=[this.trunk,this.head,this.tail,...this.feet.map(foot=>foot.carrier)];
-    const position=geometry.attributes.position;
-    const indices=new Uint16Array(4*position.count),weights=new Float32Array(4*position.count);
-    const smooth=T.MathUtils.smoothstep;
-    for(let i=0;i<position.count;i++){
-      const x=position.getX(i),y=position.getY(i),z=position.getZ(i);
-      const side=Number(x>0),width=Math.abs(x);
-      const head=smooth(y,.209,.255);
-      const foot=(1-smooth(y,.037,.091))*smooth(z,-.068,-.018);
-      const tail=(1-smooth(z,-.167,-.098))*(1-smooth(width,.014,.041));
-      indices.set([0,1,2,3+side],4*i);
-      weights.set([1-head-foot-tail,head,tail,foot],4*i);
-    }
-    geometry.setAttribute('skinIndex',new T.BufferAttribute(indices,4));
-    geometry.setAttribute('skinWeight',new T.BufferAttribute(weights,4));
+    this.head.traverse(child=>{if(child.isMesh)child.visible=false});
     const {material,textures}=texturedMaterial(asset);
     this.textures=textures;
-    this.materials.set('Meshy barn owl',material);
-    const mesh=new T.SkinnedMesh(geometry,material);
-    mesh.name='Meshy barn owl';
-    mesh.frustumCulled=false;
-    this.root.add(mesh);
-    this.root.updateMatrixWorld(true);
-    mesh.bind(new T.Skeleton(joints));
-    this.parts.push({mesh,levels:[geometry]});
+    this.materials.set('Meshy facial disc',material);
+    const geometry=facialDisc(asset),face=new T.Mesh(geometry,material);
+    face.name='Meshy barn owl facial disc';
+    this.head.add(face);
+    this.importedMesh=face;
+    this.parts.push({mesh:face,levels:[geometry]});
+    this.flightFeathers=this.wings.flatMap(wing=>wing.joints.flatMap(j=>j.children.filter(c=>c.isMesh)));
+    transferPigment([this.breast,...this.flightFeathers]);
   }
-
   setLOD(level){this.level=level}
-
-  applyPose(pose){
-    super.applyPose(pose);
-    for(const feather of this.flightFeathers??[])feather.visible=pose.open>.02;
-  }
-
   dispose(){
     super.dispose();
     this.textures.forEach(texture=>texture.dispose());

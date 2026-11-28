@@ -10,7 +10,7 @@ export function equine(a,{coat,hair,hoof,kind,foreColor=coat,pivot,front=true,sl
   const tail=joint(b,0,1.65,-.98);
   a.loft(tail,hair,[[0,0,.06,.10,.11],[0,-.10,-.12,.13,.14],[.02,-.34,-.24,.15,.15],[.04,-.63,-.30,.13,.12],[.04,-.95,-.35,.09,.08],[.02,-1.16,-.42,.008,.01]]);
   if(kind!=='hippogriff'){
-    return {base:b,neck,...equineGait(a,b,tail,{kind,coat,hoof,slender,length})};
+    return {base:b,neck,tail,...equineGait(a,b,tail,{kind,coat,hoof,slender,length})};
   }
   const legs=[];
   for(const s of [-1,1])for(const fore of [false,true]){

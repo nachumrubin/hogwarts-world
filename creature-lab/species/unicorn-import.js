@@ -1,6 +1,7 @@
 import * as T from '../vendor/three.module.js';
+import {unzlibSync} from '../vendor/fflate.js';
+import * as binding from './unicorn-binding.js';
 import {Unicorn} from './unicorn.js';
-import {grazingCorrective} from './grazing-corrective.js';
 import {loadTexturedGLB,texturedMaterial} from './textured-glb.js';
 
 export function loadUnicornAsset(){
@@ -10,69 +11,45 @@ export function loadUnicornAsset(){
   return loadTexturedGLB(url);
 }
 
-const corrections=new WeakMap();
+function decode(text,Type){
+  const bytes=unzlibSync(Uint8Array.from(atob(text),char=>char.charCodeAt(0)));
+  return new Type(bytes.buffer,bytes.byteOffset,bytes.byteLength/Type.BYTES_PER_ELEMENT);
+}
+let fitted;
+function surface(asset){
+  if(!fitted){
+    const lookup=decode(binding.vertex,Uint16Array),position=decode(binding.position,Int16Array);
+    const ids=decode(binding.joint,Uint8Array),weights=decode(binding.weight,Uint16Array);
+    const xyz=new Float32Array(3*lookup.length),joint=new Uint8Array(4*lookup.length);
+    const weight=new Float32Array(4*lookup.length);
+    lookup.forEach((v,i)=>{
+      for(let k=0;k<3;k++)xyz[3*i+k]=position[3*v+k]/8192;
+      for(let k=0;k<4;k++){joint[4*i+k]=ids[4*v+k];weight[4*i+k]=weights[4*v+k]/65535}
+    });
+    const corrections=[binding.halfGraze,binding.fullGraze].map(encoded=>{
+      const values=decode(encoded,Int16Array),delta=new Float32Array(xyz.length);
+      lookup.forEach((v,i)=>{for(let k=0;k<3;k++)delta[3*i+k]=values[3*v+k]/8192});
+      return delta;
+    });
+    fitted={xyz,joint,weight,corrections,normal:decode(binding.normal,Int8Array)};
+  }
+  const g=new T.BufferGeometry();
+  g.setAttribute('position',new T.BufferAttribute(fitted.xyz,3));
+  g.setAttribute('skinIndex',new T.BufferAttribute(fitted.joint,4));
+  g.setAttribute('skinWeight',new T.BufferAttribute(fitted.weight,4));
+  g.setAttribute('uv',new T.BufferAttribute(asset.uv,2));
+  g.setIndex(new T.BufferAttribute(asset.indices,1));
+  g.setAttribute('normal',new T.BufferAttribute(fitted.normal,3,true));
+  g.morphTargetsRelative=true;
+  g.morphAttributes.position=fitted.corrections.map(delta=>new T.BufferAttribute(delta,3));
+  return g;
+}
+
 export class ImportedUnicorn extends Unicorn {
   constructor(asset){
     super();
-    const {legs}=this.horse;
-    const geometry=new T.BufferGeometry();
-    geometry.setAttribute('position',new T.BufferAttribute(asset.positions.slice(),3));
-    geometry.setAttribute('normal',new T.BufferAttribute(asset.normals.slice(),3));
-    geometry.setAttribute('uv',new T.BufferAttribute(asset.uv,2));
-    geometry.setIndex(new T.BufferAttribute(asset.indices,1));
-    geometry.rotateY(1.67);
-    geometry.computeBoundingBox();
-    const {min}=geometry.boundingBox;
-    geometry.translate(.24,-min.y,0);
-    geometry.scale(1.47,1.64,1.47);
-    // The export turns its poll and muzzle sideways. Unwind that turn into
-    // the straight-ahead bind pose of the original cervical chain.
-    const axis=new T.Vector3(0,1,0),point=new T.Vector3();
-    const pos=geometry.attributes.position,normal=geometry.attributes.normal;
-    for(let i=0;i<pos.count;i++){
-      point.fromBufferAttribute(pos,i);
-      const turn=-1.45*T.MathUtils.smoothstep(point.y+.75*point.x,1.55,2.04)
-        *T.MathUtils.smoothstep(point.z,.38,.78);
-      point.z-=.96;
-      point.applyAxisAngle(axis,turn);
-      pos.setXYZ(i,point.x,point.y,point.z+.96);
-      point.fromBufferAttribute(normal,i).applyAxisAngle(axis,turn);
-      normal.setXYZ(i,point.x,point.y,point.z);
-    }
-    geometry.computeBoundingBox();
-
-    // The old leg skins and torso are also parents of the animated bones.
     for(const {mesh} of this.parts)mesh.visible=false;
-    const cervical=this.cervical.bones;
-    const headIndex=cervical.length;
-    const joints=[...cervical,this.head,...legs.flatMap(leg=>leg.bones)];
-    this.root.updateMatrixWorld(true);
-    const position=geometry.attributes.position;
-    const indices=new Uint16Array(position.count*4),weights=new Float32Array(position.count*4);
-    const smooth=(value,min,max)=>T.MathUtils.smoothstep(value,min,max);
-    for(let i=0;i<position.count;i++){
-      const x=position.getX(i),y=position.getY(i),z=position.getZ(i);
-      const fore=z>0,side=x>0;
-      const leg=headIndex+1+5*(2*Number(side)+Number(fore));
-      const limb=(1-smooth(y,.98,1.55))*smooth(Math.abs(z),.17,.61);
-      const neck=(1-limb)*smooth(z+.60*(y-1.55),.22,.77);
-      const progress=smooth(y+.45*z,1.60,2.48);
-      const ring=1+progress*(headIndex-2);
-      const first=Math.min(Math.floor(ring),headIndex-2),fraction=ring-first;
-      const head=smooth(y+.95*z,2.85,3.18);
-      const station=T.MathUtils.clamp((1.42-y)/.34,0,4);
-      const lower=Math.min(3,Math.floor(station)),blend=station-lower;
-      // The upper neck and lower limbs occupy separate regions of the rest mesh.
-      if(neck>limb){
-        indices.set([0,first,first+1,headIndex],4*i);
-        weights.set([1-neck,neck*(1-head)*(1-fraction),neck*(1-head)*fraction,neck*head],4*i);
-      }else{
-        indices.set([0,leg+lower,leg+lower+1],4*i);
-        weights.set([1-limb,limb*(1-blend),limb*blend],4*i);
-      }
-    }
-    geometry.setAttribute('skinIndex',new T.BufferAttribute(indices,4));
-    geometry.setAttribute('skinWeight',new T.BufferAttribute(weights,4));
+    const geometry=surface(asset);
     const {material,textures}=texturedMaterial(asset);
     this.textures=textures;
     this.materials.set('Meshy unicorn',material);
@@ -81,31 +58,19 @@ export class ImportedUnicorn extends Unicorn {
     mesh.frustumCulled=false;
     this.body.add(mesh);
     this.root.updateMatrixWorld(true);
-    mesh.bind(new T.Skeleton(joints));
-    let corrective=corrections.get(asset);
-    if(!corrective){
-      this.graze=1;
-      this.update(0,0,'Graze',{terrainHeight:()=>0});
-      this.root.updateMatrixWorld(true);
-      corrective=grazingCorrective(mesh);
-      corrections.set(asset,corrective);
-      this.graze=0;
-      this.update(0,0,'Idle');
-    }
-    geometry.morphTargetsRelative=true;
-    geometry.morphAttributes.position=[corrective];
-    mesh.updateMorphTargets();
+    const bones=[...this.cervical.bones,this.head,...this.horse.legs.flatMap(leg=>leg.bones),this.horse.tail];
+    mesh.bind(new T.Skeleton(bones));
     this.importedMesh=mesh;
     this.parts.push({mesh,levels:[geometry]});
   }
 
   setLOD(level){this.level=level}
-
-  update(dt,t,action,context){
-    super.update(dt,t,action,context);
-    if(this.importedMesh)this.importedMesh.morphTargetInfluences[0]=this.graze*this.graze;
+  update(dt,time,action,context){
+    super.update(dt,time,action,context);
+    const progress=this.graze*2;
+    this.importedMesh.morphTargetInfluences[0]=1-Math.abs(1-progress);
+    this.importedMesh.morphTargetInfluences[1]=Math.max(0,progress-1);
   }
-
   dispose(){
     super.dispose();
     this.textures.forEach(texture=>texture.dispose());
